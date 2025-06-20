@@ -1,3 +1,4 @@
+using MainAPI_Server.Middlewares;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +21,9 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
+app.UseWebSockets();
+app.UseMiddleware<WebSocketMiddleware>();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -29,6 +33,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
