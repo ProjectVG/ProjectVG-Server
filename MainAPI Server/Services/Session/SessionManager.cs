@@ -2,20 +2,25 @@
 using System.Net.WebSockets;
 using System.Text;
 
-namespace MainAPI_Server.Services
+namespace MainAPI_Server.Services.Session
 {
     public class SessionManager
     {
-        private static readonly ConcurrentDictionary<string, WebSocket> _sessions = new();
+        private static readonly ConcurrentDictionary<string, ClientConnection> _sessions = new();
 
         /// <summary>
         /// 새로운 세션 등록
         /// </summary>
         /// <param name="sessionId">세션 Id</param>
         /// <param name="socket">소캣</param>
-        public static void Register(string sessionId, WebSocket socket)
+        public static void Register(string sessionId, WebSocket socket, string? userId = null)
         {
-            _sessions[sessionId] = socket;
+            _sessions[sessionId] = new ClientConnection {
+                SessionId = sessionId,
+                Socket = socket,
+                UserId = userId,
+                ConnectedAt = DateTime.UtcNow
+            };
         }
 
         /// <summary>
@@ -35,19 +40,23 @@ namespace MainAPI_Server.Services
         /// <returns></returns>
         public static async Task SendToClientAsync(string sessionId, string message)
         {
-            if (sessionId == null || !_sessions.ContainsKey(sessionId)) return;
+            if (!_sessions.TryGetValue(sessionId, out var conn)) return;
+            if (conn.Socket.State != WebSocketState.Open) return;
 
-            var socket = _sessions[sessionId];
-            if (socket.State == WebSocketState.Open) {
-                var buffer = Encoding.UTF8.GetBytes(message);
-                await socket.SendAsync(
-                    new ArraySegment<byte>(buffer),
-                    WebSocketMessageType.Text,
-                    true,
-                    CancellationToken.None
-                );
-            }
+            var buffer = Encoding.UTF8.GetBytes(message);
+            await conn.Socket.SendAsync(
+                new ArraySegment<byte>(buffer),
+                WebSocketMessageType.Text,
+                true,
+                CancellationToken.None
+            );
         }
+
+        /// <summary>
+        /// 모든 세션 참조
+        /// </summary>
+        /// <returns>모든 클라이언트 세션</returns>
+        public static IEnumerable<ClientConnection> GetAll() => _sessions.Values;
 
     }
 }
