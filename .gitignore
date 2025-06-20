@@ -1,0 +1,147 @@
+## ---------------------------
+## .NET & ASP.NET Core
+## ---------------------------
+
+# Build results
+bin/
+obj/
+[Ll]og/
+[Bb]uild/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# .NET Core generated files
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.dbmdl
+*.pdb
+*.cache
+*.mdb
+*.log
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.swp
+*.sln.ide
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Visual Studio 2019/2022 and later
+.vscode/
+.vs/
+.vscode-test/
+
+# Rider IDE
+.idea/
+*.sln.iml
+
+# .NET Core global tools
+.dotnet_tool/
+
+# Nuke build
+.nuke/
+
+# Paket dependency manager
+.paket/
+paket-files/
+paket.dependencies
+paket.lock
+
+# Azure
+*.azurepubxml
+*.publish.xml
+*.azurePubxml.user
+PublishProfiles/
+
+# npm
+node_modules/
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# libman (Library Manager)
+libman.json
+wwwroot/lib/
+
+# VS Code
+.history/
+.vscode/
+.code-workspace
+
+# Test results
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+*.testsettings
+*.vsmdi
+.trx
+
+# Entity Framework
+*.db
+*.bak
+*.sql
+
+# Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# JetBrains Rider
+.idea/
+
+# Docker
+**/Dockerfile.*
+docker-compose*
+
+# Logs
+*.log
+logs/
+Logs/
+
+# OS generated files
+ehthumbs.db
+Icon?
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# Crash dumps
+*.dmp
+
+# Publish
+publish/
+
+# VS auto-generated
+Generated_Code/
+
+# Secrets (if using secrets.json for config)
+secrets.json
+
+# Global tool restore
+**/.store/
+**/.tools/
+**/.packagecache/
+**/.dotnet/
+
+# Temporary files
+*.tmp
+*.temp
+~$*
+
+# commit
+*.exe
+*.dll
+*.pdb
+*.log
+*.csv
+*.xlsx
+config.ini
