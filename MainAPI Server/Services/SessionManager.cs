@@ -35,7 +35,18 @@ namespace MainAPI_Server.Services
         /// <returns></returns>
         public static async Task SendToClientAsync(string sessionId, string message)
         {
-            
+            if (sessionId == null || !_sessions.ContainsKey(sessionId)) return;
+
+            var socket = _sessions[sessionId];
+            if (socket.State == WebSocketState.Open) {
+                var buffer = Encoding.UTF8.GetBytes(message);
+                await socket.SendAsync(
+                    new ArraySegment<byte>(buffer),
+                    WebSocketMessageType.Text,
+                    true,
+                    CancellationToken.None
+                );
+            }
         }
 
     }
