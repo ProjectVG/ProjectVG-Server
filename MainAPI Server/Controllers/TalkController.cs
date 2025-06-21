@@ -1,36 +1,36 @@
 ﻿using MainAPI_Server.Models.Reponse;
 using MainAPI_Server.Models.Request;
+using MainAPI_Server.Services.Session;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MainAPI_Server.Controllers
 {
     [ApiController]
     [Route("api/talk")]
+    [AllowAnonymous]
     public class TalkController : ControllerBase
     {
         [HttpPost]
         public IActionResult Post([FromBody] TalkRequest request)
         {
-
-            // todo : 작업을 실재 비동기로 실행
-            Task.Run(() => {
-                ProcessTalkRequestAsync(request);
-            });
-
-            // 아래는 요청이 잘 도착했다는 메시지만 전송
             var response = new TalkResponse {
                 Id = request.Id,
                 Response = request.Message,
             };
+
+            Task.Run(() => ProcessTalkRequestAsync(request));
 
             return Ok(response);
         }
 
         private async Task ProcessTalkRequestAsync(TalkRequest request)
         {
-            {
-                Console.WriteLine("작업 실행");
-            }
+            Console.WriteLine($"Talk 요청 처리 시작: 세션ID={request.Id}");
+
+            await SessionManager.SendToClientAsync(request.Id, $"[AI 응답] {request.Message}");
+
+            Console.WriteLine("Talk 요청 처리 완료");
         }
     }
 }
