@@ -29,6 +29,12 @@ namespace MainAPI_Server.Controllers
             var startTime = DateTime.UtcNow;
             Console.WriteLine($"Talk 요청 처리 시작: 세션ID={request.Id}");
 
+            // todo : 요청 메시지를 RAG로 전송
+
+            // todo : 해당 데이터를 LLM 모델로 전송
+
+            // todo : 보이스 서버로 전송
+
             await SessionManager.SendToClientAsync(request.Id, $"[AI 응답] {request.Message}");
 
             var endTime = DateTime.UtcNow;
