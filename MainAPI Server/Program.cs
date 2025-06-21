@@ -21,9 +21,6 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
-app.UseWebSockets();
-app.UseMiddleware<WebSocketMiddleware>();
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -32,6 +29,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseWebSockets();
+app.UseMiddleware<WebSocketMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
