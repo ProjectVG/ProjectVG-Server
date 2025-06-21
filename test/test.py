@@ -1,6 +1,5 @@
 import asyncio
 import websockets
-import threading
 import uuid
 import requests
 import json
@@ -13,10 +12,9 @@ uri = f"ws://localhost:5287/ws?sessionId={session_id}"
 ws_connection = None
 
 # 수신 쓰레드용 루프
-async def listen():
-    global ws_connection
+async def listen(websocket):
     try:
-        async for message in ws_connection:
+        async for message in websocket:
             print(f"Received: {message}")
     except websockets.ConnectionClosed:
         print("WebSocket connection closed")
@@ -44,31 +42,42 @@ def send_talk_request():
 
 # 연결 함수 (메인)
 async def connect():
-    global ws_connection
     try:
         print(f"Connecting to {uri}")
-        ws_connection = await websockets.connect(uri)
-        print("Connected successfully")
+        async with websockets.connect(uri) as websocket:
+            print("Connected successfully")
 
-        # 연결 후 간단한 메시지 전송
-        await ws_connection.send("Hello from Python client!")
-        print("Sent hello message")
+            await websocket.send("Hello from Python client!")
+            print("Sent hello message")
 
-        # 수신 쓰레드 시작
-        threading.Thread(target=lambda: asyncio.run(listen()), daemon=True).start()
+            # Start listening task
+            listen_task = asyncio.create_task(listen(websocket))
+            
+            # Send talk request
+            print("Sending talk request...")
+            send_talk_request()
 
-        # send actual talk request
-        print("Sending talk request...")
-        send_talk_request()
+            # Wait a bit for the response
+            await asyncio.sleep(1)
+            
+            send_talk_request()
 
-        # CLI 입력으로 메시지 전송
-        while True:
-            msg = input("Enter message (or 'exit'): ")
-            if msg.strip().lower() == "exit":
-                break
-            await ws_connection.send(msg)
+            await asyncio.sleep(1)
 
-        await ws_connection.close()
+            # Main input loop
+            while True:
+                msg = input("Enter message (or 'exit'): ")
+                if msg.strip().lower() == "exit":
+                    break
+                await websocket.send(msg)
+
+            # Cancel listen task
+            listen_task.cancel()
+            try:
+                await listen_task
+            except asyncio.CancelledError:
+                pass
+
         print("Disconnected")
 
     except Exception as e:
