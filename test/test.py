@@ -2,6 +2,8 @@ import asyncio
 import websockets
 import threading
 import uuid
+import requests
+import json
 
 # 연결할 서버 주소
 session_id = str(uuid.uuid4())
@@ -21,6 +23,25 @@ async def listen():
     except Exception as e:
         print(f"Error in listen: {e}")
 
+def send_talk_request():
+    url = "http://localhost:5287/api/talk"
+    data = {
+        "id": session_id,
+        "actor": "test_user",
+        "message": "Hello, this is a test message",
+        "action": "test"
+    }
+    
+    try:
+        response = requests.post(url, json=data)
+        print(f"HTTP request sent, status: {response.status_code}")
+        if response.status_code == 200:
+            print("Request accepted by server")
+        else:
+            print(f"Request failed: {response.text}")
+    except Exception as e:
+        print(f"HTTP request error: {e}")
+
 # 연결 함수 (메인)
 async def connect():
     global ws_connection
@@ -35,6 +56,10 @@ async def connect():
 
         # 수신 쓰레드 시작
         threading.Thread(target=lambda: asyncio.run(listen()), daemon=True).start()
+
+        # send actual talk request
+        print("Sending talk request...")
+        send_talk_request()
 
         # CLI 입력으로 메시지 전송
         while True:
