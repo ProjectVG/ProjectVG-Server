@@ -26,11 +26,14 @@ namespace MainAPI_Server.Controllers
 
         private async Task ProcessTalkRequestAsync(TalkRequest request)
         {
+            var startTime = DateTime.UtcNow;
             Console.WriteLine($"Talk 요청 처리 시작: 세션ID={request.Id}");
 
             await SessionManager.SendToClientAsync(request.Id, $"[AI 응답] {request.Message}");
 
-            Console.WriteLine("Talk 요청 처리 완료");
+            var endTime = DateTime.UtcNow;
+            var processingTime = (endTime - startTime).TotalMilliseconds;
+            Console.WriteLine($"Talk 요청 처리 완료, 소요시간: {processingTime:F2}ms");
         }
     }
 }

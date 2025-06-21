@@ -3,6 +3,7 @@ import websockets
 import uuid
 import requests
 import json
+import time
 
 # 연결할 서버 주소
 session_id = str(uuid.uuid4())
@@ -30,15 +31,19 @@ def send_talk_request():
         "action": "test"
     }
     
+    start_time = time.time()
     try:
         response = requests.post(url, json=data)
-        print(f"HTTP request sent, status: {response.status_code}")
+        http_time = time.time() - start_time
+        print(f"HTTP request sent, status: {response.status_code}, time: {http_time:.3f}s")
         if response.status_code == 200:
             print("Request accepted by server")
         else:
             print(f"Request failed: {response.text}")
+        return http_time
     except Exception as e:
         print(f"HTTP request error: {e}")
+        return time.time() - start_time
 
 # 연결 함수 (메인)
 async def connect():
@@ -53,17 +58,21 @@ async def connect():
             # Start listening task
             listen_task = asyncio.create_task(listen(websocket))
             
-            # Send talk request
+            # Send talk request and measure time
             print("Sending talk request...")
-            send_talk_request()
+            http_time = send_talk_request()
 
-            # Wait a bit for the response
+            # Wait for WebSocket response and measure total time
+            start_wait = time.time()
             await asyncio.sleep(1)
             
             send_talk_request()
 
             await asyncio.sleep(1)
-
+            
+            total_time = time.time() - start_wait
+            print(f"Total response time: {total_time:.3f}s")
+            
             # Main input loop
             while True:
                 msg = input("Enter message (or 'exit'): ")
