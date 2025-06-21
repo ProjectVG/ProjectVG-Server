@@ -40,9 +40,23 @@ namespace MainAPI_Server.Services.Session
         /// <returns></returns>
         public static async Task SendToClientAsync(string sessionId, string message)
         {
-            if (!_sessions.TryGetValue(sessionId, out var conn)) return;
-            if (conn.Socket.State != WebSocketState.Open) return;
+            Console.WriteLine($"SendToClientAsync called with sessionId: {sessionId}");
+            
+            if (!_sessions.TryGetValue(sessionId, out var conn))
+            {
+                Console.WriteLine($"Session not found: {sessionId}");
+                return;
+            }
+            
+            Console.WriteLine($"Session found, WebSocket state: {conn.Socket.State}");
+            
+            if (conn.Socket.State != WebSocketState.Open)
+            {
+                Console.WriteLine($"WebSocket is not open. State: {conn.Socket.State}");
+                return;
+            }
 
+            Console.WriteLine($"Sending message: {message}");
             var buffer = Encoding.UTF8.GetBytes(message);
             await conn.Socket.SendAsync(
                 new ArraySegment<byte>(buffer),
@@ -50,6 +64,7 @@ namespace MainAPI_Server.Services.Session
                 true,
                 CancellationToken.None
             );
+            Console.WriteLine("Message sent successfully");
         }
 
         /// <summary>
