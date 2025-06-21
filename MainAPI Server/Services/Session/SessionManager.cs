@@ -53,7 +53,17 @@ namespace MainAPI_Server.Services.Session
         }
 
         /// <summary>
-        /// 모든 세션 참조
+        /// 세션 조회
+        /// </summary>
+        /// <param name="sessionId">세션 ID</param>
+        /// <returns>클라이언트 세션</returns>
+        public static ClientConnection? Get(string sessionId)
+        {
+            return _sessions.TryGetValue(sessionId, out var conn) ? conn : null;
+        }
+
+        /// <summary>
+        /// 모든 세션 조회
         /// </summary>
         /// <returns>모든 클라이언트 세션</returns>
         public static IEnumerable<ClientConnection> GetAll() => _sessions.Values;
