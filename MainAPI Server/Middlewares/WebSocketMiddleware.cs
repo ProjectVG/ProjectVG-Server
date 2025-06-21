@@ -1,4 +1,5 @@
 ﻿using MainAPI_Server.Services.Session;
+using System.Net.WebSockets;
 
 namespace MainAPI_Server.Middlewares
 {
@@ -22,7 +23,14 @@ namespace MainAPI_Server.Middlewares
                     return;
                 }
 
+                // 세션 등록
+                var sessionId = context.Request.Query["sessionId"];
                 var socket = await context.WebSockets.AcceptWebSocketAsync();
+
+                SessionManager.Register(sessionId, socket);
+
+                Console.WriteLine($"[WS] Session registered: {sessionId}");
+
                 return; 
             }
 
