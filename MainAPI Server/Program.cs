@@ -19,6 +19,10 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = options.DefaultPolicy;
 });
 
+builder.Services.AddHttpClient<IMemoryStoreClient, VectorMemoryClient>(client => {
+    client.BaseAddress = new Uri("http://localhost:5001");
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
