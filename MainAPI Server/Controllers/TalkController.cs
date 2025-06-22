@@ -44,7 +44,10 @@ namespace MainAPI_Server.Controllers
 
             // todo : 보이스 서버로 전송
 
-            await SessionManager.SendToClientAsync(request.Id, $"[AI 응답] {request.Message}");
+            // todo : 대화 내용 전부 저장
+            await _ragClient.AddMemoryAsync(request.Message);
+
+            await SessionManager.SendToClientAsync(request.Id, $"[요청] : {request.Message} [응답] : {ragResult}");
 
             var endTime = DateTime.UtcNow;
             var processingTime = (endTime - startTime).TotalMilliseconds;
