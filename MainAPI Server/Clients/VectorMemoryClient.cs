@@ -59,6 +59,11 @@ public class VectorMemoryClient : IMemoryStoreClient
                 PropertyNameCaseInsensitive = true
             });
 
+            _logger.LogInformation("[MemoryStore] Search 결과 {Count}개:", results.Count);
+            foreach (var result in results) {
+                _logger.LogInformation(" - Text: {Text}, Score: {Score:F4}", result.Text, result.Score);
+            }
+
             return results ?? new List<MemorySearchResult>();
         }
         catch (Exception ex) {
