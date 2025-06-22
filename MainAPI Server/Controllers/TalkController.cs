@@ -11,6 +11,14 @@ namespace MainAPI_Server.Controllers
     [AllowAnonymous]
     public class TalkController : ControllerBase
     {
+
+        private readonly IMemoryStoreClient _ragClient;
+
+        public TalkController(IMemoryStoreClient ragClient)
+        {
+            _ragClient = ragClient;
+        }
+
         [HttpPost]
         public IActionResult Post([FromBody] TalkRequest request)
         {
@@ -30,6 +38,7 @@ namespace MainAPI_Server.Controllers
             Console.WriteLine($"Talk 요청 처리 시작: 세션ID={request.Id}");
 
             // todo : 요청 메시지를 RAG로 전송
+            var ragResult = await _ragClient.SearchAsync(request.Message);
 
             // todo : 해당 데이터를 LLM 모델로 전송
 
