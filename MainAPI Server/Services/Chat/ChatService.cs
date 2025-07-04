@@ -2,7 +2,7 @@ using MainAPI_Server.Clients;
 using MainAPI_Server.Models.Request;
 using MainAPI_Server.Services.Session;
 
-namespace MainAPI_Server.Services
+namespace MainAPI_Server.Services.Chat
 {
     public interface IChatService
     {
@@ -11,11 +11,11 @@ namespace MainAPI_Server.Services
 
     public class ChatService : IChatService
     {
-        private readonly IMemoryStoreClient _ragClient;
+        private readonly IMemoryStoreClient _memoryRetrieverClient;
 
-        public ChatService(IMemoryStoreClient ragClient)
+        public ChatService(IMemoryStoreClient memoryRetrieverClient)
         {
-            _ragClient = ragClient;
+            _memoryRetrieverClient = memoryRetrieverClient;
         }
 
         public async Task ProcessChatRequestAsync(ChatRequest request)
@@ -25,8 +25,8 @@ namespace MainAPI_Server.Services
 
             try
             {
-                // RAG 검색 수행
-                var ragResult = await _ragClient.SearchAsync(request.Message);
+                // 장기 기억 검색 수행
+                var memorySearchResults = await _memoryRetrieverClient.SearchAsync(request.Message);
 
                 // TODO: 해당 데이터를 LLM 모델로 전송
                 // var llmResponse = await _llmClient.GenerateResponseAsync(request.Message, ragResult);
@@ -35,10 +35,10 @@ namespace MainAPI_Server.Services
                 // await _voiceClient.SendToVoiceServerAsync(llmResponse);
 
                 // 대화 내용 저장
-                await _ragClient.AddMemoryAsync(request.Message);
+                await _memoryRetrieverClient.AddMemoryAsync(request.Message);
 
                 // 클라이언트에게 응답 전송
-                await SessionManager.SendToClientAsync(request.Id, $"[요청] : {request.Message} [응답] : {ragResult}");
+                await SessionManager.SendToClientAsync(request.Id, $"[요청] : {request.Message} [응답] : {memorySearchResults}");
 
                 var endTime = DateTime.UtcNow;
                 var processingTime = (endTime - startTime).TotalMilliseconds;
