@@ -145,3 +145,6 @@ secrets.json
 *.csv
 *.xlsx
 config.ini
+
+# Project documentation
+project_structure.txt
