@@ -1,10 +1,9 @@
 ﻿
 namespace MainAPI_Server.Models.Reponse
 {
-    public class TalkResponse
+    public class ChatResponse
     {
         public string Id { get; set; }
         public string Response { get; set; }
     }
-
 }

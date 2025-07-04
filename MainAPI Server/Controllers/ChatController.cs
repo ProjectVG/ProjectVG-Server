@@ -7,26 +7,26 @@ using Microsoft.AspNetCore.Authorization;
 namespace MainAPI_Server.Controllers
 {
     [ApiController]
-    [Route("api/talk")]
+    [Route("api/chat")]
     [AllowAnonymous]
-    public class TalkController : ControllerBase
+    public class ChatController : ControllerBase
     {
-        private readonly ITalkService _talkService;
+        private readonly IChatService _chatService;
 
-        public TalkController(ITalkService talkService)
+        public ChatController(IChatService chatService)
         {
-            _talkService = talkService;
+            _chatService = chatService;
         }
 
         [HttpPost]
-        public IActionResult Post([FromBody] TalkRequest request)
+        public IActionResult Post([FromBody] ChatRequest request)
         {
-            var response = new TalkResponse {
+            var response = new ChatResponse {
                 Id = request.Id,
                 Response = request.Message,
             };
 
-            Task.Run(() => _talkService.ProcessTalkRequestAsync(request));
+            Task.Run(() => _chatService.ProcessChatRequestAsync(request));
 
             return Ok(response);
         }

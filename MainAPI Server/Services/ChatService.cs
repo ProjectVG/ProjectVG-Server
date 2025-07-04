@@ -4,24 +4,24 @@ using MainAPI_Server.Services.Session;
 
 namespace MainAPI_Server.Services
 {
-    public interface ITalkService
+    public interface IChatService
     {
-        Task ProcessTalkRequestAsync(TalkRequest request);
+        Task ProcessChatRequestAsync(ChatRequest request);
     }
 
-    public class TalkService : ITalkService
+    public class ChatService : IChatService
     {
         private readonly IMemoryStoreClient _ragClient;
 
-        public TalkService(IMemoryStoreClient ragClient)
+        public ChatService(IMemoryStoreClient ragClient)
         {
             _ragClient = ragClient;
         }
 
-        public async Task ProcessTalkRequestAsync(TalkRequest request)
+        public async Task ProcessChatRequestAsync(ChatRequest request)
         {
             var startTime = DateTime.UtcNow;
-            Console.WriteLine($"Talk 요청 처리 시작: 세션ID={request.Id}");
+            Console.WriteLine($"Chat 요청 처리 시작: 세션ID={request.Id}");
 
             try
             {
@@ -42,11 +42,11 @@ namespace MainAPI_Server.Services
 
                 var endTime = DateTime.UtcNow;
                 var processingTime = (endTime - startTime).TotalMilliseconds;
-                Console.WriteLine($"Talk 요청 처리 완료, 소요시간: {processingTime:F2}ms");
+                Console.WriteLine($"Chat 요청 처리 완료, 소요시간: {processingTime:F2}ms");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Talk 요청 처리 중 오류 발생: {ex.Message}");
+                Console.WriteLine($"Chat 요청 처리 중 오류 발생: {ex.Message}");
                 await SessionManager.SendToClientAsync(request.Id, $"오류가 발생했습니다: {ex.Message}");
             }
         }

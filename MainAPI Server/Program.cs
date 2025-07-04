@@ -23,7 +23,7 @@ builder.Services.AddHttpClient<IMemoryStoreClient, VectorMemoryClient>(client =>
     client.BaseAddress = new Uri("http://localhost:5001");
 });
 
-builder.Services.AddScoped<ITalkService, TalkService>();
+builder.Services.AddScoped<IChatService, ChatService>();
 
 var app = builder.Build();
 
