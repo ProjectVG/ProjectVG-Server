@@ -23,6 +23,8 @@ builder.Services.AddHttpClient<IMemoryStoreClient, VectorMemoryClient>(client =>
     client.BaseAddress = new Uri("http://localhost:5001");
 });
 
+builder.Services.AddScoped<ITalkService, TalkService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
