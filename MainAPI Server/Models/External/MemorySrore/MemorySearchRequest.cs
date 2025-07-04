@@ -1,10 +1,13 @@
 ﻿using System.Text.Json.Serialization;
 
-public class MemorySearchRequest
+namespace MainAPI_Server.Models.External.MemorySrore
 {
-    [JsonPropertyName("query")]
-    public string Query { get; set; } = default!;
+    public class MemorySearchRequest
+    {
+        [JsonPropertyName("query")]
+        public string Query { get; set; } = default!;
 
-    [JsonPropertyName("top_k")]
-    public int TopK { get; set; } = 3;
+        [JsonPropertyName("top_k")]
+        public int TopK { get; set; } = 3;
+    }
 }

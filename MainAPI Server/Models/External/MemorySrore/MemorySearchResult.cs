@@ -1,11 +1,14 @@
 ﻿
 using System.Text.Json.Serialization;
 
-public class MemorySearchResult
+namespace MainAPI_Server.Models.External.MemorySrore
 {
-    [JsonPropertyName("text")]
-    public string Text { get; set; } = default!;
+    public class MemorySearchResult
+    {
+        [JsonPropertyName("text")]
+        public string Text { get; set; } = default!;
 
-    [JsonPropertyName("score")]
-    public float Score { get; set; }
+        [JsonPropertyName("score")]
+        public float Score { get; set; }
+    }
 }
