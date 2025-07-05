@@ -1,4 +1,8 @@
-using MainAPI_Server.Clients;
+using MainAPI_Server.Clients.LLM;
+using MainAPI_Server.Clients.Memory;
+using MainAPI_Server.Models.Chat;
+using MainAPI_Server.Models.External.LLM;
+using MainAPI_Server.Models.External.MemorySrore;
 using MainAPI_Server.Models.Request;
 using MainAPI_Server.Services.Session;
 
@@ -11,11 +15,15 @@ namespace MainAPI_Server.Services.Chat
 
     public class ChatService : IChatService
     {
-        private readonly IMemoryStoreClient _memoryRetrieverClient;
+        private readonly IMemoryStoreClient _memoryStoreClient;
+        private readonly ILLMClient _llmClient;
+        private readonly IConversationService _conversationService;
 
-        public ChatService(IMemoryStoreClient memoryRetrieverClient)
+        public ChatService(IMemoryStoreClient memoryStoreClient, ILLMClient llmClient, IConversationService conversationService)
         {
-            _memoryRetrieverClient = memoryRetrieverClient;
+            _memoryStoreClient = memoryStoreClient;
+            _llmClient = llmClient;
+            _conversationService = conversationService;
         }
 
         public async Task ProcessChatRequestAsync(ChatRequest request)
@@ -26,16 +34,20 @@ namespace MainAPI_Server.Services.Chat
             try
             {
                 // 장기 기억 검색 수행
-                var memorySearchResults = await _memoryRetrieverClient.SearchAsync(request.Message);
+                List<MemorySearchResult> memorySearchResults = await _memoryStoreClient.SearchAsync(request.Message);
+                List<string> memoryContext = memorySearchResults.Select(r => r.Text).ToList();
 
-                // TODO: 해당 데이터를 LLM 모델로 전송
-                // var llmResponse = await _llmClient.GenerateResponseAsync(request.Message, ragResult);
+                // TODO: 최근 기억 조회
+                List<string> conversationContext = new List<string>();
+
+                // LLM에 요청 메시지 전송
+                var llmResponse = await _llmClient.GenerateResponseAsync(request.Message, conversationContext, memoryContext);
 
                 // TODO: 보이스 서버로 전송
                 // await _voiceClient.SendToVoiceServerAsync(llmResponse);
 
                 // 대화 내용 저장
-                await _memoryRetrieverClient.AddMemoryAsync(request.Message);
+                await _memoryStoreClient.AddMemoryAsync(request.Message);
 
                 // 클라이언트에게 응답 전송
                 await SessionManager.SendToClientAsync(request.Id, $"[요청] : {request.Message} [응답] : {memorySearchResults}");
