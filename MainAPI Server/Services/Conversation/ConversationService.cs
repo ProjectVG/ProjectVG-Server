@@ -4,8 +4,10 @@ namespace MainAPI_Server.Services.Conversation
 {
     public class ConversationService : IConversationService
     {
+        
         private readonly Dictionary<string, List<ChatMessage>> _conversations = new();
         private const int MAX_CONVERSATION_MESSAGES = 50; // 최대 대화 기록 개수
+        private readonly ChatMessageComparer _comparer = new();
 
         public void AddMessage(ChatMessage message)
         {
@@ -14,11 +16,19 @@ namespace MainAPI_Server.Services.Conversation
                 _conversations[message.SessionId] = new List<ChatMessage>();
             }
             
-            _conversations[message.SessionId].Add(message);
-            
-            if (_conversations[message.SessionId].Count > MAX_CONVERSATION_MESSAGES)
+            var messages = _conversations[message.SessionId];
+
+            // 저장 위치 안정성 보장 - 최근 일수록 높은 인덱스에 위치 (log(n))
+            var insertIndex = messages.BinarySearch(message, _comparer);
+            if (insertIndex < 0)
             {
-                _conversations[message.SessionId] = _conversations[message.SessionId].TakeLast(MAX_CONVERSATION_MESSAGES).ToList();
+                insertIndex = ~insertIndex;
+            }
+            messages.Insert(insertIndex, message);
+            
+            if (messages.Count > MAX_CONVERSATION_MESSAGES)
+            {
+                messages.RemoveRange(0, messages.Count - MAX_CONVERSATION_MESSAGES);
             }
         }
 
