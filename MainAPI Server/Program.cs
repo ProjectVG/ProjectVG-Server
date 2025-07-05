@@ -27,6 +27,9 @@ builder.Services.AddHttpClient<MainAPI_Server.Clients.LLM.ILLMClient, MainAPI_Se
     client.BaseAddress = new Uri("http://localhost:5002");
 });
 
+builder.Services.AddScoped<MainAPI_Server.Services.Chat.IChatService, MainAPI_Server.Services.Chat.ChatService>();
+builder.Services.AddScoped<MainAPI_Server.Services.Chat.IConversationService, MainAPI_Server.Services.Chat.ConversationService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
