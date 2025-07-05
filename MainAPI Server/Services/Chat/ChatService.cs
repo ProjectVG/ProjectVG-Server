@@ -47,18 +47,9 @@ namespace MainAPI_Server.Services.Chat
 
 
                 // [4] 사용자 메시지 & 응답 저장 저장
-                var userMessage = new ChatMessage {
-                    SessionId = request.Id,
-                    Role = MessageRole.User,
-                    Content = request.Message
-                };
-                var assistantMessage = new ChatMessage {
-                    SessionId = request.Id,
-                    Role = MessageRole.Assistant,
-                    Content = llmResponse.Success ? llmResponse.Response : $"오류로 답변 생성 실패"
-                };
-                _conversationService.AddMessage(userMessage);                
-                _conversationService.AddMessage(assistantMessage);
+                _conversationService.AddMessage(request.Id, MessageRole.User, request.Message);                
+                _conversationService.AddMessage(request.Id, MessageRole.Assistant, llmResponse.Success ? llmResponse.Response : $"오류로 답변 생성 실패");
+
 
                 // TODO: [5] 보이스 서버로 전송
                 // await _voiceClient.SendToVoiceServerAsync(llmResponse);

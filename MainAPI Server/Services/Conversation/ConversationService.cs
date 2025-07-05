@@ -9,6 +9,16 @@ namespace MainAPI_Server.Services.Conversation
         private const int MAX_CONVERSATION_MESSAGES = 50; // 최대 대화 기록 개수
         private readonly ChatMessageComparer _comparer = new();
 
+        public void AddMessage(string SesstionId, MessageRole role, string content)
+        {
+            ChatMessage message = new ChatMessage() {
+                SessionId = SesstionId,
+                Role = role,
+                Content = content
+            };
+            AddMessage(message);
+        }
+
         public void AddMessage(ChatMessage message)
         {
             if (!_conversations.ContainsKey(message.SessionId))

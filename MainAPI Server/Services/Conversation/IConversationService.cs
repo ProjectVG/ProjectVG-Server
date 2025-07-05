@@ -4,6 +4,15 @@ namespace MainAPI_Server.Services.Conversation
 {
     public interface IConversationService
     {
+
+        /// <summary>
+        /// 세션 대화 기록 추가
+        /// </summary>
+        /// <param name="SesstionId">세션 ID</param>
+        /// <param name="role">주체</param>
+        /// <param name="content">대화 내용</param>
+        void AddMessage(string SesstionId, MessageRole role, string content);
+
         /// <summary>
         /// 세션 대화 기록 추가
         /// </summary>
