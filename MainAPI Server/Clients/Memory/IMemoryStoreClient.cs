@@ -1,6 +1,6 @@
 ﻿using MainAPI_Server.Models.External.MemorySrore;
 
-namespace MainAPI_Server.Clients
+namespace MainAPI_Server.Clients.Memory
 {
     public interface IMemoryStoreClient
     {

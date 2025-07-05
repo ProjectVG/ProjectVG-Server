@@ -15,4 +15,11 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Clients\LLM\" />
+    <Folder Include="Clients\Memory\" />
+    <Folder Include="Services\Chat\" />
+    <Folder Include="Services\Conversation\" />
+  </ItemGroup>
+
 </Project>

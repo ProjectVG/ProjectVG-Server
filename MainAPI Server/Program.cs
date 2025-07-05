@@ -1,5 +1,10 @@
 using MainAPI_Server.Middlewares;
 using Microsoft.AspNetCore.Authentication.Negotiate;
+using MainAPI_Server.Clients.LLM;
+using MainAPI_Server.Clients.Memory;
+using MainAPI_Server.Services.Conversation;
+using MainAPI_Server.Services.Chat;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,12 +28,12 @@ builder.Services.AddHttpClient<IMemoryStoreClient, VectorMemoryClient>(client =>
     client.BaseAddress = new Uri("http://localhost:5001");
 });
 
-builder.Services.AddHttpClient<MainAPI_Server.Clients.LLM.ILLMClient, MainAPI_Server.Clients.LLM.LLMClient>(client => {
+builder.Services.AddHttpClient<ILLMClient, LLMClient>(client => {
     client.BaseAddress = new Uri("http://localhost:5002");
 });
 
-builder.Services.AddScoped<MainAPI_Server.Services.Chat.IChatService, MainAPI_Server.Services.Chat.ChatService>();
-builder.Services.AddScoped<MainAPI_Server.Services.Chat.IConversationService, MainAPI_Server.Services.Chat.ConversationService>();
+builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<IConversationService, ConversationService>();
 
 var app = builder.Build();
 
