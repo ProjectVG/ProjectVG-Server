@@ -29,7 +29,7 @@ builder.Services.AddHttpClient<IMemoryStoreClient, VectorMemoryClient>(client =>
 });
 
 builder.Services.AddHttpClient<ILLMClient, LLMClient>(client => {
-    client.BaseAddress = new Uri("http://localhost:5002");
+    client.BaseAddress = new Uri("http://localhost:5601");
 });
 
 builder.Services.AddScoped<IChatService, ChatService>();

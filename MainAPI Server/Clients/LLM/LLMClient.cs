@@ -41,7 +41,7 @@ namespace MainAPI_Server.Clients.LLM
                 _logger.LogInformation("[LLM] 요청 전송: {Prompt}", request.UserMessage.Substring(0, Math.Min(50, request.UserMessage.Length)) + "...");
                 
                 // 요청 결과 전송
-                HttpResponseMessage response = await _httpClient.PostAsync("/chat", content);
+                HttpResponseMessage response = await _httpClient.PostAsync("api/v1/chat", content);
 
                 if (!response.IsSuccessStatusCode) {
                     _logger.LogWarning("[LLM] 응답 실패: {StatusCode}", response.StatusCode);
@@ -65,7 +65,7 @@ namespace MainAPI_Server.Clients.LLM
                     };
                 }
 
-                _logger.LogInformation("[LLM] 응답 생성 완료: 토큰 사용량 ({TokensUsed}) , 요청 시간({ProcessingTimeMs:F2}ms)", llmResponse.TokensUsed, llmResponse.ProcessingTimeMs);
+                _logger.LogInformation("[LLM] 응답 생성 완료: 토큰 사용량 ({TokensUsed}) , 요청 시간({ProcessingTimeMs:F2}ms)", llmResponse.TokensUsed, llmResponse.ResponseTime);
 
                 return llmResponse;
             }

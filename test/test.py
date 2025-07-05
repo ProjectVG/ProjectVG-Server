@@ -23,7 +23,7 @@ async def listen(websocket):
         print(f"Error in listen: {e}")
 
 def send_talk_request():
-    url = "http://localhost:5287/api/talk"
+    url = "http://localhost:5287/api/chat"
     data = {
         "id": session_id,
         "actor": "test_user",

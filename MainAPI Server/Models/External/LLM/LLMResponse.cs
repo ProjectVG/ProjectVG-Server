@@ -5,22 +5,28 @@ namespace MainAPI_Server.Models.External.LLM
     public class LLMResponse
     {
         /// <summary>
+        /// 세션 ID
+        /// </summary>
+        [JsonPropertyName("session_id")]
+        public string SessionId { get; set; } = default!;
+
+        /// <summary>
         /// 응답
         /// </summary>
-        [JsonPropertyName("response")]
+        [JsonPropertyName("response_text")]
         public string Response { get; set; } = default!;
 
         /// <summary>
         /// 사용된 토큰 수
         /// </summary>
-        [JsonPropertyName("tokens_used")]
+        [JsonPropertyName("total_tokens_used")]
         public int TokensUsed { get; set; }
 
         /// <summary>
         /// 처리 시간 (ms)
         /// </summary>
-        [JsonPropertyName("processing_time_ms")]
-        public double ProcessingTimeMs { get; set; }
+        [JsonPropertyName("response_time")]
+        public double ResponseTime { get; set; }
 
         /// <summary>
         /// 사용된 LLM 모델

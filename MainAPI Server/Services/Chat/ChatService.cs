@@ -67,8 +67,8 @@ namespace MainAPI_Server.Services.Chat
                 // [7] 클라이언트에게 응답 전송
                 await SessionManager.SendToClientAsync(request.Id, 
                     $"[요청] : {request.Message} " +
-                    $"[응답] : {memorySearchResults} " +
-                    $"[응답 소요 시간] : {processingTime}");
+                    $"[응답] : {llmResponse.Response} " +
+                    $"[응답 소요 시간] : {processingTime:F2}ms");
 
                 Console.WriteLine($"Chat 요청 처리 완료, 소요시간: {processingTime:F2}ms");
             }
