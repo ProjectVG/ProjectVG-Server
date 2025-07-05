@@ -1,6 +1,7 @@
+using MainAPI_Server.Models.External.LLM;
+using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
-using MainAPI_Server.Models.External.LLM;
 
 namespace MainAPI_Server.Clients.LLM
 {
@@ -18,9 +19,66 @@ namespace MainAPI_Server.Clients.LLM
 
         public async Task<LLMResponse> GenerateResponseAsync(string userMessage, List<string> conversationContext, List<string> memoryContext)
         {
-            LLMResponse response = new LLMResponse();
 
-            return response;
+            LLMRequest request = new LLMRequest();
+
+            request.SystemMessage = "";
+            request.UserMessage = userMessage;
+            request.MemoryContext = memoryContext ?? new List<string>();
+            request.ConversationHistory = conversationContext ?? new List<string>();
+
+            return await GenerateResponseAsync(request);
         }
+
+        public async Task<LLMResponse> GenerateResponseAsync(LLMRequest request)
+        {
+            try {
+
+                // request 메시지 생성
+                string json = JsonSerializer.Serialize(request);
+                StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                _logger.LogInformation("[LLM] 요청 전송: {Prompt}", request.UserMessage.Substring(0, Math.Min(50, request.UserMessage.Length)) + "...");
+                
+                // 요청 결과 전송
+                HttpResponseMessage response = await _httpClient.PostAsync("/chat", content);
+
+                if (!response.IsSuccessStatusCode) {
+                    _logger.LogWarning("[LLM] 응답 실패: {StatusCode}", response.StatusCode);
+                    return new LLMResponse {
+                        Success = false,
+                        ErrorMessage = $"HTTP {response.StatusCode}: {response.ReasonPhrase}"
+                    };
+                }
+
+                // 요청 파싱
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var llmResponse = JsonSerializer.Deserialize<LLMResponse>(responseBody) ?? new LLMResponse();
+
+                if (llmResponse == null)
+                {
+                    _logger.LogError("[LLM] 응답 파싱 실패");
+                    return new LLMResponse
+                    {
+                        Success = false,
+                        ErrorMessage = "응답을 파싱할 수 없습니다."
+                    };
+                }
+
+                _logger.LogInformation("[LLM] 응답 생성 완료: 토큰 사용량 ({TokensUsed}) , 요청 시간({ProcessingTimeMs:F2}ms)", llmResponse.TokensUsed, llmResponse.ProcessingTimeMs);
+
+                return llmResponse;
+            }
+            catch (Exception ex) {
+                _logger.LogError(ex, "[LLM] 요청 처리 중 예외 발생");
+
+                return new LLMResponse {
+                    Success = false,
+                    ErrorMessage = ex.Message,
+                };
+            }
+
+        }
+
     }
 } 
