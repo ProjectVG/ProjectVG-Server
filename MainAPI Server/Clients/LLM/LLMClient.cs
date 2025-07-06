@@ -17,15 +17,18 @@ namespace MainAPI_Server.Clients.LLM
         }
 
 
-        public async Task<LLMResponse> GenerateResponseAsync(string userMessage, List<string> conversationContext, List<string> memoryContext)
+        public async Task<LLMResponse> GenerateResponseAsync(string systemMessage,string userMessage, List<string> conversationContext, List<string> memoryContext)
         {
-
-            LLMRequest request = new LLMRequest();
-
-            request.SystemMessage = "";
-            request.UserMessage = userMessage;
-            request.MemoryContext = memoryContext ?? new List<string>();
-            request.ConversationHistory = conversationContext ?? new List<string>();
+            LLMRequest request = new LLMRequest
+            {
+                SystemMessage = systemMessage ?? "",
+                UserMessage = userMessage,
+                MemoryContext = memoryContext ?? new List<string>(),
+                ConversationHistory = conversationContext ?? new List<string>(),
+                MaxTokens = 1000,
+                Temperature = 0.7f,
+                Model = "gpt-4o-mini"
+            };
 
             return await GenerateResponseAsync(request);
         }
@@ -38,7 +41,7 @@ namespace MainAPI_Server.Clients.LLM
                 string json = JsonSerializer.Serialize(request);
                 StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                _logger.LogInformation("[LLM] 요청 전송: {Prompt}", request.UserMessage.Substring(0, Math.Min(50, request.UserMessage.Length)) + "...");
+                _logger.LogInformation("[LLM] 요청 전송: {UserMessage}", request.UserMessage.Substring(0, Math.Min(50, request.UserMessage.Length)) + "...");
                 
                 // 요청 결과 전송
                 HttpResponseMessage response = await _httpClient.PostAsync("api/v1/chat", content);

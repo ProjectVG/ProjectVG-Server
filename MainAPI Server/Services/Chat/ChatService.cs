@@ -34,6 +34,8 @@ namespace MainAPI_Server.Services.Chat
             try
             {
                 
+
+
                 // [1] 장기 기억 검색 수행
                 List<MemorySearchResult> memorySearchResults = await _memoryStoreClient.SearchAsync(request.Message);
                 List<string> memoryContext = memorySearchResults.Select(r => r.Text).ToList();
@@ -42,8 +44,10 @@ namespace MainAPI_Server.Services.Chat
                 var recentMessages = _conversationService.GetConversationHistory(request.Id, 10);
                 List<string> conversationContext = recentMessages.Select(m => $"{m.Role}: {m.Content}").ToList();
 
+                string systemMessage = "";
+
                 // [3] LLM에 요청 메시지 전송
-                var llmResponse = await _llmClient.GenerateResponseAsync(request.Message, conversationContext, memoryContext);
+                var llmResponse = await _llmClient.GenerateResponseAsync(systemMessage, request.Message, conversationContext, memoryContext);
 
 
                 // [4] 사용자 메시지 & 응답 저장 저장
