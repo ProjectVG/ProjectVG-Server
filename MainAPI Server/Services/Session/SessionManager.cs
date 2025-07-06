@@ -40,23 +40,23 @@ namespace MainAPI_Server.Services.Session
         /// <returns></returns>
         public static async Task SendToClientAsync(string sessionId, string message)
         {
-            Console.WriteLine($"SendToClientAsync called with sessionId: {sessionId}");
+            Console.WriteLine($"[SessionManager] 클라이언트에게 메시지 전송 시도: 세션ID={sessionId}");
             
             if (!_sessions.TryGetValue(sessionId, out var conn))
             {
-                Console.WriteLine($"Session not found: {sessionId}");
+                Console.WriteLine($"[SessionManager] 세션을 찾을 수 없음: {sessionId}");
                 return;
             }
             
-            Console.WriteLine($"Session found, WebSocket state: {conn.Socket.State}");
+            Console.WriteLine($"[SessionManager] 세션 발견, WebSocket 상태: {conn.Socket.State}");
             
             if (conn.Socket.State != WebSocketState.Open)
             {
-                Console.WriteLine($"WebSocket is not open. State: {conn.Socket.State}");
+                Console.WriteLine($"[SessionManager] WebSocket이 열려있지 않음. 상태: {conn.Socket.State}");
                 return;
             }
 
-            Console.WriteLine($"Sending message: {message}");
+            Console.WriteLine($"[SessionManager] 메시지 전송 중: {message}");
             var buffer = Encoding.UTF8.GetBytes(message);
             await conn.Socket.SendAsync(
                 new ArraySegment<byte>(buffer),
@@ -64,7 +64,7 @@ namespace MainAPI_Server.Services.Session
                 true,
                 CancellationToken.None
             );
-            Console.WriteLine("Message sent successfully");
+            Console.WriteLine("[SessionManager] 메시지 전송 완료");
         }
 
         /// <summary>
