@@ -33,7 +33,7 @@ builder.Services.AddHttpClient<ILLMClient, LLMClient>(client => {
 });
 
 builder.Services.AddScoped<IChatService, ChatService>();
-builder.Services.AddScoped<IConversationService, ConversationService>();
+builder.Services.AddSingleton<IConversationService, ConversationService>();
 
 var app = builder.Build();
 
