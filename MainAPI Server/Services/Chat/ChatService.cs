@@ -31,7 +31,6 @@ namespace MainAPI_Server.Services.Chat
         public async Task ProcessChatRequestAsync(ChatRequest request)
         {
             var startTime = DateTime.UtcNow;
-            Console.WriteLine($"Chat 요청 처리 시작: 세션ID={request.SessionId}");
 
             try
             {
@@ -48,13 +47,11 @@ namespace MainAPI_Server.Services.Chat
                 // [3] LLM에 요청 메시지 전송
                 var llmResponse = await _llmClient.GenerateResponseAsync(systemMessage, request.Message, conversationContext, memoryContext);
 
-
-                // [4] 사용자 메시지 & 응답 저장 저장
+                // [4] 사용자 메시지 & 응답 저장
                 _conversationService.AddMessage(request.SessionId, MessageRole.User, request.Message);                
                 _conversationService.AddMessage(request.SessionId, MessageRole.Assistant, llmResponse.Success ? llmResponse.Response : $"오류로 답변 생성 실패");
 
-
-                // TODO: [5] 보이스 서버로 전송
+                // [5] 보이스 서버로 전송
                 // await _voiceClient.SendToVoiceServerAsync(llmResponse);
 
                 // [6] 대화 내용을 장기 기억에 저장
@@ -73,12 +70,12 @@ namespace MainAPI_Server.Services.Chat
                     $"[응답] : {llmResponse.Response} " +
                     $"[응답 소요 시간] : {processingTime:F2}ms");
 
-                Console.WriteLine($"Chat 요청 처리 완료, 소요시간: {processingTime:F2}ms");
+                Console.WriteLine($"Chat 요청 완료: {request.SessionId}, 소요시간: {processingTime:F2}ms");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Chat 요청 처리 중 오류 발생: {ex.Message}");
-                await _sessionManager.SendToClientAsync(request.SessionId, $"오류가 발생했습니다: {ex.Message}");
+                Console.WriteLine($"Chat 요청 오류: {ex.Message}");
+                await _sessionManager.SendToClientAsync(request.SessionId, $"Error: {ex.Message}");
             }
         }
     }
