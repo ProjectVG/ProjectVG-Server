@@ -1,97 +1,173 @@
 import asyncio
 import websockets
-import uuid
 import requests
 import json
 import time
+from datetime import datetime
 
-# 연결할 서버 주소
-session_id = str(uuid.uuid4())
-uri = f"ws://localhost:5287/ws?sessionId={session_id}"
-
-# 전역으로 소켓 저장
-ws_connection = None
-
-# 수신 쓰레드용 루프
-async def listen(websocket):
-    try:
-        async for message in websocket:
-            print(f"Received: {message}")
-    except websockets.ConnectionClosed:
-        print("WebSocket connection closed")
-    except Exception as e:
-        print(f"Error in listen: {e}")
-
-def send_talk_request():
-    url = "http://localhost:5287/api/chat"
-    data = {
-        "id": session_id,
-        "actor": "test_user",
-        "message": "Hello, this is a test message",
-        "action": "test"
-    }
+class ChatApp:
+    def __init__(self, http_url="http://localhost:5287", ws_url="ws://localhost:5287/ws"):
+        self.http_url = http_url
+        self.ws_url = ws_url
+        self.websocket = None
+        self.session_id = None
+        
+    async def connect_websocket(self):
+        """WebSocket 연결"""
+        try:
+            # 세션 ID가 있으면 재연결, 없으면 새 연결
+            ws_url = self.ws_url
+            if self.session_id:
+                ws_url = f"{self.ws_url}?sessionId={self.session_id}"
+                print(f"기존 세션으로 재연결 시도: {self.session_id}")
+            else:
+                print("새 세션 연결 시도")
+            
+            print(f"WebSocket URL: {ws_url}")
+            self.websocket = await websockets.connect(ws_url)
+            print("WebSocket 연결됨")
+            
+            # 세션 ID 수신 대기
+            await self.wait_for_session_id()
+            
+            return True
+        except Exception as e:
+            print(f"WebSocket 연결 실패: {e}")
+            print(f"연결 URL: {ws_url}")
+            return False
     
-    start_time = time.time()
-    try:
-        response = requests.post(url, json=data)
-        http_time = time.time() - start_time
-        print(f"HTTP request sent, status: {response.status_code}, time: {http_time:.3f}s")
-        if response.status_code == 200:
-            print("Request accepted by server")
-        else:
-            print(f"Request failed: {response.text}")
-        return http_time
-    except Exception as e:
-        print(f"HTTP request error: {e}")
-        return time.time() - start_time
-
-# 연결 함수 (메인)
-async def connect():
-    try:
-        print(f"Connecting to {uri}")
-        async with websockets.connect(uri) as websocket:
-            print("Connected successfully")
-
-            await websocket.send("Hello from Python client!")
-            print("Sent hello message")
-
-            # Start listening task
-            listen_task = asyncio.create_task(listen(websocket))
+    async def wait_for_session_id(self):
+        """서버로부터 세션 ID 수신"""
+        try:
+            print("세션 ID 수신 대기 중...")
+            message = await asyncio.wait_for(self.websocket.recv(), timeout=5.0)
+            data = json.loads(message)
             
-            # Send talk request and measure time
-            print("Sending talk request...")
-            http_time = send_talk_request()
+            if data.get("type") == "session_id":
+                self.session_id = data.get("session_id")
+                print(f"세션 ID 수신: {self.session_id}")
+            else:
+                print(f"예상치 못한 메시지: {message}")
+        except asyncio.TimeoutError:
+            print("세션 ID 수신 타임아웃")
+            raise
+        except Exception as e:
+            print(f"세션 ID 수신 실패: {e}")
+            raise
+    
 
-            # Wait for WebSocket response and measure total time
-            start_wait = time.time()
-            await asyncio.sleep(1)
+    
+    async def listen_for_responses(self):
+        """WebSocket에서 응답 수신"""
+        if not self.websocket:
+            return
             
-            send_talk_request()
-
-            await asyncio.sleep(1)
-            
-            total_time = time.time() - start_wait
-            print(f"Total response time: {total_time:.3f}s")
-            
-            # Main input loop
+        try:
             while True:
-                msg = input("Enter message (or 'exit'): ")
-                if msg.strip().lower() == "exit":
-                    break
-                await websocket.send(msg)
-
-            # Cancel listen task
-            listen_task.cancel()
+                message = await self.websocket.recv()
+                
+                # 세션 ID 메시지는 무시
+                try:
+                    data = json.loads(message)
+                    if data.get("type") == "session_id":
+                        continue
+                except:
+                    pass
+                
+                print(f"\nAI: {message}")
+                print("-" * 50)
+                break
+                    
+        except websockets.exceptions.ConnectionClosed:
+            print("WebSocket 연결이 종료됨")
+        except Exception as e:
+            print(f"WebSocket 수신 오류: {e}")
+    
+    def send_chat_request(self, message):
+        """HTTP로 채팅 요청 전송"""
+        try:
+            # 세션 ID가 없으면 오류
+            if not self.session_id:
+                print("세션 ID가 없습니다. WebSocket 연결을 먼저 해주세요.")
+                return False
+            
+            payload = {
+                "session_id": self.session_id,
+                "actor": "test_user",
+                "message": message,
+                "action": "chat"
+            }
+            
+            print("요청 전송 중...")
+            response = requests.post(f"{self.http_url}/api/chat", json=payload, timeout=30)
+            
+            if response.status_code == 200:
+                result = response.json()
+                self.session_id = result.get("id", self.session_id)
+                print(f"요청 성공 (세션: {self.session_id})")
+                return True
+            else:
+                print(f"요청 실패: {response.status_code} - {response.text}")
+                return False
+                
+        except requests.exceptions.Timeout:
+            print("요청 시간 초과")
+            return False
+        except Exception as e:
+            print(f"요청 오류: {e}")
+            return False
+    
+    async def chat_loop(self):
+        """대화 루프"""
+        print("채팅 앱 시작")
+        print("=" * 50)
+        
+        if not await self.connect_websocket():
+            return
+        
+        print("\n대화를 시작하세요 (종료: quit, exit, 종료)")
+        print("=" * 50)
+        
+        while True:
             try:
-                await listen_task
-            except asyncio.CancelledError:
-                pass
+                user_input = input("\n나: ").strip()
+                
+                if user_input.lower() in ['quit', 'exit', '종료']:
+                    print("채팅 종료")
+                    break
+                
+                if not user_input:
+                    print("메시지를 입력하세요")
+                    continue
+                
+                # WebSocket 연결이 없으면 연결 (첫 실행 시에만)
+                if not self.websocket:
+                    print("WebSocket 연결 시도...")
+                    if not await self.connect_websocket():
+                        print("WebSocket 연결 실패. 다시 시도하세요")
+                        continue
+                
+                if not self.send_chat_request(user_input):
+                    print("요청 전송 실패. 다시 시도하세요")
+                    continue
+                
+                print("AI 응답 대기 중...")
+                await self.listen_for_responses()
+                
+            except KeyboardInterrupt:
+                print("\n채팅 종료")
+                break
+            except Exception as e:
+                print(f"오류: {e}")
+                continue
+        
+        if self.websocket:
+            await self.websocket.close()
+            print("WebSocket 연결 종료")
 
-        print("Disconnected")
+async def main():
+    app = ChatApp()
+    await app.chat_loop()
 
-    except Exception as e:
-        print(f"Connection failed: {e}")
-
-# 실행
 if __name__ == "__main__":
-    asyncio.run(connect())
+    asyncio.run(main())
