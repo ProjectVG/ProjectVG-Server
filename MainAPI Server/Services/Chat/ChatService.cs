@@ -18,12 +18,14 @@ namespace MainAPI_Server.Services.Chat
         private readonly IMemoryStoreClient _memoryStoreClient;
         private readonly ILLMClient _llmClient;
         private readonly IConversationService _conversationService;
+        private readonly ISessionManager _sessionManager;
 
-        public ChatService(IMemoryStoreClient memoryStoreClient, ILLMClient llmClient, IConversationService conversationService)
+        public ChatService(IMemoryStoreClient memoryStoreClient, ILLMClient llmClient, IConversationService conversationService, ISessionManager sessionManager)
         {
             _memoryStoreClient = memoryStoreClient;
             _llmClient = llmClient;
             _conversationService = conversationService;
+            _sessionManager = sessionManager;
         }
 
         public async Task ProcessChatRequestAsync(ChatRequest request)
@@ -66,7 +68,7 @@ namespace MainAPI_Server.Services.Chat
                 var processingTime = (endTime - startTime).TotalMilliseconds;
                 
                 // [7] 클라이언트에게 응답 전송
-                await SessionManager.SendToClientAsync(request.SessionId, 
+                await _sessionManager.SendToClientAsync(request.SessionId, 
                     $"[요청] : {request.Message} " +
                     $"[응답] : {llmResponse.Response} " +
                     $"[응답 소요 시간] : {processingTime:F2}ms");
@@ -76,7 +78,7 @@ namespace MainAPI_Server.Services.Chat
             catch (Exception ex)
             {
                 Console.WriteLine($"Chat 요청 처리 중 오류 발생: {ex.Message}");
-                await SessionManager.SendToClientAsync(request.SessionId, $"오류가 발생했습니다: {ex.Message}");
+                await _sessionManager.SendToClientAsync(request.SessionId, $"오류가 발생했습니다: {ex.Message}");
             }
         }
     }

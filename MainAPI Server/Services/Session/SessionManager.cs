@@ -1,19 +1,35 @@
 ﻿using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace MainAPI_Server.Services.Session
 {
-    public class SessionManager
+    public interface ISessionManager
     {
-        private static readonly ConcurrentDictionary<string, ClientConnection> _sessions = new();
+        void Register(string sessionId, WebSocket socket, string? userId = null);
+        void Unregister(string sessionId);
+        Task SendToClientAsync(string sessionId, string message);
+        ClientConnection? Get(string sessionId);
+        IEnumerable<ClientConnection> GetAll();
+    }
+
+    public class SessionManager : ISessionManager
+    {
+        private readonly ConcurrentDictionary<string, ClientConnection> _sessions = new();
+        private readonly ILogger<SessionManager> _logger;
+
+        public SessionManager(ILogger<SessionManager> logger)
+        {
+            _logger = logger;
+        }
 
         /// <summary>
         /// 새로운 세션 등록
         /// </summary>
         /// <param name="sessionId">세션 Id</param>
         /// <param name="socket">소캣</param>
-        public static void Register(string sessionId, WebSocket socket, string? userId = null)
+        public void Register(string sessionId, WebSocket socket, string? userId = null)
         {
             _sessions[sessionId] = new ClientConnection {
                 SessionId = sessionId,
@@ -21,15 +37,17 @@ namespace MainAPI_Server.Services.Session
                 UserId = userId,
                 ConnectedAt = DateTime.UtcNow
             };
+            _logger.LogInformation("세션 등록됨: {SessionId}", sessionId);
         }
 
         /// <summary>
         /// 세션 제거
         /// </summary>
         /// <param name="sessionId">세션 Id</param>
-        public static void Unregister(string sessionId)
+        public void Unregister(string sessionId)
         {
             _sessions.TryRemove(sessionId, out _);
+            _logger.LogInformation("세션 해제됨: {SessionId}", sessionId);
         }
 
         /// <summary>
@@ -38,25 +56,25 @@ namespace MainAPI_Server.Services.Session
         /// <param name="sessionId">세션 Id</param>
         /// <param name="message">전송할 메시지</param>
         /// <returns></returns>
-        public static async Task SendToClientAsync(string sessionId, string message)
+        public async Task SendToClientAsync(string sessionId, string message)
         {
-            Console.WriteLine($"[SessionManager] 클라이언트에게 메시지 전송 시도: 세션ID={sessionId}");
+            _logger.LogDebug("클라이언트에게 메시지 전송 시도: 세션ID={SessionId}", sessionId);
             
             if (!_sessions.TryGetValue(sessionId, out var conn))
             {
-                Console.WriteLine($"[SessionManager] 세션을 찾을 수 없음: {sessionId}");
+                _logger.LogWarning("세션을 찾을 수 없음: {SessionId}", sessionId);
                 return;
             }
             
-            Console.WriteLine($"[SessionManager] 세션 발견, WebSocket 상태: {conn.Socket.State}");
+            _logger.LogDebug("세션 발견, WebSocket 상태: {SocketState}", conn.Socket.State);
             
             if (conn.Socket.State != WebSocketState.Open)
             {
-                Console.WriteLine($"[SessionManager] WebSocket이 열려있지 않음. 상태: {conn.Socket.State}");
+                _logger.LogWarning("WebSocket이 열려있지 않음. 상태: {SocketState}, 세션: {SessionId}", conn.Socket.State, sessionId);
                 return;
             }
 
-            Console.WriteLine($"[SessionManager] 메시지 전송 중: {message}");
+            _logger.LogDebug("메시지 전송 중: {Message}", message);
             var buffer = Encoding.UTF8.GetBytes(message);
             await conn.Socket.SendAsync(
                 new ArraySegment<byte>(buffer),
@@ -64,7 +82,7 @@ namespace MainAPI_Server.Services.Session
                 true,
                 CancellationToken.None
             );
-            Console.WriteLine("[SessionManager] 메시지 전송 완료");
+            _logger.LogDebug("메시지 전송 완료: {SessionId}", sessionId);
         }
 
         /// <summary>
@@ -72,7 +90,7 @@ namespace MainAPI_Server.Services.Session
         /// </summary>
         /// <param name="sessionId">세션 ID</param>
         /// <returns>클라이언트 세션</returns>
-        public static ClientConnection? Get(string sessionId)
+        public ClientConnection? Get(string sessionId)
         {
             return _sessions.TryGetValue(sessionId, out var conn) ? conn : null;
         }
@@ -81,7 +99,7 @@ namespace MainAPI_Server.Services.Session
         /// 모든 세션 조회
         /// </summary>
         /// <returns>모든 클라이언트 세션</returns>
-        public static IEnumerable<ClientConnection> GetAll() => _sessions.Values;
+        public IEnumerable<ClientConnection> GetAll() => _sessions.Values;
 
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.Json;
 using MainAPI_Server.Models.External.MemorySrore;
 

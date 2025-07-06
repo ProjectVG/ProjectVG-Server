@@ -4,6 +4,7 @@ using MainAPI_Server.Clients.LLM;
 using MainAPI_Server.Clients.Memory;
 using MainAPI_Server.Services.Conversation;
 using MainAPI_Server.Services.Chat;
+using MainAPI_Server.Services.Session;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +35,7 @@ builder.Services.AddHttpClient<ILLMClient, LLMClient>(client => {
 
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddSingleton<IConversationService, ConversationService>();
+builder.Services.AddSingleton<ISessionManager, SessionManager>();
 
 var app = builder.Build();
 
