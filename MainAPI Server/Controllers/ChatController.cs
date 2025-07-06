@@ -1,4 +1,4 @@
-﻿using MainAPI_Server.Models.Reponse;
+using MainAPI_Server.Models.Reponse;
 using MainAPI_Server.Models.Request;
 using MainAPI_Server.Services.Chat;
 using Microsoft.AspNetCore.Mvc;
@@ -22,7 +22,7 @@ namespace MainAPI_Server.Controllers
         public IActionResult Post([FromBody] ChatRequest request)
         {
             var response = new ChatResponse {
-                Id = request.Id,
+                SessionId = request.SessionId,
                 Response = request.Message,
             };
 

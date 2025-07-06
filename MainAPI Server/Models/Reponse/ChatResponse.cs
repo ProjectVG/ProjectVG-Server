@@ -1,9 +1,14 @@
-﻿
+
+using System.Text.Json.Serialization;
+
 namespace MainAPI_Server.Models.Reponse
 {
     public class ChatResponse
     {
-        public string Id { get; set; }
+        [JsonPropertyName("session_id")]
+        public string SessionId { get; set; }
+
+        [JsonPropertyName("response")]
         public string Response { get; set; }
     }
 }
