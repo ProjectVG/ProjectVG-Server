@@ -26,7 +26,7 @@ builder.Services.AddAuthorization(options =>
 });
 
 builder.Services.AddHttpClient<IMemoryStoreClient, VectorMemoryClient>(client => {
-    client.BaseAddress = new Uri("http://localhost:5001");
+    client.BaseAddress = new Uri("http://localhost:5602");
 });
 
 builder.Services.AddHttpClient<ILLMClient, LLMClient>(client => {

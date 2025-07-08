@@ -54,21 +54,20 @@ namespace MainAPI_Server.Services.Chat
                 // [5] 보이스 서버로 전송
                 // await _voiceClient.SendToVoiceServerAsync(llmResponse);
 
-                // [6] 대화 내용을 장기 기억에 저장
-                await _memoryStoreClient.AddMemoryAsync(request.Message);
-                if (llmResponse.Success)
-                {
-                    await _memoryStoreClient.AddMemoryAsync(llmResponse.Response);
-                }
-
                 var endTime = DateTime.UtcNow;
                 var processingTime = (endTime - startTime).TotalMilliseconds;
                 
-                // [7] 클라이언트에게 응답 전송
+                // [6] 클라이언트에게 응답 전송
                 await _sessionManager.SendToClientAsync(request.SessionId, 
                     $"[요청] : {request.Message} " +
                     $"[응답] : {llmResponse.Response} " +
                     $"[응답 소요 시간] : {processingTime:F2}ms");
+
+                // [7] 대화 내용을 장기 기억에 저장
+                _ = _memoryStoreClient.AddMemoryAsync(request.Message);
+                if (llmResponse.Success) {
+                    _ = _memoryStoreClient.AddMemoryAsync(llmResponse.Response);
+                }
 
                 Console.WriteLine($"Chat 요청 완료: {request.SessionId}, 소요시간: {processingTime:F2}ms");
             }
