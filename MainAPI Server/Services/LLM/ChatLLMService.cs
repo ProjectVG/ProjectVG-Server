@@ -1,5 +1,6 @@
 using MainAPI_Server.Clients.LLM;
 using MainAPI_Server.Models.External.LLM;
+using MainAPI_Server.Config;
 
 namespace MainAPI_Server.Services.LLM
 {
@@ -7,11 +8,6 @@ namespace MainAPI_Server.Services.LLM
     {
         private readonly ILLMClient _llmClient;
         private readonly ILogger<ChatLLMService> _logger;
-
-        private const string _instructions = "";
-        private const int _maxTokens = 1000;
-        private const float _temperature = 0.7f;
-        private const string _model = "gpt-4.1-mini";
 
         public ChatLLMService(ILLMClient llmClient, ILogger<ChatLLMService> logger) 
         {
@@ -23,17 +19,16 @@ namespace MainAPI_Server.Services.LLM
         {
             var request = new LLMRequest
             {
-                SystemMessage = systemMessage ?? "",
+                SystemMessage = LLMSettings.Chat.SystemPrompt,
                 UserMessage = userMessage,
-                Instructions = _instructions,
+                Instructions = LLMSettings.Chat.Instructions,
                 MemoryContext = memoryContext ?? new List<string>(),
                 ConversationHistory = conversationContext ?? new List<string>(),
-                MaxTokens = _maxTokens,
-                Temperature = _temperature,
-                Model = _model
+                MaxTokens = LLMSettings.Chat.MaxTokens,
+                Temperature = LLMSettings.Chat.Temperature,
+                Model = LLMSettings.Chat.Model
             };
             return await _llmClient.SendRequestAsync(request);
         }
-
     }
 } 

@@ -62,7 +62,8 @@ namespace MainAPI_Server.Services.Chat
                 await _sessionManager.SendToClientAsync(request.SessionId, 
                     $"[요청] : {request.Message} " +
                     $"[응답] : {llmResponse.Response} " +
-                    $"[응답 소요 시간] : {processingTime:F2}ms");
+                    $"[응답 소요 시간] : {processingTime:F2}ms" +
+                    $"[사용된 토큰] : {llmResponse.TokensUsed}");
 
                 // [7] 대화 내용을 장기 기억에 저장
                 _ = _memoryStoreClient.AddMemoryAsync(request.Message);
@@ -70,7 +71,7 @@ namespace MainAPI_Server.Services.Chat
                     _ = _memoryStoreClient.AddMemoryAsync(llmResponse.Response);
                 }
 
-                Console.WriteLine($"Chat 요청 완료: {request.SessionId}, 소요시간: {processingTime:F2}ms");
+                Console.WriteLine($"Chat 요청 완료: {request.SessionId}, 소요시간: {processingTime:F2}ms, 사용된 토큰: {llmResponse.TokensUsed}");
             }
             catch (Exception ex)
             {
