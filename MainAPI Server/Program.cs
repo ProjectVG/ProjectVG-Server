@@ -5,7 +5,7 @@ using MainAPI_Server.Clients.Memory;
 using MainAPI_Server.Services.Conversation;
 using MainAPI_Server.Services.Chat;
 using MainAPI_Server.Services.Session;
-
+using MainAPI_Server.Services.LLM;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +32,8 @@ builder.Services.AddHttpClient<IMemoryStoreClient, VectorMemoryClient>(client =>
 builder.Services.AddHttpClient<ILLMClient, LLMClient>(client => {
     client.BaseAddress = new Uri("http://localhost:5601");
 });
+
+builder.Services.AddScoped<ILLMService, ChatLLMService>();
 
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddSingleton<IConversationService, ConversationService>();

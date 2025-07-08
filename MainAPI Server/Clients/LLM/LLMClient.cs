@@ -1,5 +1,4 @@
 using MainAPI_Server.Models.External.LLM;
-using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 
@@ -16,27 +15,10 @@ namespace MainAPI_Server.Clients.LLM
             _logger = logger;
         }
 
-
-        public async Task<LLMResponse> GenerateResponseAsync(string systemMessage,string userMessage, List<string> conversationContext, List<string> memoryContext)
+        public async Task<LLMResponse> SendRequestAsync(LLMRequest request)
         {
-            LLMRequest request = new LLMRequest
+            try
             {
-                SystemMessage = systemMessage ?? "",
-                UserMessage = userMessage,
-                MemoryContext = memoryContext ?? new List<string>(),
-                ConversationHistory = conversationContext ?? new List<string>(),
-                MaxTokens = 1000,
-                Temperature = 0.7f,
-                Model = "gpt-4o-mini"
-            };
-
-            return await GenerateResponseAsync(request);
-        }
-
-        public async Task<LLMResponse> GenerateResponseAsync(LLMRequest request)
-        {
-            try {
-
                 // request 메시지 생성
                 string json = JsonSerializer.Serialize(request);
                 StringContent content = new StringContent(json, Encoding.UTF8, "application/json");

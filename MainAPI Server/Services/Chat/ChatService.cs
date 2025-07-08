@@ -4,6 +4,7 @@ using MainAPI_Server.Models.Chat;
 using MainAPI_Server.Models.External.MemorySrore;
 using MainAPI_Server.Models.Request;
 using MainAPI_Server.Services.Conversation;
+using MainAPI_Server.Services.LLM;
 using MainAPI_Server.Services.Session;
 
 namespace MainAPI_Server.Services.Chat
@@ -16,14 +17,14 @@ namespace MainAPI_Server.Services.Chat
     public class ChatService : IChatService
     {
         private readonly IMemoryStoreClient _memoryStoreClient;
-        private readonly ILLMClient _llmClient;
+        private readonly ILLMService _llmService ;
         private readonly IConversationService _conversationService;
         private readonly ISessionManager _sessionManager;
 
-        public ChatService(IMemoryStoreClient memoryStoreClient, ILLMClient llmClient, IConversationService conversationService, ISessionManager sessionManager)
+        public ChatService(IMemoryStoreClient memoryStoreClient, ILLMService llmService, IConversationService conversationService, ISessionManager sessionManager)
         {
             _memoryStoreClient = memoryStoreClient;
-            _llmClient = llmClient;
+            _llmService = llmService;
             _conversationService = conversationService;
             _sessionManager = sessionManager;
         }
@@ -45,7 +46,7 @@ namespace MainAPI_Server.Services.Chat
                 string systemMessage = "";
 
                 // [3] LLM에 요청 메시지 전송
-                var llmResponse = await _llmClient.GenerateResponseAsync(systemMessage, request.Message, conversationContext, memoryContext);
+                var llmResponse = await _llmService.CreateTextResponseAsync(systemMessage, request.Message, conversationContext, memoryContext);
 
                 // [4] 사용자 메시지 & 응답 저장
                 _conversationService.AddMessage(request.SessionId, MessageRole.User, request.Message);                
