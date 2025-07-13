@@ -6,6 +6,7 @@ using MainAPI_Server.Services.Conversation;
 using MainAPI_Server.Services.Chat;
 using MainAPI_Server.Services.Session;
 using MainAPI_Server.Services.LLM;
+using MainAPI_Server.Services.Characters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +39,10 @@ builder.Services.AddScoped<ILLMService, ChatLLMService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddSingleton<IConversationService, ConversationService>();
 builder.Services.AddSingleton<ISessionManager, SessionManager>();
+
+// Character services
+builder.Services.AddScoped<ICharacterService, CharacterService>();
+builder.Services.AddScoped<ICharacterRepository, InMemoryCharacterRepository>();
 
 var app = builder.Build();
 
