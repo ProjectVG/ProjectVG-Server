@@ -1,12 +1,13 @@
 using MainAPI_Server.Clients.LLM;
 using MainAPI_Server.Clients.MemoryStore;
-using MainAPI_Server.Models.Chat;
+using MainAPI_Server.Models.Domain.Chats;
 using MainAPI_Server.Models.External.MemoryStore;
 using MainAPI_Server.Models.API.Request;
-using MainAPI_Server.Models.Service.Chat;
+using MainAPI_Server.Models.Service.Chats;
 using MainAPI_Server.Services.Conversation;
 using MainAPI_Server.Services.LLM;
 using MainAPI_Server.Services.Session;
+using MainAPI_Server.Services.Characters;
 using MainAPI_Server.Config;
 
 namespace MainAPI_Server.Services.Chat
@@ -22,13 +23,15 @@ namespace MainAPI_Server.Services.Chat
         private readonly ILLMService _llmService ;
         private readonly IConversationService _conversationService;
         private readonly ISessionManager _sessionManager;
+        private readonly ICharacterService _characterService;
 
-        public ChatService(IMemoryStoreClient memoryStoreClient, ILLMService llmService, IConversationService conversationService, ISessionManager sessionManager)
+        public ChatService(IMemoryStoreClient memoryStoreClient, ILLMService llmService, IConversationService conversationService, ISessionManager sessionManager, ICharacterService characterService)
         {
             _memoryStoreClient = memoryStoreClient;
             _llmService = llmService;
             _conversationService = conversationService;
             _sessionManager = sessionManager;
+            _characterService = characterService;
         }
 
         public async Task ProcessChatRequestAsync(ChatRequest request)
@@ -52,11 +55,11 @@ namespace MainAPI_Server.Services.Chat
                 var endTime = DateTime.UtcNow;
                 var processingTime = (endTime - startTime).TotalMilliseconds;
 
-                Console.WriteLine($"Chat 요청 완료: {request.SessionId}, 소요시간: {processingTime:F2}ms, 사용된 토큰: {resultDto.TokensUsed}");
+                Console.WriteLine($"Chats 요청 완료: {request.SessionId}, 소요시간: {processingTime:F2}ms, 사용된 토큰: {resultDto.TokensUsed}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Chat 요청 오류: {ex.Message}");
+                Console.WriteLine($"Chats 요청 오류: {ex.Message}");
                 await _sessionManager.SendToClientAsync(request.SessionId, $"Error: {ex.Message}");
             }
         }
@@ -74,14 +77,25 @@ namespace MainAPI_Server.Services.Chat
             var recentMessages = _conversationService.GetConversationHistory(request.SessionId, 10);
             List<string> conversationContext = recentMessages.Select(m => $"{m.Role}: {m.Content}").ToList();
 
-            // [3] ChatContextDto 생성
+            // [3] 캐릭터 정보 가져오기
+            string systemMessage = LLMSettings.Chat.SystemPrompt;
+            if (request.CharacterId.HasValue)
+            {
+                var character = await _characterService.GetCharacterByIdAsync(request.CharacterId.Value);
+                if (character != null)
+                {
+                    systemMessage = character.Role;
+                }
+            }
+
+            // [4] ChatContextDto 생성
             return new ChatContextDto
             {
                 SessionId = request.SessionId,
                 UserMessage = request.Message,
                 Actor = request.Actor,
                 Action = request.Action,
-                SystemMessage = LLMSettings.Chat.SystemPrompt,
+                SystemMessage = systemMessage,
                 ConversationContext = conversationContext,
                 MemoryContext = memoryContext,
                 LLMSettings = new LLMSettingsDto

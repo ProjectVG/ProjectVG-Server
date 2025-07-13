@@ -1,6 +1,6 @@
 using MainAPI_Server.Clients.LLM;
 using MainAPI_Server.Models.External.LLM;
-using MainAPI_Server.Models.Service.Chat;
+using MainAPI_Server.Models.Service.Chats;
 using MainAPI_Server.Config;
 
 namespace MainAPI_Server.Services.LLM

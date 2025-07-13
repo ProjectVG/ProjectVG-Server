@@ -18,8 +18,8 @@
   <ItemGroup>
     <Folder Include="Clients\LLM\" />
     <Folder Include="Clients\Memory\" />
-    <Folder Include="Services\Chat\" />
-    <Folder Include="Services\Conversation\" />
+    <Folder Include="Services\Chats\" />
+    <Folder Include="Services\Conversations\" />
   </ItemGroup>
 
 </Project>

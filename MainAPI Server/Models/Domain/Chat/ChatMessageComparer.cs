@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 
-namespace MainAPI_Server.Models.Chat
+namespace MainAPI_Server.Models.Domain.Chats
 {
     public class ChatMessageComparer : IComparer<ChatMessage>
     {
-        public int Compare(ChatMessage x, ChatMessage y)
+        public int Compare(ChatMessage? x, ChatMessage? y)
         {
             if (x == null && y == null) return 0;
             if (x == null) return -1;

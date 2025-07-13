@@ -10,6 +10,7 @@
 7. [로깅 및 예외 처리](#로깅-및-예외-처리)
 8. [테스트 코드](#테스트-코드)
 9. [커밋 컨벤션](#커밋-컨벤션)
+10. [네임스페이스 설계 및 충돌 회피](#네임스페이스-설계-및-충돌-회피)
 
 ---
 
@@ -320,6 +321,46 @@ bugfix/login-error
 hotfix/security-patch
 release/v1.0.0
 ```
+
+---
+
+## 네임스페이스 설계 및 충돌 회피
+
+### 복수형 네임스페이스 컨벤션
+- **계층/도메인/역할별로 네임스페이스를 복수형으로 명확히 구분**
+- 예시:
+  - `ProjectName.Domain.Characters` (엔티티)
+  - `ProjectName.Services.Characters` (서비스)
+  - `ProjectName.Api.Controllers` (API 컨트롤러)
+  - `ProjectName.Models.Service.Characters` (서비스 DTO)
+  - `ProjectName.Models.Api.Request.Characters` (API 요청 DTO)
+  - `ProjectName.Models.Api.Response.Characters` (API 응답 DTO)
+
+### 네임스페이스 충돌 회피 실무 팁
+- **클래스명과 네임스페이스 마지막 이름이 겹치지 않도록 복수형/역할명 사용**
+- 도메인/서비스/컨트롤러/DTO 등 계층별로 네임스페이스를 명확히 분리
+- using 별칭은 불가피할 때만 사용 (권장 X)
+- 예시:
+  ```csharp
+  // 도메인 엔티티
+  namespace MyApp.Domain.Characters
+  {
+      public class Character { ... }
+  }
+
+  // 서비스 계층
+  namespace MyApp.Services.Characters
+  {
+      public class CharacterService { ... }
+  }
+
+  // API 컨트롤러
+  namespace MyApp.Api.Controllers
+  {
+      public class CharacterController { ... }
+  }
+  ```
+- 이렇게 하면 `Characters.Character`, `Characters.CharacterService`처럼 명확하게 구분되어 네임스페이스 충돌을 방지할 수 있음
 
 ---
 

@@ -1,4 +1,4 @@
-using MainAPI_Server.Models.Chat;
+using MainAPI_Server.Models.Domain.Chats;
 
 namespace MainAPI_Server.Services.Conversation
 {

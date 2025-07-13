@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace MainAPI_Server.Models.Chat
+namespace MainAPI_Server.Models.Domain.Chats
 {
     public enum MessageRole
     {
@@ -15,13 +15,13 @@ namespace MainAPI_Server.Models.Chat
         public string Id { get; set; } = Guid.NewGuid().ToString();
 
         [JsonPropertyName("session_id")]
-        public string SessionId { get; set; } = default!;
+        public string SessionId { get; set; } = string.Empty;
 
         [JsonPropertyName("role")]
         public MessageRole Role { get; set; }
 
         [JsonPropertyName("content")]
-        public string Content { get; set; } = default!;
+        public string Content { get; set; } = string.Empty;
 
         [JsonPropertyName("timestamp")]
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
