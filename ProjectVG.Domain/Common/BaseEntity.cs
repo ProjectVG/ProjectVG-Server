@@ -9,13 +9,13 @@ namespace ProjectVG.Domain.Common
 
         protected BaseEntity()
         {
-            CreatedAt = DateTimeOffset.UtcNow;
-            UpdatedAt = DateTimeOffset.UtcNow;
+            CreatedAt = DateTime.UtcNow;
+            UpdatedAt = DateTime.UtcNow;
         }
 
         public void Update()
         {
-            UpdatedAt = DateTimeOffset.UtcNow;
+            UpdatedAt = DateTime.UtcNow;
         }
     }
 } 

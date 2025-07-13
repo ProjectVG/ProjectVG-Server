@@ -1,8 +1,9 @@
+using ProjectVG.Domain.Common;
 using ProjectVG.Domain.Enums;
 
 namespace ProjectVG.Domain.Entities.ConversationHistory
 {
-    public class ConversationHistory
+    public class ConversationHistory : BaseEntity
     {
         // 대화 기록 고유 ID
         public string Id { get; set; } = Guid.NewGuid().ToString(); 

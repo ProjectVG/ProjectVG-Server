@@ -14,5 +14,9 @@ namespace ProjectVG.Domain.Entities.User
         public string Email { get; set; } = string.Empty;
         // 사용자 이름
         public string Name { get; set; } = string.Empty;
+        // 사용자명
+        public string Username { get; set; } = string.Empty;
+        // 활성화 여부
+        public bool IsActive { get; set; } = true;
     }
 } 
