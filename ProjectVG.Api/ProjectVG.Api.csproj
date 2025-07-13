@@ -9,11 +9,13 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ProjectVG.Application\ProjectVG.Application.csproj" />
     <ProjectReference Include="..\ProjectVG.Infrastructure\ProjectVG.Infrastructure.csproj" />
+    <ProjectReference Include="..\ProjectVG.Common\ProjectVG.Common.csproj" />
   </ItemGroup>
 
 </Project> 

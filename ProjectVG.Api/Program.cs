@@ -1,0 +1,88 @@
+using ProjectVG.Application.Middlewares;
+using Microsoft.AspNetCore.Authentication.Negotiate;
+using ProjectVG.Infrastructure.ExternalApis.LLM;
+using ProjectVG.Infrastructure.ExternalApis.MemoryClient;
+using ProjectVG.Application.Services.LLM;
+using ProjectVG.Application.Services.Chat;
+using ProjectVG.Application.Services.Character;
+using ProjectVG.Application.Services.Conversation;
+using ProjectVG.Application.Services.Session;
+using ProjectVG.Infrastructure.Repositories;
+using ProjectVG.Infrastructure.Repositories.InMemory;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "ProjectVG API",
+        Version = "v1",
+        Description = "ProjectVG API Server"
+    });
+});
+
+builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
+   .AddNegotiate();
+
+// [Authorize]가 붙은 엔드포인트만 인증을 요구하도록 설정
+builder.Services.AddAuthorization(options =>
+{
+    // FallbackPolicy를 null로 설정하여 기본적으로 인증을 요구하지 않음
+    options.FallbackPolicy = null;
+});
+
+// External API Clients
+builder.Services.AddHttpClient<ILLMClient, LLMClient>(client => {
+    client.BaseAddress = new Uri("http://localhost:5601");
+});
+
+builder.Services.AddHttpClient<IMemoryClient, VectorMemoryClient>(client => {
+    client.BaseAddress = new Uri("http://localhost:5602");
+});
+
+// Application Services
+builder.Services.AddScoped<ILLMService, ChatLLMService>();
+builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<ICharacterService, CharacterService>();
+builder.Services.AddScoped<IConversationService, ConversationService>();
+builder.Services.AddScoped<ISessionService, SessionService>();
+
+// Infrastructure Repositories
+builder.Services.AddScoped<ICharacterRepository, InMemoryCharacterRepository>();
+builder.Services.AddScoped<IConversationRepository, InMemoryConversationRepository>();
+builder.Services.AddScoped<IUserRepository, InMemoryUserRepository>();
+builder.Services.AddScoped<ISessionRepository, InMemorySessionRepository>();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "ProjectVG API V1");
+        c.RoutePrefix = "swagger";
+    });
+}
+
+app.UseHttpsRedirection();
+
+app.UseWebSockets();
+
+// WebSocket 미들웨어를 특정 경로에만 적용
+app.UseMiddleware<WebSocketMiddleware>();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+// WebSocket 전용 포트 추가
+app.Urls.Add("http://localhost:5287");
+
+app.Run(); 
