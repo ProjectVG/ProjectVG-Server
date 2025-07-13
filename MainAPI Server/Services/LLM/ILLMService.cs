@@ -1,5 +1,5 @@
 using MainAPI_Server.Models.External.LLM;
-using MainAPI_Server.Models.DTOs.Chat;
+using MainAPI_Server.Models.Service.Chat;
 
 namespace MainAPI_Server.Services.LLM
 {

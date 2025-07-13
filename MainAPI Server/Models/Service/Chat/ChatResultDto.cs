@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace MainAPI_Server.Models.DTOs.Chat
+namespace MainAPI_Server.Models.Service.Chat
 {
     /// <summary>
     /// LLM 서비스에서 반환되는 채팅 결과

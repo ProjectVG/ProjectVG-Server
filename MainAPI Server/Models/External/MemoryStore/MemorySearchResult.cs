@@ -1,7 +1,7 @@
 ﻿
 using System.Text.Json.Serialization;
 
-namespace MainAPI_Server.Models.External.MemorySrore
+namespace MainAPI_Server.Models.External.MemoryStore
 {
     public class MemorySearchResult
     {

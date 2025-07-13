@@ -1,8 +1,8 @@
 using System.Text;
 using System.Text.Json;
-using MainAPI_Server.Models.External.MemorySrore;
+using MainAPI_Server.Models.External.MemoryStore;
 
-namespace MainAPI_Server.Clients.Memory
+namespace MainAPI_Server.Clients.MemoryStore
 {
     public class VectorMemoryClient : IMemoryStoreClient
     {

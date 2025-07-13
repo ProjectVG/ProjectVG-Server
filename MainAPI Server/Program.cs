@@ -1,7 +1,7 @@
 using MainAPI_Server.Middlewares;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using MainAPI_Server.Clients.LLM;
-using MainAPI_Server.Clients.Memory;
+using MainAPI_Server.Clients.MemoryStore;
 using MainAPI_Server.Services.Conversation;
 using MainAPI_Server.Services.Chat;
 using MainAPI_Server.Services.Session;

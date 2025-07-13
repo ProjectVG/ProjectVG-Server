@@ -1,9 +1,9 @@
 using MainAPI_Server.Clients.LLM;
-using MainAPI_Server.Clients.Memory;
+using MainAPI_Server.Clients.MemoryStore;
 using MainAPI_Server.Models.Chat;
-using MainAPI_Server.Models.External.MemorySrore;
+using MainAPI_Server.Models.External.MemoryStore;
 using MainAPI_Server.Models.API.Request;
-using MainAPI_Server.Models.DTOs.Chat;
+using MainAPI_Server.Models.Service.Chat;
 using MainAPI_Server.Services.Conversation;
 using MainAPI_Server.Services.LLM;
 using MainAPI_Server.Services.Session;

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace MainAPI_Server.Models.DTOs.Common
+namespace MainAPI_Server.Models.Service.Common
 {
     /// <summary>
     /// 공통 처리 결과 DTO

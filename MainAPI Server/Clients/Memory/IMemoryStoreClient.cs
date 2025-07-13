@@ -1,6 +1,6 @@
-﻿using MainAPI_Server.Models.External.MemorySrore;
+using MainAPI_Server.Models.External.MemoryStore;
 
-namespace MainAPI_Server.Clients.Memory
+namespace MainAPI_Server.Clients.MemoryStore
 {
     public interface IMemoryStoreClient
     {
