@@ -9,11 +9,13 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ProjectVG.Domain\ProjectVG.Domain.csproj" />
     <ProjectReference Include="..\ProjectVG.Common\ProjectVG.Common.csproj" />
+    <ProjectReference Include="..\ProjectVG.Infrastructure\ProjectVG.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project> 
