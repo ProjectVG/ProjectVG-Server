@@ -1,6 +1,7 @@
 using ProjectVG.Infrastructure.ExternalApis.LLM.Models;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace ProjectVG.Infrastructure.ExternalApis.LLM
 {

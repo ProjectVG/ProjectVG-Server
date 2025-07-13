@@ -1,4 +1,4 @@
-using ProjectVG.Domain.Entities.Chat;
+using ProjectVG.Domain.Entities.ConversationHistory;
 
 namespace ProjectVG.Infrastructure.Repositories
 {

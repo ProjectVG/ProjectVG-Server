@@ -1,4 +1,4 @@
-using ProjectVG.Domain.Entities.Chat;
+using ProjectVG.Domain.Entities.ConversationHistory;
 using Microsoft.Extensions.Logging;
 
 namespace ProjectVG.Infrastructure.Repositories.InMemory

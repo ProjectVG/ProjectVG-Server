@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace ProjectVG.Infrastructure.ExternalApis.MemoryStore.Models
+namespace ProjectVG.Infrastructure.ExternalApis.MemoryClient.Models
 {
     public class MemoryAddRequest
     {

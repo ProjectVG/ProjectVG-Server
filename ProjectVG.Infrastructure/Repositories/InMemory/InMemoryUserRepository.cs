@@ -34,19 +34,19 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
 
         public Task<User> CreateAsync(User user)
         {
-            if (_usersByUsername.ContainsKey(user.Username))
+            if (_usersByUsername.ContainsKey(user.Name))
             {
-                throw new InvalidOperationException($"Username '{user.Username}' already exists.");
+                throw new InvalidOperationException($"Username '{user.Name}' already exists.");
             }
 
             user.Id = Guid.NewGuid();
-            user.CreatedAt = DateTimeOffset.UtcNow;
-            user.UpdatedAt = DateTimeOffset.UtcNow;
+            user.CreatedAt = DateTime.UtcNow;
+            user.UpdatedAt = DateTime.UtcNow;
             
             _users[user.Id] = user;
-            _usersByUsername[user.Username] = user;
+            _usersByUsername[user.Name] = user;
             
-            _logger.LogInformation("User created: {Username} with ID: {UserId}", user.Username, user.Id);
+            _logger.LogInformation("User created: {Username} with ID: {UserId}", user.Name, user.Id);
             
             return Task.FromResult(user);
         }
@@ -61,19 +61,19 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
             var existingUser = _users[user.Id];
             
             // Username이 변경된 경우 중복 체크
-            if (existingUser.Username != user.Username && _usersByUsername.ContainsKey(user.Username))
+            if (existingUser.Name != user.Name && _usersByUsername.ContainsKey(user.Name))
             {
-                throw new InvalidOperationException($"Username '{user.Username}' already exists.");
+                throw new InvalidOperationException($"Username '{user.Name}' already exists.");
             }
 
             // 기존 username 인덱스 제거
-            _usersByUsername.Remove(existingUser.Username);
+            _usersByUsername.Remove(existingUser.Name);
             
-            user.UpdatedAt = DateTimeOffset.UtcNow;
+            user.UpdatedAt = DateTime.UtcNow;
             _users[user.Id] = user;
-            _usersByUsername[user.Username] = user;
+            _usersByUsername[user.Name] = user;
             
-            _logger.LogInformation("User updated: {Username} with ID: {UserId}", user.Username, user.Id);
+            _logger.LogInformation("User updated: {Username} with ID: {UserId}", user.Name, user.Id);
             
             return Task.FromResult(user);
         }
@@ -83,8 +83,8 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
             if (_users.TryGetValue(id, out var user))
             {
                 _users.Remove(id);
-                _usersByUsername.Remove(user.Username);
-                _logger.LogInformation("User deleted: {Username} with ID: {UserId}", user.Username, id);
+                _usersByUsername.Remove(user.Name);
+                _logger.LogInformation("User deleted: {Username} with ID: {UserId}", user.Name, id);
             }
             else
             {
@@ -101,29 +101,27 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
                 new User
                 {
                     Id = Guid.NewGuid(),
-                    Username = "admin",
+                    Name = "admin",
                     Email = "admin@example.com",
-                    DisplayName = "관리자",
                     IsActive = true,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 },
                 new User
                 {
                     Id = Guid.NewGuid(),
-                    Username = "user1",
+                    Name = "user1",
                     Email = "user1@example.com",
-                    DisplayName = "테스트 사용자 1",
                     IsActive = true,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 }
             };
 
             foreach (var user in defaultUsers)
             {
                 _users[user.Id] = user;
-                _usersByUsername[user.Username] = user;
+                _usersByUsername[user.Name] = user;
             }
 
             _logger.LogInformation("Initialized {Count} default users", defaultUsers.Count);

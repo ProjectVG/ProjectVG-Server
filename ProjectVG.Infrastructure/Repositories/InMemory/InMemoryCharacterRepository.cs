@@ -28,8 +28,8 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
         public Task<Character> CreateAsync(Character character)
         {
             character.Id = Guid.NewGuid();
-            character.CreatedAt = DateTimeOffset.UtcNow;
-            character.UpdatedAt = DateTimeOffset.UtcNow;
+            character.CreatedAt = DateTime.UtcNow;
+            character.UpdatedAt = DateTime.UtcNow;
             
             _characters[character.Id] = character;
             _logger.LogInformation("Character created: {CharacterName} with ID: {CharacterId}", character.Name, character.Id);
@@ -44,7 +44,7 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
                 throw new KeyNotFoundException($"Character with ID {character.Id} not found.");
             }
 
-            character.UpdatedAt = DateTimeOffset.UtcNow;
+            character.UpdatedAt = DateTime.UtcNow;
             _characters[character.Id] = character;
             _logger.LogInformation("Character updated: {CharacterName} with ID: {CharacterId}", character.Name, character.Id);
             
@@ -75,10 +75,9 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
                     Name = "AI 어시스턴트",
                     Description = "일반적인 AI 어시스턴트입니다. 다양한 질문에 답변하고 도움을 드립니다.",
                     Role = "당신은 친근하고 도움이 되는 AI 어시스턴트입니다. 사용자의 질문에 정확하고 유용한 답변을 제공하세요.",
-                    Avatar = "",
                     IsActive = true,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 },
                 new Character
                 {
@@ -86,10 +85,9 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
                     Name = "코딩 전문가",
                     Description = "프로그래밍과 소프트웨어 개발에 특화된 AI입니다.",
                     Role = "당신은 경험 많은 소프트웨어 개발자입니다. 다양한 프로그래밍 언어와 기술에 대해 전문적인 조언을 제공하고, 코드 리뷰와 문제 해결을 도와주세요.",
-                    Avatar = "",
                     IsActive = true,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 },
                 new Character
                 {
@@ -97,10 +95,9 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
                     Name = "창작 도우미",
                     Description = "창작 활동을 돕는 AI입니다. 글쓰기, 아이디어 발상 등을 지원합니다.",
                     Role = "당신은 창의적이고 영감을 주는 창작 도우미입니다. 글쓰기, 스토리텔링, 아이디어 발상, 창작 활동 전반에 대해 도움을 주세요.",
-                    Avatar = "",
                     IsActive = true,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 },
                 new Character
                 {
@@ -108,10 +105,9 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
                     Name = "학습 도우미",
                     Description = "학습과 교육을 돕는 AI입니다. 개념 설명과 학습 방법을 제시합니다.",
                     Role = "당신은 교육 전문가입니다. 복잡한 개념을 쉽게 설명하고, 효과적인 학습 방법을 제시하며, 학생들의 이해를 돕는 역할을 합니다.",
-                    Avatar = "",
                     IsActive = true,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 }
             };
 
