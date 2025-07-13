@@ -8,6 +8,8 @@ namespace ProjectVG.Infrastructure.Services.Session
     public class ClientConnection
     {
         public string SessionId { get; set; } = string.Empty;
+
+        public WebSocket WebSocket { get; set; } = default;
         public string? UserId { get; set; }
         public WebSocket Socket { get; set; } = null!;
         public DateTime ConnectedAt { get; set; } = DateTime.UtcNow;

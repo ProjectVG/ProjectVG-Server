@@ -1,6 +1,9 @@
 using ProjectVG.Infrastructure.Services.Session;
 using ProjectVG.Infrastructure.Repositories;
 using Microsoft.Extensions.Logging;
+using System.Net.WebSockets;
+using System.Text;
+using System.Collections.Concurrent;
 
 namespace ProjectVG.Application.Services.Session
 {
@@ -8,6 +11,7 @@ namespace ProjectVG.Application.Services.Session
     {
         private readonly ISessionRepository _sessionRepository;
         private readonly ILogger<SessionService> _logger;
+        private readonly ConcurrentDictionary<string, ClientConnection> _activeConnections = new();
 
         public SessionService(ISessionRepository sessionRepository, ILogger<SessionService> logger)
         {
@@ -15,13 +19,14 @@ namespace ProjectVG.Application.Services.Session
             _logger = logger;
         }
 
-        public async Task RegisterSessionAsync(string sessionId, string? userId = null)
+        public async Task RegisterSessionAsync(string sessionId, WebSocket socket, string? userId = null)
         {
             try
             {
                 var connection = new ClientConnection
                 {
                     SessionId = sessionId,
+                    WebSocket = socket,
                     UserId = userId,
                     ConnectedAt = DateTime.UtcNow
                 };
@@ -54,6 +59,7 @@ namespace ProjectVG.Application.Services.Session
         {
             try
             {
+                // Repository에서 세션 정보 조회
                 var connection = await _sessionRepository.GetAsync(sessionId);
                 if (connection == null)
                 {
@@ -61,13 +67,21 @@ namespace ProjectVG.Application.Services.Session
                     return;
                 }
 
-                // WebSocket을 통한 메시지 전송 로직
-                // 실제 구현에서는 WebSocket 연결을 통해 메시지를 전송
-                _logger.LogDebug("메시지 전송 완료: 세션 {SessionId}", sessionId);
+
+                // 실제 WebSocket으로 메시지 전송
+                var buffer = Encoding.UTF8.GetBytes(message);
+                await connection.WebSocket.SendAsync(
+                    new ArraySegment<byte>(buffer),
+                    WebSocketMessageType.Text,
+                    true,
+                    CancellationToken.None
+                );
+                
+                _logger.LogDebug("메시지 전송 완료: {SessionId}", sessionId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "메시지 전송 중 오류 발생: 세션 {SessionId}", sessionId);
+                _logger.LogError(ex, "메시지 전송 실패: {SessionId}", sessionId);
                 throw;
             }
         }
@@ -76,8 +90,16 @@ namespace ProjectVG.Application.Services.Session
         {
             try
             {
+                // 먼저 활성 연결에서 확인
+                if (_activeConnections.TryGetValue(sessionId, out var activeConnection))
+                {
+                    _logger.LogDebug("활성 세션 조회 완료: {SessionId}", sessionId);
+                    return activeConnection;
+                }
+
+                // Repository에서 조회
                 var connection = await _sessionRepository.GetAsync(sessionId);
-                _logger.LogDebug("세션 조회 완료: {SessionId}", sessionId);
+                _logger.LogDebug("저장된 세션 조회 완료: {SessionId}", sessionId);
                 
                 return connection;
             }
@@ -92,10 +114,20 @@ namespace ProjectVG.Application.Services.Session
         {
             try
             {
-                var sessions = await _sessionRepository.GetAllAsync();
-                _logger.LogDebug("모든 세션 조회 완료: {Count}개", sessions.Count());
+                // 활성 연결과 저장된 세션을 모두 반환
+                var activeSessions = _activeConnections.Values.ToList();
+                var storedSessions = await _sessionRepository.GetAllAsync();
                 
-                return sessions;
+                // 중복 제거 (SessionId 기준)
+                var allSessions = activeSessions.Concat(storedSessions)
+                    .GroupBy(s => s.SessionId)
+                    .Select(g => g.First())
+                    .ToList();
+                
+                _logger.LogDebug("모든 세션 조회 완료: 활성 {ActiveCount}개, 저장된 {StoredCount}개", 
+                    activeSessions.Count, storedSessions.Count());
+                
+                return allSessions;
             }
             catch (Exception ex)
             {
@@ -108,10 +140,11 @@ namespace ProjectVG.Application.Services.Session
         {
             try
             {
-                var count = await _sessionRepository.GetActiveSessionCountAsync();
-                _logger.LogDebug("활성 세션 수 조회 완료: {Count}개", count);
+                // 활성 WebSocket 연결 수 반환
+                var activeCount = _activeConnections.Count;
+                _logger.LogDebug("활성 세션 수 조회 완료: {Count}개", activeCount);
                 
-                return count;
+                return activeCount;
             }
             catch (Exception ex)
             {

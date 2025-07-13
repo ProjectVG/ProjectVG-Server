@@ -31,7 +31,6 @@ builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
 // [Authorize]가 붙은 엔드포인트만 인증을 요구하도록 설정
 builder.Services.AddAuthorization(options =>
 {
-    // FallbackPolicy를 null로 설정하여 기본적으로 인증을 요구하지 않음
     options.FallbackPolicy = null;
 });
 
@@ -51,11 +50,12 @@ builder.Services.AddScoped<ICharacterService, CharacterService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
 
-// Infrastructure Repositories
-builder.Services.AddScoped<ICharacterRepository, InMemoryCharacterRepository>();
-builder.Services.AddScoped<IConversationRepository, InMemoryConversationRepository>();
-builder.Services.AddScoped<IUserRepository, InMemoryUserRepository>();
-builder.Services.AddScoped<ISessionRepository, InMemorySessionRepository>();
+// Infrastructure Repositories 
+// AddSingleton(임시) todo : 실제 DB에서는 AddScoped를 사용할 것
+builder.Services.AddSingleton<ICharacterRepository, InMemoryCharacterRepository>();
+builder.Services.AddSingleton<IConversationRepository, InMemoryConversationRepository>();
+builder.Services.AddSingleton<IUserRepository, InMemoryUserRepository>();
+builder.Services.AddSingleton<ISessionRepository, InMemorySessionRepository>();
 
 var app = builder.Build();
 

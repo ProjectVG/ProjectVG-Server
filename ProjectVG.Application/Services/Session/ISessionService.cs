@@ -1,4 +1,5 @@
 using ProjectVG.Infrastructure.Services.Session;
+using System.Net.WebSockets;
 
 namespace ProjectVG.Application.Services.Session
 {
@@ -9,7 +10,7 @@ namespace ProjectVG.Application.Services.Session
         /// </summary>
         /// <param name="sessionId">세션 ID</param>
         /// <param name="userId">사용자 ID (선택사항)</param>
-        Task RegisterSessionAsync(string sessionId, string? userId = null);
+        Task RegisterSessionAsync(string sessionId, WebSocket socket, string? userId = null);
 
         /// <summary>
         /// 세션을 해제합니다

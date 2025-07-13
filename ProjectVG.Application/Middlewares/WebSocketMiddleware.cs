@@ -51,7 +51,7 @@ namespace ProjectVG.Application.Middlewares
                 // 서비스 로케이터를 사용하여 scoped 서비스 해결
                 using var scope = _serviceProvider.CreateScope();
                 var sessionService = scope.ServiceProvider.GetRequiredService<ISessionService>();
-                await sessionService.RegisterSessionAsync(sessionId);
+                await sessionService.RegisterSessionAsync(sessionId, socket);
                 
                 // 클라이언트에게 세션 ID 전송
                 await SendSessionIdToClient(socket, sessionId);
