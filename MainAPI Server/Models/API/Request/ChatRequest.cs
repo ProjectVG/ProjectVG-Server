@@ -1,7 +1,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace MainAPI_Server.Models.Request
+namespace MainAPI_Server.Models.API.Request
 {
     public class ChatRequest
     {
