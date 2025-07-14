@@ -52,7 +52,7 @@ namespace ProjectVG.Application.Services.Chat
                 // 3. 시스템 메시지 준비
                 var systemMessage = await PrepareSystemMessageAsync(command.CharacterId);
 
-                // 4. LLM 응답 생성
+                // 4. LLMClient 응답 생성
                 var llmResponse = await _llmService.CreateTextResponseAsync(
                     systemMessage,
                     command.Message,

@@ -1,6 +1,6 @@
 using ProjectVG.Application.Middlewares;
 using Microsoft.AspNetCore.Authentication.Negotiate;
-using ProjectVG.Infrastructure.ExternalApis.LLM;
+using ProjectVG.Infrastructure.ExternalApis.LLMClient;
 using ProjectVG.Infrastructure.ExternalApis.MemoryClient;
 using ProjectVG.Application.Services.LLM;
 using ProjectVG.Application.Services.Chat;

@@ -1,4 +1,4 @@
-using ProjectVG.Infrastructure.ExternalApis.LLM.Models;
+using ProjectVG.Infrastructure.ExternalApis.LLMClient.Models;
 
 namespace ProjectVG.Application.Services.LLM
 {
@@ -15,7 +15,7 @@ namespace ProjectVG.Application.Services.LLM
         /// <param name="maxTokens">최대 토큰 수</param>
         /// <param name="temperature">온도</param>
         /// <param name="model">모델명</param>
-        /// <returns>LLM 응답</returns>
+        /// <returns>LLMClient 응답</returns>
         Task<LLMResponse> CreateTextResponseAsync(
             string systemMessage,
             string userMessage,

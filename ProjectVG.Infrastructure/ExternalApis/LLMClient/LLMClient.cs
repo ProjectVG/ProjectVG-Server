@@ -1,9 +1,9 @@
-using ProjectVG.Infrastructure.ExternalApis.LLM.Models;
+using ProjectVG.Infrastructure.ExternalApis.LLMClient.Models;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
-namespace ProjectVG.Infrastructure.ExternalApis.LLM
+namespace ProjectVG.Infrastructure.ExternalApis.LLMClient
 {
     public class LLMClient : ILLMClient
     {
@@ -24,13 +24,13 @@ namespace ProjectVG.Infrastructure.ExternalApis.LLM
                 string json = JsonSerializer.Serialize(request);
                 StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                _logger.LogInformation("[LLM] 요청 전송: {UserMessage}", request.UserMessage.Substring(0, Math.Min(50, request.UserMessage.Length)) + "...");
+                _logger.LogInformation("[LLMClient] 요청 전송: {UserMessage}", request.UserMessage.Substring(0, Math.Min(50, request.UserMessage.Length)) + "...");
                 
                 // 요청 결과 전송
                 HttpResponseMessage response = await _httpClient.PostAsync("api/v1/chat", content);
 
                 if (!response.IsSuccessStatusCode) {
-                    _logger.LogWarning("[LLM] 응답 실패: {StatusCode}", response.StatusCode);
+                    _logger.LogWarning("[LLMClient] 응답 실패: {StatusCode}", response.StatusCode);
                     return new LLMResponse {
                         Success = false,
                         ErrorMessage = $"HTTP {response.StatusCode}: {response.ReasonPhrase}"
@@ -43,7 +43,7 @@ namespace ProjectVG.Infrastructure.ExternalApis.LLM
 
                 if (llmResponse == null)
                 {
-                    _logger.LogError("[LLM] 응답 파싱 실패");
+                    _logger.LogError("[LLMClient] 응답 파싱 실패");
                     return new LLMResponse
                     {
                         Success = false,
@@ -51,12 +51,12 @@ namespace ProjectVG.Infrastructure.ExternalApis.LLM
                     };
                 }
 
-                _logger.LogInformation("[LLM] 응답 생성 완료: 토큰 사용량 ({TokensUsed}) , 요청 시간({ProcessingTimeMs:F2}ms)", llmResponse.TokensUsed, llmResponse.ResponseTime);
+                _logger.LogInformation("[LLMClient] 응답 생성 완료: 토큰 사용량 ({TokensUsed}) , 요청 시간({ProcessingTimeMs:F2}ms)", llmResponse.TokensUsed, llmResponse.ResponseTime);
 
                 return llmResponse;
             }
             catch (Exception ex) {
-                _logger.LogError(ex, "[LLM] 요청 처리 중 예외 발생");
+                _logger.LogError(ex, "[LLMClient] 요청 처리 중 예외 발생");
 
                 return new LLMResponse {
                     Success = false,

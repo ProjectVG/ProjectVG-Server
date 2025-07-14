@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace ProjectVG.Infrastructure.ExternalApis.LLM.Models
+namespace ProjectVG.Infrastructure.ExternalApis.LLMClient.Models
 {
     public class LLMResponse
     {
@@ -29,7 +29,7 @@ namespace ProjectVG.Infrastructure.ExternalApis.LLM.Models
         public double ResponseTime { get; set; }
 
         /// <summary>
-        /// 사용된 LLM 모델
+        /// 사용된 LLMClient 모델
         /// </summary>
         [JsonPropertyName("model")]
         public string Model { get; set; } = default!;

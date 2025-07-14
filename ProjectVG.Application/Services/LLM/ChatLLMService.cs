@@ -1,5 +1,5 @@
-using ProjectVG.Infrastructure.ExternalApis.LLM;
-using ProjectVG.Infrastructure.ExternalApis.LLM.Models;
+using ProjectVG.Infrastructure.ExternalApis.LLMClient;
+using ProjectVG.Infrastructure.ExternalApis.LLMClient.Models;
 using ProjectVG.Common.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -43,20 +43,20 @@ namespace ProjectVG.Application.Services.LLM
                     Model = model
                 };
 
-                // LLM 호출
+                // LLMClient 호출
                 var llmResponse = await _llmClient.SendRequestAsync(request);
 
                 var endTime = DateTime.UtcNow;
                 var processingTime = (endTime - startTime).TotalMilliseconds;
 
-                _logger.LogInformation("LLM 응답 생성 완료: 토큰 사용량 ({TokensUsed}), 요청 시간({ProcessingTimeMs:F2}ms)", 
+                _logger.LogInformation("LLMClient 응답 생성 완료: 토큰 사용량 ({TokensUsed}), 요청 시간({ProcessingTimeMs:F2}ms)", 
                     llmResponse.TokensUsed, processingTime);
 
                 return llmResponse;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "LLM 서비스 오류 발생");
+                _logger.LogError(ex, "LLMClient 서비스 오류 발생");
                 
                 return new LLMResponse
                 {

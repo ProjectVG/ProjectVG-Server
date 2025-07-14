@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace ProjectVG.Infrastructure.ExternalApis.LLM.Models
+namespace ProjectVG.Infrastructure.ExternalApis.LLMClient.Models
 {
     public class LLMRequest
     {
