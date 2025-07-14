@@ -64,31 +64,6 @@ namespace ProjectVG.Application.Services.Chat
             }
         }
 
-        // [전처리] DTO
-        private class ChatPreprocessContext
-        {
-            public string SessionId { get; set; } = string.Empty;
-            public string UserMessage { get; set; } = string.Empty;
-            public string Actor { get; set; } = string.Empty;
-            public string? Action { get; set; }
-            public Guid? CharacterId { get; set; }
-            public List<string> MemoryContext { get; set; } = new();
-            public List<string> ConversationHistory { get; set; } = new();
-            public string SystemMessage { get; set; } = string.Empty;
-            public string Instructions { get; set; } = string.Empty;
-            public string VoiceName { get; set; } = string.Empty;
-            public string[] AllowedEmotions { get; set; } = Array.Empty<string>();
-        }
-
-        // [프로세스] DTO
-        private class ChatProcessResult
-        {
-            public string Response { get; set; } = string.Empty;
-            public string Emotion { get; set; } = string.Empty;
-            public string Summary { get; set; } = string.Empty;
-            public int TokensUsed { get; set; }
-        }
-
         // [전처리] 사용자 입력, 컨텍스트, instructions 등 준비
         private async Task<ChatPreprocessContext> PreprocessAsync(ProcessChatCommand command)
         {
@@ -98,9 +73,6 @@ namespace ProjectVG.Application.Services.Chat
             // 대화 기록 조회
             var conversationHistory = await CollectConversationHistoryAsync(command.SessionId);
             
-            // 시스템 메시지 작성
-            var systemMessage = await PrepareSystemMessageAsync(command.CharacterId);
-
             // VoiceName이 있다면 emotion 제한
             string voiceName = "Zero";
             string[] allowedEmotions = Array.Empty<string>();
@@ -112,7 +84,8 @@ namespace ProjectVG.Application.Services.Chat
                 allowedEmotions = voiceProfile.SupportedStyles;
             }
 
-            var instructions = BuildInstructions(allowedEmotions);
+            var outputFormat = new ChatOutputFormat(allowedEmotions);
+            var instructions = outputFormat.GetFullInstructions(@"- 마스터한텐 반말 써.\n- 귀찮은 듯 말해도 되고, 길게 설명하지 마.\n- 감정 싣지 마.  \n- 멍청한 질문엔 가볍게 비꼬는 거 괜찮아.\n- 긴급하면 바로 진지하게 대답해.\n- 하나의 응답만 써라. 여러 개 쓰면 무시된다.\n- 예시 쓰지 마.");
 
             return new ChatPreprocessContext
             {
@@ -123,7 +96,7 @@ namespace ProjectVG.Application.Services.Chat
                 CharacterId = command.CharacterId,
                 MemoryContext = memoryContext,
                 ConversationHistory = conversationHistory,
-                SystemMessage = systemMessage,
+                SystemMessage = "",
                 Instructions = instructions,
                 VoiceName = voiceName,
                 AllowedEmotions = allowedEmotions
@@ -143,9 +116,10 @@ namespace ProjectVG.Application.Services.Chat
                 LLMSettings.Chat.Temperature,
                 LLMSettings.Chat.Model
             );
+            var outputFormat = new ChatOutputFormat(context.AllowedEmotions);
+            var parsed = outputFormat.Parse(llmResponse.Response);
 
-            // YAML 파싱 예시 (실제 파싱 로직 필요)
-            var parsed = ParseLlmContext(llmResponse.Response);
+            // todo : Voice 모델 동작
 
             return new ChatProcessResult
             {
@@ -161,8 +135,13 @@ namespace ProjectVG.Application.Services.Chat
         {
             try
             {
-                await SaveConversationAsync(context.SessionId, context.UserMessage, result.Response);
-                await SaveToMemoryAsync(context.UserMessage, result.Response);
+                // 대화 기록
+                await _conversationService.AddMessageAsync(context.SessionId, ChatRole.User, context.UserMessage);
+                await _conversationService.AddMessageAsync(context.SessionId, ChatRole.Assistant, result.Response);
+
+                // 메모리 클라이언트에 동록
+                await _memoryClient.AddMemoryAsync(context.UserMessage);
+                await _memoryClient.AddMemoryAsync(result.Response);
 
                 // 결과 전송
                 await _sessionService.SendMessageAsync(context.SessionId, result.Response);
@@ -171,65 +150,6 @@ namespace ProjectVG.Application.Services.Chat
             {
                 _logger.LogError(ex, "결과 적용(저장/응답) 실패: 세션 {SessionId}", context.SessionId);
             }
-        }
-
-        // 동적으로 Instructions 생성 (emotion은 allowedEmotions 중 하나만 허용)
-        private string BuildInstructions(string[] allowedEmotions)
-        {
-            string emotionList = allowedEmotions.Length > 0 ? string.Join(", ", allowedEmotions) : "(감정 없음)";
-            return $@"
-답변할 때 아래 규칙 지켜.
-
-- 마스터한텐 반말 써.
-- 귀찮은 듯 말해도 되고, 길게 설명하지 마.
-- 감정 싣지 마.  
-- 멍청한 질문엔 가볍게 비꼬는 거 괜찮아.
-- 긴급하면 바로 진지하게 대답해.
-- 하나의 응답만 써라. 여러 개 쓰면 무시된다.
-- 예시 쓰지 마.
-
-응답은 아래 형식만 써. 딴 포맷 쓰지 마:
-
-[start]
-응답: (여기에 네 대답 작성)
-상황: (지금 상황을 한두 줄로 요약)
-감정: ({emotionList} 중 하나 골라서 작성)
-[end]
-
-예시:
-[start]
-응답: 알아서 해. 그게 빠르겠다.
-요약: 마스터가 귀찮은 질문을 함.
-감정: annoyed 
-[end]
-";
-        }
-
-        // LLM 결과 파싱 ([start]~[end] 블록에서 응답/상황/감정 추출)
-        private (string Response, string Emotion, string Summary) ParseLlmContext(string llmText)
-        {
-            if (string.IsNullOrWhiteSpace(llmText))
-                return ("", "", "");
-
-            // [start] ~ [end] 블록 추출
-            var startIdx = llmText.IndexOf("[start]");
-            var endIdx = llmText.IndexOf("[end]", startIdx + 7);
-            if (startIdx == -1 || endIdx == -1)
-                return (llmText.Trim(), "", "");
-
-            var block = llmText.Substring(startIdx + 7, endIdx - (startIdx + 7)).Trim();
-            string response = "", summary = "", emotion = "";
-            foreach (var line in block.Split('\n'))
-            {
-                var trimmed = line.Trim();
-                if (trimmed.StartsWith("응답:") || trimmed.StartsWith("응답 :"))
-                    response = trimmed.Substring(trimmed.IndexOf(":") + 1).Trim();
-                else if (trimmed.StartsWith("상황:") || trimmed.StartsWith("요약:") || trimmed.StartsWith("상황 :") || trimmed.StartsWith("요약 :"))
-                    summary = trimmed.Substring(trimmed.IndexOf(":") + 1).Trim();
-                else if (trimmed.StartsWith("감정:") || trimmed.StartsWith("감정 :"))
-                    emotion = trimmed.Substring(trimmed.IndexOf(":") + 1).Trim();
-            }
-            return (response, emotion, summary);
         }
 
         // 기존 메모리 컨텍스트 수집
@@ -259,48 +179,6 @@ namespace ProjectVG.Application.Services.Chat
             {
                 _logger.LogWarning(ex, "대화 기록 수집 실패: 세션 {SessionId}", sessionId);
                 return new List<string>();
-            }
-        }
-
-        // 기존 시스템 메시지 준비
-        private async Task<string> PrepareSystemMessageAsync(Guid? characterId)
-        {
-            if (characterId.HasValue)
-            {
-                var character = await _characterService.GetCharacterByIdAsync(characterId.Value);
-                if (character != null)
-                {
-                    return character.Role;
-                }
-            }
-            return LLMSettings.Chat.SystemPrompt;
-        }
-
-        // 기존 대화 기록 저장
-        private async Task SaveConversationAsync(string sessionId, string userMessage, string aiResponse)
-        {
-            try
-            {
-                await _conversationService.AddMessageAsync(sessionId, ChatRole.User, userMessage);
-                await _conversationService.AddMessageAsync(sessionId, ChatRole.Assistant, aiResponse);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "대화 기록 저장 실패: 세션 {SessionId}", sessionId);
-            }
-        }
-
-        // 기존 메모리 저장
-        private async Task SaveToMemoryAsync(string userMessage, string aiResponse)
-        {
-            try
-            {
-                await _memoryClient.AddMemoryAsync(userMessage);
-                await _memoryClient.AddMemoryAsync(aiResponse);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "메모리 저장 실패");
             }
         }
     }
