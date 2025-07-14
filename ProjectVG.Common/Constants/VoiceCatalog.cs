@@ -18,29 +18,39 @@ namespace ProjectVG.Common.Constants
     {
         private static readonly Dictionary<string, VoiceProfile> _profiles = new()
         {
-            ["Zero"] = new VoiceProfile
+            ["Hyewon"] = new VoiceProfile
             {
-                Name = "Zero",
-                VoiceId = "do1p29ed1j02",
-                DisplayName = "Supertone Zero",
-                SupportedLanguages = new[] { "ko", "jp", "en" },
-                SupportedStyles = new[] { "Angry", "Natural", "Shy" },
+                Name = "Hyewon",
+                VoiceId = "651d3de921570047a83b90",
+                DisplayName = "Hyewon",
+                SupportedLanguages = new[] { "ko" },
+                SupportedStyles = new[] { "Amused", "Angry", "Happay", "Sad", "Shy", "Neutral" },
                 DefaultLanguage = "ko",
-                DefaultStyle = "Natural",
+                DefaultStyle = "Neutral",
                 Model = "sona_speech_1"
             },
-            ["Hana"] = new VoiceProfile
+            ["Haru"] = new VoiceProfile
             {
-                Name = "Hana",
-                VoiceId = "djqwi102312dah",
-                DisplayName = "Supertone Hana",
+                Name = "Haru",
+                VoiceId = "f4a2a3f41fc82de8616b84",
+                DisplayName = "Haru",
                 SupportedLanguages = new[] { "ko" },
-                SupportedStyles = new[] { "Sad", "Natural" },
+                SupportedStyles = new[] { "Angry", "Happay", "Sad", "Shy", "Surprised", "Neutral" },
                 DefaultLanguage = "ko",
-                DefaultStyle = "Natural",
+                DefaultStyle = "Neutral",
+                Model = "sona_speech_1"
+            },
+            ["Miya"] = new VoiceProfile
+            {
+                Name = "Miya",
+                VoiceId = "ad965de9532e67f8c17d72",
+                DisplayName = "Miya",
+                SupportedLanguages = new[] { "ko" },
+                SupportedStyles = new[] { "Angry", "Happy", "Embarrassed", "Painful", "Sad", "Neutral" },
+                DefaultLanguage = "ko",
+                DefaultStyle = "Neutral",
                 Model = "sona_speech_1"
             }
-            // 추가 보이스는 여기에 계속 등록
         };
 
         public static VoiceProfile? GetProfile(string name)
@@ -48,4 +58,4 @@ namespace ProjectVG.Common.Constants
 
         public static IEnumerable<VoiceProfile> GetAllProfiles() => _profiles.Values;
     }
-} 
+}
