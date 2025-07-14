@@ -31,7 +31,7 @@ namespace ProjectVG.Application.Services.Voice
 
             try
             {
-                var profile = ValidateVoiceRequest(voiceName, text);
+                var profile = ValidateVoiceRequest(voiceName, text, sty);
 
                 var request = new TextToSpeechRequest
                 {
@@ -43,7 +43,7 @@ namespace ProjectVG.Application.Services.Voice
                 };
 
                 // API 호출
-                var response = await _ttsClient.TextToSpeechAsync(request with { VoiceId = profile.VoiceId });
+                var response = await _ttsClient.TextToSpeechAsync(request);
 
                 var endTime = DateTime.UtcNow;
                 var processingTime = (endTime - startTime).TotalMilliseconds;
@@ -73,7 +73,7 @@ namespace ProjectVG.Application.Services.Voice
             }
         }
 
-        private VoiceProfile ValidateVoiceRequest(string voiceName, string text)
+        private VoiceProfile ValidateVoiceRequest(string voiceName, string text, string style)
         {
             if (string.IsNullOrWhiteSpace(text))
                 throw new VoiceValidationException("텍스트가 비어있습니다.");
