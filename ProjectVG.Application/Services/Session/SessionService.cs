@@ -86,6 +86,33 @@ namespace ProjectVG.Application.Services.Session
             }
         }
 
+        public async Task SendAudioAsync(string sessionId, byte[] audioData, string? contentType = null, float? audioLength = null)
+        {
+            try
+            {
+                var connection = await _sessionRepository.GetAsync(sessionId);
+                if (connection == null)
+                {
+                    _logger.LogWarning("세션을 찾을 수 없음: {SessionId}", sessionId);
+                    return;
+                }
+
+                await connection.WebSocket.SendAsync(
+                    new ArraySegment<byte>(audioData),
+                    WebSocketMessageType.Binary,
+                    true,
+                    CancellationToken.None
+                );
+
+                _logger.LogDebug("오디오(wav) 전송 완료: {SessionId}", sessionId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "오디오(wav) 전송 실패: {SessionId}", sessionId);
+                throw;
+            }
+        }
+
         public async Task<ClientConnection?> GetSessionAsync(string sessionId)
         {
             try
