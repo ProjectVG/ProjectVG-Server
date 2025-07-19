@@ -6,7 +6,7 @@ namespace ProjectVG.Domain.Entities.ConversationHistory
     public class ConversationHistory : BaseEntity
     {
         // 대화 기록 고유 ID
-        public string Id { get; set; } = Guid.NewGuid().ToString(); 
+        public Guid Id { get; set; } = Guid.NewGuid();
         // 대화 세션 ID
         public string SessionId { get; set; } = string.Empty;        
         // 채팅 역할 (User, Assistant, System)
@@ -15,13 +15,13 @@ namespace ProjectVG.Domain.Entities.ConversationHistory
         public string Content { get; set; } = string.Empty;          
         // 대화 발생 시각
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;   
-        // 추가 메타데이터
-        public Dictionary<string, string> Metadata { get; set; } = new(); 
-        // 캐릭터 ID (AI 어시스턴트)
-        public string? CharacterId { get; set; }                     
+        // 추가 메타데이터 (JSON으로 저장)
+        public string MetadataJson { get; set; } = "{}";
+        // 캐릭터 ID
+        public Guid? CharacterId { get; set; }                     
         // 사용자 ID
-        public string? UserId { get; set; }                          
+        public Guid? UserId { get; set; }                          
         // 삭제 여부
-        public bool IsDeleted { get; set; } = false;                 
+        public bool IsDeleted { get; set; } = false;
     }
 } 
