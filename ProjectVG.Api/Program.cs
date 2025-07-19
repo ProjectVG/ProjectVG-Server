@@ -9,6 +9,8 @@ using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Session;
 using ProjectVG.Application.Services.Voice;
 using ProjectVG.Application.Services.User;
+using ProjectVG.Application.Services.Auth;
+using ProjectVG.Application.Services.MessageBroker;
 using ProjectVG.Infrastructure.Repositories;
 using ProjectVG.Infrastructure.Repositories.InMemory;
 using ProjectVG.Infrastructure.Repositories.SqlServer;
@@ -71,12 +73,13 @@ builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IClientSessionService, ClientSessionService>();
 builder.Services.AddScoped<IVoiceService, VoiceService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IMessageBroker, MessageBroker>();
 
 // Infrastructure Repositories 
 builder.Services.AddScoped<ICharacterRepository, SqlServerCharacterRepository>();
 builder.Services.AddScoped<IConversationRepository, SqlServerConversationRepository>();
 builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
-builder.Services.AddScoped<ISessionRepository, InMemorySessionRepository>();
 builder.Services.AddSingleton<IClientSessionRepository, InMemoryClientSessionRepository>();
 
 var app = builder.Build();
@@ -103,8 +106,8 @@ app.UseHttpsRedirection();
 
 app.UseWebSockets();
 
-// WebSocket 미들웨어를 특정 경로에만 적용
-app.UseMiddleware<WebSocketMiddleware>();
+// Stateless WebSocket 미들웨어 적용
+app.UseMiddleware<StatelessWebSocketMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
