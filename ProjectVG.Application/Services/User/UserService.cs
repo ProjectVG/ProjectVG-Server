@@ -21,6 +21,28 @@ namespace ProjectVG.Application.Services.User
             _logger = logger;
         }
 
+        public async Task<UserDto?> GetUserByIdAsync(Guid userId)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+                {
+                    _logger.LogWarning("ID {UserId}인 사용자를 찾을 수 없습니다", userId);
+                    return null;
+                }
+
+                var userDto = new UserDto(user);
+                _logger.LogDebug("ID {UserId}인 사용자를 조회했습니다", userId);
+                return userDto;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ID {UserId}인 사용자 조회 중 오류가 발생했습니다", userId);
+                throw;
+            }
+        }
+
         public async Task<UserDto?> GetUserByUsernameAsync(string username)
         {
             try
