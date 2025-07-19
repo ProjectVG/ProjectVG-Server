@@ -10,7 +10,10 @@ using ProjectVG.Application.Services.Session;
 using ProjectVG.Application.Services.Voice;
 using ProjectVG.Infrastructure.Repositories;
 using ProjectVG.Infrastructure.Repositories.InMemory;
+using ProjectVG.Infrastructure.Repositories.SqlServer;
 using ProjectVG.Infrastructure.ExternalApis.TextToSpeech;
+using ProjectVG.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +38,10 @@ builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = null;
 });
+
+// Entity Framework Core 설정
+builder.Services.AddDbContext<ProjectVGDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // External API Clients
 builder.Services.AddHttpClient<ILLMClient, LLMClient>(client => {
@@ -63,13 +70,20 @@ builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IVoiceService, VoiceService>();
 
 // Infrastructure Repositories 
-// AddSingleton(임시) todo : 실제 DB에서는 AddScoped를 사용할 것
-builder.Services.AddSingleton<ICharacterRepository, InMemoryCharacterRepository>();
-builder.Services.AddSingleton<IConversationRepository, InMemoryConversationRepository>();
-builder.Services.AddSingleton<IUserRepository, InMemoryUserRepository>();
-builder.Services.AddSingleton<ISessionRepository, InMemorySessionRepository>();
+// SQL Server Repository 사용 (InMemory 대신)
+builder.Services.AddScoped<ICharacterRepository, SqlServerCharacterRepository>();
+builder.Services.AddScoped<IConversationRepository, SqlServerConversationRepository>();
+builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
+builder.Services.AddScoped<ISessionRepository, InMemorySessionRepository>();
 
 var app = builder.Build();
+
+// 데이터베이스 마이그레이션 자동 적용
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ProjectVGDbContext>();
+    context.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
