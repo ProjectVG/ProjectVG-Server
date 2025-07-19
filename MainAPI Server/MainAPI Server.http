@@ -1,4 +1,0 @@
-@MainAPI_Server_HostAddress = http://localhost:5287
-
-GET {{MainAPI_Server_HostAddress}}/api/health
-Accept: application/json
