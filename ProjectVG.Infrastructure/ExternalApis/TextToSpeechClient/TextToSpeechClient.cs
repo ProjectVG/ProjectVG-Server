@@ -9,13 +9,11 @@ namespace ProjectVG.Infrastructure.ExternalApis.TextToSpeech
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<TextToSpeechClient> _logger;
-        private readonly string _apiKey;
 
-        public TextToSpeechClient(HttpClient httpClient, ILogger<TextToSpeechClient> logger, string apiKey)
+        public TextToSpeechClient(HttpClient httpClient, ILogger<TextToSpeechClient> logger)
         {
             _httpClient = httpClient;
             _logger = logger;
-            _apiKey = apiKey;
         }
 
         public async Task<TextToSpeechResponse> TextToSpeechAsync(TextToSpeechRequest request)
@@ -29,9 +27,12 @@ namespace ProjectVG.Infrastructure.ExternalApis.TextToSpeech
                 string json = JsonSerializer.Serialize(request);
                 StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                // API 키 헤더 추가
+                // API 키 헤더 추가 (직접 환경변수에서 읽음)
+                var apiKey = Environment.GetEnvironmentVariable("TTSApiKey");
+                if (string.IsNullOrWhiteSpace(apiKey))
+                    throw new InvalidOperationException("환경 변수 TTSApiKey가 설정되어 있지 않습니다.");
                 _httpClient.DefaultRequestHeaders.Clear();
-                _httpClient.DefaultRequestHeaders.Add("x-sup-api-key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("x-sup-api-key", apiKey);
 
                 _logger.LogInformation("[TextToSpeech] TextToSpeech 요청 전송: {Text}", request.Text.Substring(0, Math.Min(50, request.Text.Length)) + "...");
                 
@@ -91,9 +92,12 @@ namespace ProjectVG.Infrastructure.ExternalApis.TextToSpeech
                 string json = JsonSerializer.Serialize(request);
                 StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                // API 키 헤더 추가
+                // API 키 헤더 추가 (직접 환경변수에서 읽음)
+                var apiKey = Environment.GetEnvironmentVariable("TTSApiKey");
+                if (string.IsNullOrWhiteSpace(apiKey))
+                    throw new InvalidOperationException("환경 변수 TTSApiKey가 설정되어 있지 않습니다.");
                 _httpClient.DefaultRequestHeaders.Clear();
-                _httpClient.DefaultRequestHeaders.Add("x-sup-api-key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("x-sup-api-key", apiKey);
 
                 _logger.LogInformation("[TextToSpeech] 지속 시간 예측 요청 전송: {Text}", request.Text.Substring(0, Math.Min(50, request.Text.Length)) + "...");
                 

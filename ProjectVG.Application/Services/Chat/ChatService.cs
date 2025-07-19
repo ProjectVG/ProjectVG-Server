@@ -8,6 +8,7 @@ using ProjectVG.Common.Constants;
 using ProjectVG.Application.Models.Chat;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Domain.Enums;
+using ProjectVG.Application.Services.Voice;
 
 namespace ProjectVG.Application.Services.Chat
 {
@@ -18,6 +19,7 @@ namespace ProjectVG.Application.Services.Chat
         private readonly IConversationService _conversationService;
         private readonly ISessionService _sessionService;
         private readonly IMemoryClient _memoryClient;
+        private readonly IVoiceService _voiceService;
         private readonly ILogger<ChatService> _logger;
 
         public ChatService(
@@ -26,6 +28,7 @@ namespace ProjectVG.Application.Services.Chat
             IConversationService conversationService,
             ISessionService sessionService,
             IMemoryClient memoryClient,
+            IVoiceService voiceService,
             ILogger<ChatService> logger)
         {
             _llmService = llmService;
@@ -33,6 +36,7 @@ namespace ProjectVG.Application.Services.Chat
             _conversationService = conversationService;
             _sessionService = sessionService;
             _memoryClient = memoryClient;
+            _voiceService = voiceService;
             _logger = logger;
         }
 
@@ -74,7 +78,7 @@ namespace ProjectVG.Application.Services.Chat
             var conversationHistory = await CollectConversationHistoryAsync(command.SessionId);
             
             // VoiceName이 있다면 emotion 제한
-            string voiceName = "Zero";
+            string voiceName = "Hyewon";
             string[] allowedEmotions = Array.Empty<string>();
             if (!string.IsNullOrWhiteSpace(voiceName))
             {
@@ -96,7 +100,7 @@ namespace ProjectVG.Application.Services.Chat
                 CharacterId = command.CharacterId,
                 MemoryContext = memoryContext,
                 ConversationHistory = conversationHistory,
-                SystemMessage = "",
+                SystemMessage = LLMSettings.Chat.SystemPrompt,
                 Instructions = instructions,
                 VoiceName = voiceName,
                 AllowedEmotions = allowedEmotions
@@ -119,14 +123,46 @@ namespace ProjectVG.Application.Services.Chat
             var outputFormat = new ChatOutputFormat(context.AllowedEmotions);
             var parsed = outputFormat.Parse(llmResponse.Response);
 
-            // todo : Voice 모델 동작
+            // Voice Synthesis (TTS)
+            byte[]? audioData = null;
+            string? audioContentType = null;
+            float? audioLength = null;
+            if (!string.IsNullOrWhiteSpace(context.VoiceName) && !string.IsNullOrWhiteSpace(parsed.Response))
+            {
+                try
+                {
+                    var ttsResult = await _voiceService.TextToSpeechAsync(
+                        context.VoiceName,
+                        parsed.Response,
+                        parsed.Emotion,
+                        null // VoiceSettings 확장 가능
+                    );
+                    if (ttsResult.Success && ttsResult.AudioData != null)
+                    {
+                        audioData = ttsResult.AudioData;
+                        audioContentType = ttsResult.ContentType;
+                        audioLength = ttsResult.AudioLength;
+                    }
+                    else if (!ttsResult.Success)
+                    {
+                        _logger.LogWarning("TTS 변환 실패: {Error}", ttsResult.ErrorMessage);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "TTS 변환 중 예외 발생");
+                }
+            }
 
             return new ChatProcessResult
             {
                 Response = parsed.Response,
                 Emotion = parsed.Emotion,
                 Summary = parsed.Summary,
-                TokensUsed = llmResponse.TokensUsed
+                TokensUsed = llmResponse.TokensUsed,
+                AudioData = audioData,
+                AudioContentType = audioContentType,
+                AudioLength = audioLength
             };
         }
 
@@ -143,8 +179,14 @@ namespace ProjectVG.Application.Services.Chat
                 await _memoryClient.AddMemoryAsync(context.UserMessage);
                 await _memoryClient.AddMemoryAsync(result.Response);
 
-                // 결과 전송
+                // 결과 전송 (텍스트)
                 await _sessionService.SendMessageAsync(context.SessionId, result.Response);
+
+                // 오디오(wav) 전송
+                if (result.AudioData != null && result.AudioData.Length > 0)
+                {
+                    await _sessionService.SendAudioAsync(context.SessionId, result.AudioData, result.AudioContentType, result.AudioLength);
+                }
             }
             catch (Exception ex)
             {

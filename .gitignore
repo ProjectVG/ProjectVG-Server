@@ -164,3 +164,6 @@ project_structure.txt
 *.m4b
 *.m4r
 *.m4p
+
+# appsettings.json
+ProjectVG.Api/Properties/launchSettings.json

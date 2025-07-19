@@ -7,8 +7,10 @@ using ProjectVG.Application.Services.Chat;
 using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Session;
+using ProjectVG.Application.Services.Voice;
 using ProjectVG.Infrastructure.Repositories;
 using ProjectVG.Infrastructure.Repositories.InMemory;
+using ProjectVG.Infrastructure.ExternalApis.TextToSpeech;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,12 +45,22 @@ builder.Services.AddHttpClient<IMemoryClient, VectorMemoryClient>(client => {
     client.BaseAddress = new Uri("http://localhost:5602");
 });
 
+builder.Services.AddHttpClient<ITextToSpeechClient, TextToSpeechClient>((sp, client) => {
+    client.BaseAddress = new Uri("https://supertoneapi.com");
+})
+.AddTypedClient((httpClient, sp) => {
+    var logger = sp.GetRequiredService<ILogger<TextToSpeechClient>>();
+    return new TextToSpeechClient(httpClient, logger);
+});
+
+
 // Application Services
 builder.Services.AddScoped<ILLMService, ChatLLMService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<ICharacterService, CharacterService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
+builder.Services.AddScoped<IVoiceService, VoiceService>();
 
 // Infrastructure Repositories 
 // AddSingleton(임시) todo : 실제 DB에서는 AddScoped를 사용할 것
