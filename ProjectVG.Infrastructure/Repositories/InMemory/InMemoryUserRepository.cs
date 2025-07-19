@@ -7,6 +7,8 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
     {
         private readonly Dictionary<Guid, User> _users = new();
         private readonly Dictionary<string, User> _usersByUsername = new();
+        private readonly Dictionary<string, User> _usersByEmail = new();
+        private readonly Dictionary<string, User> _usersByProviderId = new();
         private readonly ILogger<InMemoryUserRepository> _logger;
 
         public InMemoryUserRepository(ILogger<InMemoryUserRepository> logger)
@@ -32,11 +34,28 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
             return Task.FromResult(user);
         }
 
+        public Task<User?> GetByEmailAsync(string email)
+        {
+            _usersByEmail.TryGetValue(email, out var user);
+            return Task.FromResult(user);
+        }
+
+        public Task<User?> GetByProviderIdAsync(string providerId)
+        {
+            _usersByProviderId.TryGetValue(providerId, out var user);
+            return Task.FromResult(user);
+        }
+
         public Task<User> CreateAsync(User user)
         {
-            if (_usersByUsername.ContainsKey(user.Name))
+            if (_usersByUsername.ContainsKey(user.Username))
             {
-                throw new InvalidOperationException($"Username '{user.Name}' already exists.");
+                throw new InvalidOperationException($"Username '{user.Username}' already exists.");
+            }
+
+            if (_usersByEmail.ContainsKey(user.Email))
+            {
+                throw new InvalidOperationException($"Email '{user.Email}' already exists.");
             }
 
             user.Id = Guid.NewGuid();
@@ -44,9 +63,14 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
             user.UpdatedAt = DateTime.UtcNow;
             
             _users[user.Id] = user;
-            _usersByUsername[user.Name] = user;
+            _usersByUsername[user.Username] = user;
+            _usersByEmail[user.Email] = user;
+            if (!string.IsNullOrEmpty(user.ProviderId))
+            {
+                _usersByProviderId[user.ProviderId] = user;
+            }
             
-            _logger.LogInformation("User created: {Username} with ID: {UserId}", user.Name, user.Id);
+            _logger.LogInformation("User created: {Username} with ID: {UserId}", user.Username, user.Id);
             
             return Task.FromResult(user);
         }
@@ -61,19 +85,35 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
             var existingUser = _users[user.Id];
             
             // Username이 변경된 경우 중복 체크
-            if (existingUser.Name != user.Name && _usersByUsername.ContainsKey(user.Name))
+            if (existingUser.Username != user.Username && _usersByUsername.ContainsKey(user.Username))
             {
-                throw new InvalidOperationException($"Username '{user.Name}' already exists.");
+                throw new InvalidOperationException($"Username '{user.Username}' already exists.");
             }
 
-            // 기존 username 인덱스 제거
-            _usersByUsername.Remove(existingUser.Name);
+            // Email이 변경된 경우 중복 체크
+            if (existingUser.Email != user.Email && _usersByEmail.ContainsKey(user.Email))
+            {
+                throw new InvalidOperationException($"Email '{user.Email}' already exists.");
+            }
+
+            // 기존 인덱스 제거
+            _usersByUsername.Remove(existingUser.Username);
+            _usersByEmail.Remove(existingUser.Email);
+            if (!string.IsNullOrEmpty(existingUser.ProviderId))
+            {
+                _usersByProviderId.Remove(existingUser.ProviderId);
+            }
             
             user.UpdatedAt = DateTime.UtcNow;
             _users[user.Id] = user;
-            _usersByUsername[user.Name] = user;
+            _usersByUsername[user.Username] = user;
+            _usersByEmail[user.Email] = user;
+            if (!string.IsNullOrEmpty(user.ProviderId))
+            {
+                _usersByProviderId[user.ProviderId] = user;
+            }
             
-            _logger.LogInformation("User updated: {Username} with ID: {UserId}", user.Name, user.Id);
+            _logger.LogInformation("User updated: {Username} with ID: {UserId}", user.Username, user.Id);
             
             return Task.FromResult(user);
         }
@@ -83,8 +123,13 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
             if (_users.TryGetValue(id, out var user))
             {
                 _users.Remove(id);
-                _usersByUsername.Remove(user.Name);
-                _logger.LogInformation("User deleted: {Username} with ID: {UserId}", user.Name, id);
+                _usersByUsername.Remove(user.Username);
+                _usersByEmail.Remove(user.Email);
+                if (!string.IsNullOrEmpty(user.ProviderId))
+                {
+                    _usersByProviderId.Remove(user.ProviderId);
+                }
+                _logger.LogInformation("User deleted: {Username} with ID: {UserId}", user.Username, id);
             }
             else
             {
@@ -101,8 +146,11 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
                 new User
                 {
                     Id = Guid.NewGuid(),
-                    Name = "admin",
+                    Username = "admin",
+                    Name = "Administrator",
                     Email = "admin@example.com",
+                    Provider = "local",
+                    ProviderId = "admin",
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -110,8 +158,11 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
                 new User
                 {
                     Id = Guid.NewGuid(),
-                    Name = "user1",
+                    Username = "user1",
+                    Name = "Test User",
                     Email = "user1@example.com",
+                    Provider = "local",
+                    ProviderId = "user1",
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -121,7 +172,9 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
             foreach (var user in defaultUsers)
             {
                 _users[user.Id] = user;
-                _usersByUsername[user.Name] = user;
+                _usersByUsername[user.Username] = user;
+                _usersByEmail[user.Email] = user;
+                _usersByProviderId[user.ProviderId] = user;
             }
 
             _logger.LogInformation("Initialized {Count} default users", defaultUsers.Count);
