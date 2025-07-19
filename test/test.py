@@ -4,6 +4,7 @@ import requests
 import json
 import time
 from datetime import datetime
+import simpleaudio as sa
 
 class ChatApp:
     def __init__(self, http_url="http://localhost:5287", ws_url="ws://localhost:5287/ws"):
@@ -11,7 +12,18 @@ class ChatApp:
         self.ws_url = ws_url
         self.websocket = None
         self.session_id = None
-        
+    
+    def play_audio_file(self, filename):
+        """저장된 오디오 파일을 simpleaudio로 자동 재생"""
+        try:
+            print(f"[클라이언트] 오디오 자동 재생 시작: {filename}")
+            wave_obj = sa.WaveObject.from_wave_file(filename)
+            play_obj = wave_obj.play()
+            play_obj.wait_done()
+            print("[클라이언트] 오디오 자동 재생 완료")
+        except Exception as e:
+            print(f"[클라이언트] 오디오 재생 실패: {e}")
+
     async def connect_websocket(self):
         """WebSocket 연결"""
         try:
@@ -58,26 +70,43 @@ class ChatApp:
 
     
     async def listen_for_responses(self):
-        """WebSocket에서 응답 수신"""
+        """WebSocket에서 응답 수신 (텍스트/오디오 모두)"""
         if not self.websocket:
             return
-            
+
         try:
+            text_received = False
+            audio_received = False
+            filename = None
             while True:
                 message = await self.websocket.recv()
-                
-                # 세션 ID 메시지는 무시
+
+                # 바이너리(wav) 메시지인 경우
+                if isinstance(message, bytes):
+                    print("[클라이언트] 오디오(wav) 데이터 수신!")
+                    filename = f"output_{datetime.now().strftime('%Y%m%d_%H%M%S')}.wav"
+                    with open(filename, "wb") as f:
+                        f.write(message)
+                    print(f"[클라이언트] 오디오 파일 저장: {filename}")
+                    self.play_audio_file(filename)
+                    audio_received = True
+                    if text_received:
+                        break
+                    continue
+
                 try:
                     data = json.loads(message)
                     if data.get("type") == "session_id":
                         continue
-                except:
+                except Exception:
                     pass
-                
+
                 print(f"\nAI: {message}")
                 print("-" * 50)
-                break
-                    
+                text_received = True
+                if audio_received:
+                    break
+
         except websockets.exceptions.ConnectionClosed:
             print("WebSocket 연결이 종료됨")
         except Exception as e:
