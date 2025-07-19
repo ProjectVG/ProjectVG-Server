@@ -18,11 +18,11 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
         {
             if (_conversations.TryGetValue(sessionId, out var messages))
             {
-                _logger.LogDebug("Retrieved {Count} messages for session {SessionId}", messages.Count, sessionId);
+                _logger.LogDebug("세션 {SessionId}에서 메시지 {Count}개를 조회했습니다", sessionId, messages.Count);
                 return Task.FromResult(messages.TakeLast(count).AsEnumerable());
             }
             
-            _logger.LogDebug("No messages found for session {SessionId}", sessionId);
+            _logger.LogDebug("세션 {SessionId}에서 메시지를 찾을 수 없습니다", sessionId);
             return Task.FromResult(Enumerable.Empty<ConversationHistory>());
         }
 
@@ -31,7 +31,7 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
             if (!_conversations.ContainsKey(message.SessionId))
             {
                 _conversations[message.SessionId] = new List<ConversationHistory>();
-                _logger.LogDebug("Created new conversation session: {SessionId}", message.SessionId);
+                _logger.LogDebug("새로운 대화 세션을 생성했습니다: {SessionId}", message.SessionId);
             }
 
             var messages = _conversations[message.SessionId];
@@ -53,7 +53,7 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
                 messages.RemoveRange(0, messages.Count - MAX_CONVERSATION_MESSAGES);
             }
 
-            _logger.LogDebug("Added message to session {SessionId}, total messages: {Count}", 
+            _logger.LogDebug("세션 {SessionId}에 메시지를 추가했습니다. 총 메시지 수: {Count}", 
                 message.SessionId, messages.Count);
 
             return Task.FromResult(message);
@@ -64,7 +64,7 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
             if (_conversations.ContainsKey(sessionId))
             {
                 _conversations[sessionId].Clear();
-                _logger.LogInformation("Cleared conversation session: {SessionId}", sessionId);
+                _logger.LogInformation("대화 세션을 삭제했습니다: {SessionId}", sessionId);
             }
             
             return Task.CompletedTask;

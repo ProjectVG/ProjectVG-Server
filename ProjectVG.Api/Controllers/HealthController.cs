@@ -12,7 +12,7 @@ namespace ProjectVG.Api.Controllers
             return Ok(new {
                 status = "ok",
                 serverTime = DateTime.UtcNow,
-                message = "ProjectVG API is running."
+                message = "ProjectVG API가 정상적으로 실행 중입니다."
             });
         }
     }

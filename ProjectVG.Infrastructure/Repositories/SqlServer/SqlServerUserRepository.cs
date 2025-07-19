@@ -58,7 +58,7 @@ namespace ProjectVG.Infrastructure.Repositories.SqlServer
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("User created: {UserName} with ID: {UserId}", user.Name, user.Id);
+            _logger.LogInformation("사용자를 생성했습니다. 이름: {UserName}, ID: {UserId}", user.Name, user.Id);
             return user;
         }
 
@@ -69,7 +69,7 @@ namespace ProjectVG.Infrastructure.Repositories.SqlServer
 
             if (existingUser == null)
             {
-                throw new KeyNotFoundException($"User with ID {user.Id} not found.");
+                throw new KeyNotFoundException($"ID {user.Id}인 사용자를 찾을 수 없습니다.");
             }
 
             existingUser.Name = user.Name;
@@ -82,7 +82,7 @@ namespace ProjectVG.Infrastructure.Repositories.SqlServer
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("User updated: {UserName} with ID: {UserId}", user.Name, user.Id);
+            _logger.LogInformation("사용자를 수정했습니다. 이름: {UserName}, ID: {UserId}", user.Name, user.Id);
             return existingUser;
         }
 
@@ -97,11 +97,11 @@ namespace ProjectVG.Infrastructure.Repositories.SqlServer
                 user.Update();
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("User deleted with ID: {UserId}", id);
+                _logger.LogInformation("사용자를 삭제했습니다. ID: {UserId}", id);
             }
             else
             {
-                _logger.LogWarning("Attempted to delete user with ID: {UserId}, but it was not found", id);
+                _logger.LogWarning("ID {UserId}인 사용자를 삭제하려 했지만 사용자를 찾을 수 없습니다", id);
             }
         }
     }

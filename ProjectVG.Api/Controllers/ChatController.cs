@@ -34,7 +34,7 @@ namespace ProjectVG.Api.Controllers
 
             return Ok(new { 
                 success = true, 
-                message = "Chat request processed",
+                message = "채팅 요청이 처리되었습니다",
                 sessionId = request.SessionId 
             });
         }

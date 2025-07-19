@@ -23,6 +23,18 @@ namespace ProjectVG.Common.Constants
         public const string 인증_토큰_만료 = "인증_토큰_만료";
         public const string 인증_권한_부족 = "인증_권한_부족";
 
+        // 사용자 관련 에러
+        public const string 사용자_찾을_수_없음 = "사용자_찾을_수_없음";
+        public const string 사용자_이미_존재 = "사용자_이미_존재";
+        public const string 사용자_이메일_중복 = "사용자_이메일_중복";
+        public const string 사용자_사용자명_중복 = "사용자_사용자명_중복";
+        public const string 사용자_이메일_유효하지_않음 = "사용자_이메일_유효하지_않음";
+        public const string 사용자_사용자명_유효하지_않음 = "사용자_사용자명_유효하지_않음";
+        public const string 사용자_비활성화 = "사용자_비활성화";
+        public const string 사용자_생성_실패 = "사용자_생성_실패";
+        public const string 사용자_수정_실패 = "사용자_수정_실패";
+        public const string 사용자_삭제_실패 = "사용자_삭제_실패";
+
         // 캐릭터 관련 에러
         public const string 캐릭터_찾을_수_없음 = "캐릭터_찾을_수_없음";
         public const string 캐릭터_이미_존재 = "캐릭터_이미_존재";

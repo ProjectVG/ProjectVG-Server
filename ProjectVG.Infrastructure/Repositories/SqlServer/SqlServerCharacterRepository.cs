@@ -40,7 +40,7 @@ namespace ProjectVG.Infrastructure.Repositories.SqlServer
             _context.Characters.Add(character);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Character created: {CharacterName} with ID: {CharacterId}", character.Name, character.Id);
+            _logger.LogInformation("캐릭터를 생성했습니다. 이름: {CharacterName}, ID: {CharacterId}", character.Name, character.Id);
             return character;
         }
 
@@ -51,7 +51,7 @@ namespace ProjectVG.Infrastructure.Repositories.SqlServer
 
             if (existingCharacter == null)
             {
-                throw new KeyNotFoundException($"Character with ID {character.Id} not found.");
+                throw new KeyNotFoundException($"ID {character.Id}인 캐릭터를 찾을 수 없습니다.");
             }
 
             existingCharacter.Name = character.Name;
@@ -65,7 +65,7 @@ namespace ProjectVG.Infrastructure.Repositories.SqlServer
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Character updated: {CharacterName} with ID: {CharacterId}", character.Name, character.Id);
+            _logger.LogInformation("캐릭터를 수정했습니다. 이름: {CharacterName}, ID: {CharacterId}", character.Name, character.Id);
             return existingCharacter;
         }
 
@@ -80,11 +80,11 @@ namespace ProjectVG.Infrastructure.Repositories.SqlServer
                 character.Update();
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Character deleted with ID: {CharacterId}", id);
+                _logger.LogInformation("캐릭터를 삭제했습니다. ID: {CharacterId}", id);
             }
             else
             {
-                _logger.LogWarning("Attempted to delete character with ID: {CharacterId}, but it was not found", id);
+                _logger.LogWarning("ID {CharacterId}인 캐릭터를 삭제하려 했지만 캐릭터를 찾을 수 없습니다", id);
             }
         }
     }

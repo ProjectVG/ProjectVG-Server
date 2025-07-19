@@ -29,8 +29,8 @@ namespace ProjectVG.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while retrieving all characters");
-                return StatusCode(500, "Internal server error occurred while retrieving characters");
+                _logger.LogError(ex, "모든 캐릭터 조회 중 오류가 발생했습니다");
+                return StatusCode(500, "캐릭터 목록을 가져오는 중 내부 서버 오류가 발생했습니다.");
             }
         }
 
@@ -42,7 +42,7 @@ namespace ProjectVG.Api.Controllers
                 var characterDto = await _characterService.GetCharacterByIdAsync(id);
                 if (characterDto == null)
                 {
-                    return NotFound($"Character with ID {id} not found");
+                    return NotFound($"ID {id}인 캐릭터를 찾을 수 없습니다.");
                 }
 
                 var response = CharacterMapper.ToResponseDto(characterDto);
@@ -50,8 +50,8 @@ namespace ProjectVG.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while retrieving character with ID: {CharacterId}", id);
-                return StatusCode(500, "Internal server error occurred while retrieving character");
+                _logger.LogError(ex, "ID {CharacterId}인 캐릭터 조회 중 오류가 발생했습니다", id);
+                return StatusCode(500, "캐릭터 정보를 가져오는 중 내부 서버 오류가 발생했습니다.");
             }
         }
 
@@ -79,8 +79,8 @@ namespace ProjectVG.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while creating character");
-                return StatusCode(500, "Internal server error occurred while creating character");
+                _logger.LogError(ex, "캐릭터 생성 중 오류가 발생했습니다");
+                return StatusCode(500, "캐릭터 생성 중 내부 서버 오류가 발생했습니다.");
             }
         }
 
@@ -108,12 +108,12 @@ namespace ProjectVG.Api.Controllers
             }
             catch (KeyNotFoundException)
             {
-                return NotFound($"Character with ID {id} not found");
+                return NotFound($"ID {id}인 캐릭터를 찾을 수 없습니다.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while updating character with ID: {CharacterId}", id);
-                return StatusCode(500, "Internal server error occurred while updating character");
+                _logger.LogError(ex, "ID {CharacterId}인 캐릭터 수정 중 오류가 발생했습니다", id);
+                return StatusCode(500, "캐릭터 정보 수정 중 내부 서버 오류가 발생했습니다.");
             }
         }
 
@@ -127,8 +127,8 @@ namespace ProjectVG.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while deleting character with ID: {CharacterId}", id);
-                return StatusCode(500, "Internal server error occurred while deleting character");
+                _logger.LogError(ex, "ID {CharacterId}인 캐릭터 삭제 중 오류가 발생했습니다", id);
+                return StatusCode(500, "캐릭터 삭제 중 내부 서버 오류가 발생했습니다.");
             }
         }
     }

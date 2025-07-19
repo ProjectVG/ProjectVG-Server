@@ -28,11 +28,11 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
         {
             if (_sessions.ContainsKey(connection.SessionId))
             {
-                throw new InvalidOperationException($"Session with ID '{connection.SessionId}' already exists.");
+                throw new InvalidOperationException($"세션 ID '{connection.SessionId}'가 이미 존재합니다.");
             }
 
             _sessions[connection.SessionId] = connection;
-            _logger.LogDebug("Session created: {SessionId}", connection.SessionId);
+            _logger.LogDebug("세션을 생성했습니다: {SessionId}", connection.SessionId);
             
             return Task.FromResult(connection);
         }
@@ -41,11 +41,11 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
         {
             if (!_sessions.ContainsKey(connection.SessionId))
             {
-                throw new KeyNotFoundException($"Session with ID {connection.SessionId} not found.");
+                throw new KeyNotFoundException($"세션 ID {connection.SessionId}를 찾을 수 없습니다.");
             }
 
             _sessions[connection.SessionId] = connection;
-            _logger.LogDebug("Session updated: {SessionId}", connection.SessionId);
+            _logger.LogDebug("세션을 수정했습니다: {SessionId}", connection.SessionId);
             
             return Task.FromResult(connection);
         }
@@ -54,11 +54,11 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
         {
             if (_sessions.Remove(sessionId))
             {
-                _logger.LogDebug("Session deleted: {SessionId}", sessionId);
+                _logger.LogDebug("세션을 삭제했습니다: {SessionId}", sessionId);
             }
             else
             {
-                _logger.LogWarning("Attempted to delete session with ID: {SessionId}, but it was not found", sessionId);
+                _logger.LogWarning("세션 ID {SessionId}를 삭제하려 했지만 세션을 찾을 수 없습니다", sessionId);
             }
             
             return Task.CompletedTask;

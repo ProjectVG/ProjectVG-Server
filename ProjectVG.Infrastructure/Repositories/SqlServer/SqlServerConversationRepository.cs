@@ -26,7 +26,7 @@ namespace ProjectVG.Infrastructure.Repositories.SqlServer
                 .OrderBy(ch => ch.Timestamp)
                 .ToListAsync();
 
-            _logger.LogDebug("Retrieved {Count} messages for session {SessionId}", messages.Count, sessionId);
+            _logger.LogDebug("세션 {SessionId}에서 메시지 {Count}개를 조회했습니다", sessionId, messages.Count);
             return messages;
         }
 
@@ -58,7 +58,7 @@ namespace ProjectVG.Infrastructure.Repositories.SqlServer
 
             await _context.SaveChangesAsync();
 
-            _logger.LogDebug("Added message to session {SessionId}, message ID: {MessageId}", 
+            _logger.LogDebug("세션 {SessionId}에 메시지를 추가했습니다. 메시지 ID: {MessageId}", 
                 message.SessionId, message.Id);
 
             return message;
@@ -77,7 +77,7 @@ namespace ProjectVG.Infrastructure.Repositories.SqlServer
             }
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Cleared conversation session: {SessionId}", sessionId);
+            _logger.LogInformation("대화 세션을 삭제했습니다: {SessionId}", sessionId);
         }
 
         public async Task<int> GetMessageCountAsync(string sessionId)

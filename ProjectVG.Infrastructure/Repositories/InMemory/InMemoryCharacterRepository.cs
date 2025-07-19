@@ -32,7 +32,7 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
             character.UpdatedAt = DateTime.UtcNow;
             
             _characters[character.Id] = character;
-            _logger.LogInformation("Character created: {CharacterName} with ID: {CharacterId}", character.Name, character.Id);
+            _logger.LogInformation("캐릭터를 생성했습니다. 이름: {CharacterName}, ID: {CharacterId}", character.Name, character.Id);
             
             return Task.FromResult(character);
         }
@@ -41,12 +41,12 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
         {
             if (!_characters.ContainsKey(character.Id))
             {
-                throw new KeyNotFoundException($"Character with ID {character.Id} not found.");
+                throw new KeyNotFoundException($"ID {character.Id}인 캐릭터를 찾을 수 없습니다.");
             }
 
             character.UpdatedAt = DateTime.UtcNow;
             _characters[character.Id] = character;
-            _logger.LogInformation("Character updated: {CharacterName} with ID: {CharacterId}", character.Name, character.Id);
+            _logger.LogInformation("캐릭터를 수정했습니다. 이름: {CharacterName}, ID: {CharacterId}", character.Name, character.Id);
             
             return Task.FromResult(character);
         }
@@ -55,11 +55,11 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
         {
             if (_characters.Remove(id))
             {
-                _logger.LogInformation("Character deleted with ID: {CharacterId}", id);
+                _logger.LogInformation("캐릭터를 삭제했습니다. ID: {CharacterId}", id);
             }
             else
             {
-                _logger.LogWarning("Attempted to delete character with ID: {CharacterId}, but it was not found", id);
+                _logger.LogWarning("ID {CharacterId}인 캐릭터를 삭제하려 했지만 캐릭터를 찾을 수 없습니다", id);
             }
             
             return Task.CompletedTask;
@@ -116,7 +116,7 @@ namespace ProjectVG.Infrastructure.Repositories.InMemory
                 _characters[character.Id] = character;
             }
 
-            _logger.LogInformation("Initialized {Count} default characters", defaultCharacters.Count);
+            _logger.LogInformation("기본 캐릭터 {Count}개를 초기화했습니다", defaultCharacters.Count);
         }
     }
 } 
