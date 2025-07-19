@@ -8,6 +8,7 @@ using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Session;
 using ProjectVG.Application.Services.Voice;
+using ProjectVG.Application.Services.User;
 using ProjectVG.Infrastructure.Repositories;
 using ProjectVG.Infrastructure.Repositories.InMemory;
 using ProjectVG.Infrastructure.Repositories.SqlServer;
@@ -68,6 +69,7 @@ builder.Services.AddScoped<ICharacterService, CharacterService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IVoiceService, VoiceService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 // Infrastructure Repositories 
 // SQL Server Repository 사용 (InMemory 대신)
