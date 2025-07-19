@@ -68,15 +68,16 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<ICharacterService, CharacterService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<ISessionService, SessionService>();
+builder.Services.AddScoped<IClientSessionService, ClientSessionService>();
 builder.Services.AddScoped<IVoiceService, VoiceService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 // Infrastructure Repositories 
-// SQL Server Repository 사용 (InMemory 대신)
 builder.Services.AddScoped<ICharacterRepository, SqlServerCharacterRepository>();
 builder.Services.AddScoped<IConversationRepository, SqlServerConversationRepository>();
 builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
 builder.Services.AddScoped<ISessionRepository, InMemorySessionRepository>();
+builder.Services.AddSingleton<IClientSessionRepository, InMemoryClientSessionRepository>();
 
 var app = builder.Build();
 

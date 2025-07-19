@@ -5,7 +5,7 @@ namespace ProjectVG.Domain.Entities.Session
     public class ClientSession : BaseEntity
     {
         /// 세션 ID
-        public string SessionId { get; set; };
+        public string SessionId { get; set; }
 
         /// 유저 ID
         public Guid UserId { get; set; }
