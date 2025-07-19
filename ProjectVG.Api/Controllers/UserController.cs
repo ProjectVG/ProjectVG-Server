@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using ProjectVG.Application.Services.User;
-using ProjectVG.Domain.Entities.User;
+using ProjectVG.Application.Models.User;
 using Microsoft.Extensions.Logging;
 
 namespace ProjectVG.Api.Controllers
@@ -22,7 +22,7 @@ namespace ProjectVG.Api.Controllers
         /// 모든 사용자 조회
         /// </summary>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetAllUsers()
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetAllUsers()
         {
             try
             {
@@ -40,7 +40,7 @@ namespace ProjectVG.Api.Controllers
         /// ID로 사용자 조회
         /// </summary>
         [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUserById(Guid id)
+        public async Task<ActionResult<UserDto>> GetUserById(Guid id)
         {
             try
             {
@@ -62,7 +62,7 @@ namespace ProjectVG.Api.Controllers
         /// 이메일로 사용자 조회
         /// </summary>
         [HttpGet("email/{email}")]
-        public async Task<ActionResult<User>> GetUserByEmail(string email)
+        public async Task<ActionResult<UserDto>> GetUserByEmail(string email)
         {
             try
             {
@@ -84,7 +84,7 @@ namespace ProjectVG.Api.Controllers
         /// 사용자명으로 사용자 조회
         /// </summary>
         [HttpGet("username/{username}")]
-        public async Task<ActionResult<User>> GetUserByUsername(string username)
+        public async Task<ActionResult<UserDto>> GetUserByUsername(string username)
         {
             try
             {
@@ -106,7 +106,7 @@ namespace ProjectVG.Api.Controllers
         /// Provider ID로 사용자 조회
         /// </summary>
         [HttpGet("provider/{providerId}")]
-        public async Task<ActionResult<User>> GetUserByProviderId(string providerId)
+        public async Task<ActionResult<UserDto>> GetUserByProviderId(string providerId)
         {
             try
             {
@@ -128,11 +128,11 @@ namespace ProjectVG.Api.Controllers
         /// 새 사용자 생성
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<User>> CreateUser([FromBody] User user)
+        public async Task<ActionResult<UserDto>> CreateUser([FromBody] UserDto userDto)
         {
             try
             {
-                var createdUser = await _userService.CreateUserAsync(user);
+                var createdUser = await _userService.CreateUserAsync(userDto);
                 return CreatedAtAction(nameof(GetUserById), new { id = createdUser.Id }, createdUser);
             }
             catch (InvalidOperationException ex)
@@ -150,16 +150,16 @@ namespace ProjectVG.Api.Controllers
         /// 사용자 정보 수정
         /// </summary>
         [HttpPut("{id}")]
-        public async Task<ActionResult<User>> UpdateUser(Guid id, [FromBody] User user)
+        public async Task<ActionResult<UserDto>> UpdateUser(Guid id, [FromBody] UserDto userDto)
         {
             try
             {
-                if (id != user.Id)
+                if (id != userDto.Id)
                 {
                     return BadRequest("URL의 ID와 요청 본문의 ID가 일치하지 않습니다.");
                 }
 
-                var updatedUser = await _userService.UpdateUserAsync(user);
+                var updatedUser = await _userService.UpdateUserAsync(userDto);
                 return Ok(updatedUser);
             }
             catch (KeyNotFoundException ex)

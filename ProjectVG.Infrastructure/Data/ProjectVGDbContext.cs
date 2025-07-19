@@ -91,7 +91,7 @@ namespace ProjectVG.Infrastructure.Data
             {
                 new Character
                 {
-                    Id = Guid.Parse("1"),
+                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
                     Name = "Test Character",
                     Description = "test description",
                     Role = "test role",

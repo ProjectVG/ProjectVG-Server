@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ProjectVG.Domain.Entities.User;
 using ProjectVG.Infrastructure.Repositories;
+using ProjectVG.Application.Models.User;
 using Microsoft.Extensions.Logging;
 
 namespace ProjectVG.Application.Services.User
@@ -20,13 +21,14 @@ namespace ProjectVG.Application.Services.User
             _logger = logger;
         }
 
-        public async Task<IEnumerable<User>> GetAllUsersAsync()
+        public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
         {
             try
             {
                 var users = await _userRepository.GetAllAsync();
-                _logger.LogInformation("사용자 {Count}명을 조회했습니다", users.Count());
-                return users;
+                var userDtos = users.Select(u => new UserDto(u));
+                _logger.LogInformation("사용자 {Count}명을 조회했습니다", userDtos.Count());
+                return userDtos;
             }
             catch (Exception ex)
             {
@@ -35,7 +37,7 @@ namespace ProjectVG.Application.Services.User
             }
         }
 
-        public async Task<User?> GetUserByIdAsync(Guid id)
+        public async Task<UserDto?> GetUserByIdAsync(Guid id)
         {
             try
             {
@@ -43,12 +45,12 @@ namespace ProjectVG.Application.Services.User
                 if (user == null)
                 {
                     _logger.LogWarning("ID {UserId}인 사용자를 찾을 수 없습니다", id);
+                    return null;
                 }
-                else
-                {
-                    _logger.LogDebug("ID {UserId}인 사용자를 조회했습니다", id);
-                }
-                return user;
+
+                var userDto = new UserDto(user);
+                _logger.LogDebug("ID {UserId}인 사용자를 조회했습니다", id);
+                return userDto;
             }
             catch (Exception ex)
             {
@@ -57,7 +59,7 @@ namespace ProjectVG.Application.Services.User
             }
         }
 
-        public async Task<User?> GetUserByEmailAsync(string email)
+        public async Task<UserDto?> GetUserByEmailAsync(string email)
         {
             try
             {
@@ -65,12 +67,12 @@ namespace ProjectVG.Application.Services.User
                 if (user == null)
                 {
                     _logger.LogWarning("이메일 {Email}인 사용자를 찾을 수 없습니다", email);
+                    return null;
                 }
-                else
-                {
-                    _logger.LogDebug("이메일 {Email}인 사용자를 조회했습니다", email);
-                }
-                return user;
+
+                var userDto = new UserDto(user);
+                _logger.LogDebug("이메일 {Email}인 사용자를 조회했습니다", email);
+                return userDto;
             }
             catch (Exception ex)
             {
@@ -79,7 +81,7 @@ namespace ProjectVG.Application.Services.User
             }
         }
 
-        public async Task<User?> GetUserByUsernameAsync(string username)
+        public async Task<UserDto?> GetUserByUsernameAsync(string username)
         {
             try
             {
@@ -87,12 +89,12 @@ namespace ProjectVG.Application.Services.User
                 if (user == null)
                 {
                     _logger.LogWarning("사용자명 {Username}인 사용자를 찾을 수 없습니다", username);
+                    return null;
                 }
-                else
-                {
-                    _logger.LogDebug("사용자명 {Username}인 사용자를 조회했습니다", username);
-                }
-                return user;
+
+                var userDto = new UserDto(user);
+                _logger.LogDebug("사용자명 {Username}인 사용자를 조회했습니다", username);
+                return userDto;
             }
             catch (Exception ex)
             {
@@ -101,7 +103,7 @@ namespace ProjectVG.Application.Services.User
             }
         }
 
-        public async Task<User?> GetUserByProviderIdAsync(string providerId)
+        public async Task<UserDto?> GetUserByProviderIdAsync(string providerId)
         {
             try
             {
@@ -109,12 +111,12 @@ namespace ProjectVG.Application.Services.User
                 if (user == null)
                 {
                     _logger.LogWarning("Provider ID {ProviderId}인 사용자를 찾을 수 없습니다", providerId);
+                    return null;
                 }
-                else
-                {
-                    _logger.LogDebug("Provider ID {ProviderId}인 사용자를 조회했습니다", providerId);
-                }
-                return user;
+
+                var userDto = new UserDto(user);
+                _logger.LogDebug("Provider ID {ProviderId}인 사용자를 조회했습니다", providerId);
+                return userDto;
             }
             catch (Exception ex)
             {
@@ -123,63 +125,69 @@ namespace ProjectVG.Application.Services.User
             }
         }
 
-        public async Task<User> CreateUserAsync(User user)
+        public async Task<UserDto> CreateUserAsync(UserDto userDto)
         {
             try
             {
                 // 중복 검사
-                if (await EmailExistsAsync(user.Email))
+                if (await EmailExistsAsync(userDto.Email))
                 {
-                    throw new InvalidOperationException($"이메일 '{user.Email}'이 이미 존재합니다.");
+                    throw new InvalidOperationException($"이메일 '{userDto.Email}'이 이미 존재합니다.");
                 }
 
-                if (await UsernameExistsAsync(user.Username))
+                if (await UsernameExistsAsync(userDto.Username))
                 {
-                    throw new InvalidOperationException($"사용자명 '{user.Username}'이 이미 존재합니다.");
+                    throw new InvalidOperationException($"사용자명 '{userDto.Username}'이 이미 존재합니다.");
                 }
 
+                var user = userDto.ToEntity();
                 var createdUser = await _userRepository.CreateAsync(user);
+                var createdUserDto = new UserDto(createdUser);
+                
                 _logger.LogInformation("사용자를 생성했습니다. ID: {UserId}, 사용자명: {Username}", 
-                    createdUser.Id, createdUser.Username);
-                return createdUser;
+                    createdUserDto.Id, createdUserDto.Username);
+                return createdUserDto;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "이메일 {Email}인 사용자 생성 중 오류가 발생했습니다", user.Email);
+                _logger.LogError(ex, "이메일 {Email}인 사용자 생성 중 오류가 발생했습니다", userDto.Email);
                 throw;
             }
         }
 
-        public async Task<User> UpdateUserAsync(User user)
+        public async Task<UserDto> UpdateUserAsync(UserDto userDto)
         {
             try
             {
-                var existingUser = await _userRepository.GetByIdAsync(user.Id);
+                var existingUser = await _userRepository.GetByIdAsync(userDto.Id);
                 if (existingUser == null)
                 {
-                    throw new KeyNotFoundException($"ID {user.Id}인 사용자를 찾을 수 없습니다.");
+                    throw new KeyNotFoundException($"ID {userDto.Id}인 사용자를 찾을 수 없습니다.");
                 }
 
                 // 이메일 변경 시 중복 검사
-                if (user.Email != existingUser.Email && await EmailExistsAsync(user.Email))
+                if (userDto.Email != existingUser.Email && await EmailExistsAsync(userDto.Email))
                 {
-                    throw new InvalidOperationException($"이메일 '{user.Email}'이 이미 존재합니다.");
+                    throw new InvalidOperationException($"이메일 '{userDto.Email}'이 이미 존재합니다.");
                 }
 
                 // 사용자명 변경 시 중복 검사
-                if (user.Username != existingUser.Username && await UsernameExistsAsync(user.Username))
+                if (userDto.Username != existingUser.Username && await UsernameExistsAsync(userDto.Username))
                 {
-                    throw new InvalidOperationException($"사용자명 '{user.Username}'이 이미 존재합니다.");
+                    throw new InvalidOperationException($"사용자명 '{userDto.Username}'이 이미 존재합니다.");
                 }
 
+                var user = userDto.ToEntity();
                 var updatedUser = await _userRepository.UpdateAsync(user);
+                var updatedUserDto = new UserDto(updatedUser);
+                
                 _logger.LogInformation("사용자를 수정했습니다. ID: {UserId}, 사용자명: {Username}", 
-                    updatedUser.Id, updatedUser.Username);
-                return updatedUser;
+                    updatedUserDto.Id, updatedUserDto.Username);
+                return updatedUserDto;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ID {UserId}인 사용자 수정 중 오류가 발생했습니다", user.Id);
+                _logger.LogError(ex, "ID {UserId}인 사용자 수정 중 오류가 발생했습니다", userDto.Id);
                 throw;
             }
         }
