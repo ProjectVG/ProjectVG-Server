@@ -9,6 +9,7 @@ using ProjectVG.Application.Models.Chat;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Domain.Enums;
 using ProjectVG.Application.Services.Voice;
+using ProjectVG.Application.Services.MessageBroker;
 
 namespace ProjectVG.Application.Services.Chat
 {
@@ -17,18 +18,20 @@ namespace ProjectVG.Application.Services.Chat
         private readonly ILLMService _llmService;
         private readonly ICharacterService _characterService;
         private readonly IConversationService _conversationService;
-        private readonly ISessionService _sessionService;
+        private readonly IClientSessionService _sessionService;
         private readonly IMemoryClient _memoryClient;
         private readonly IVoiceService _voiceService;
+        private readonly IMessageBroker _messageBroker;
         private readonly ILogger<ChatService> _logger;
 
         public ChatService(
             ILLMService llmService,
             ICharacterService characterService,
             IConversationService conversationService,
-            ISessionService sessionService,
+            IClientSessionService sessionService,
             IMemoryClient memoryClient,
             IVoiceService voiceService,
+            IMessageBroker messageBroker,
             ILogger<ChatService> logger)
         {
             _llmService = llmService;
@@ -37,6 +40,7 @@ namespace ProjectVG.Application.Services.Chat
             _sessionService = sessionService;
             _memoryClient = memoryClient;
             _voiceService = voiceService;
+            _messageBroker = messageBroker;
             _logger = logger;
         }
 
@@ -64,7 +68,7 @@ namespace ProjectVG.Application.Services.Chat
             catch (Exception ex)
             {
                 _logger.LogError(ex, "채팅 요청 처리 중 오류 발생: 세션 {SessionId}", command.SessionId);
-                await _sessionService.SendMessageAsync(command.SessionId, "서비스 오류로 답변 생성 실패");
+                await _messageBroker.SendResultAsync(command.SessionId, "서비스 오류로 답변 생성 실패");
             }
         }
 
@@ -180,12 +184,12 @@ namespace ProjectVG.Application.Services.Chat
                 await _memoryClient.AddMemoryAsync(result.Response);
 
                 // 결과 전송 (텍스트)
-                await _sessionService.SendMessageAsync(context.SessionId, result.Response);
+                await _messageBroker.SendResultAsync(context.SessionId, result.Response);
 
                 // 오디오(wav) 전송
                 if (result.AudioData != null && result.AudioData.Length > 0)
                 {
-                    await _sessionService.SendAudioAsync(context.SessionId, result.AudioData, result.AudioContentType, result.AudioLength);
+                    await _messageBroker.SendResultAsync(context.SessionId, result.AudioData, result.AudioContentType, result.AudioLength);
                 }
             }
             catch (Exception ex)
