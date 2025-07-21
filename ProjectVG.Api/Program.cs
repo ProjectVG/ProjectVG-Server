@@ -76,7 +76,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICharacterRepository, SqlServerCharacterRepository>();
 builder.Services.AddScoped<IConversationRepository, SqlServerConversationRepository>();
 builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
-builder.Services.AddScoped<ISessionRepository, InMemorySessionRepository>();
+builder.Services.AddSingleton<ISessionRepository, InMemorySessionRepository>();
 
 var app = builder.Build();
 

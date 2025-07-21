@@ -3,6 +3,7 @@ using ProjectVG.Application.Services.Chat;
 using ProjectVG.Application.Models.Chat;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ProjectVG.Api.Controllers
 {
@@ -12,10 +13,12 @@ namespace ProjectVG.Api.Controllers
     public class ChatController : ControllerBase
     {
         private readonly IChatService _chatService;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public ChatController(IChatService chatService)
+        public ChatController(IChatService chatService, IServiceScopeFactory scopeFactory)
         {
             _chatService = chatService;
+            _scopeFactory = scopeFactory;
         }
 
         [HttpPost]
@@ -30,7 +33,12 @@ namespace ProjectVG.Api.Controllers
                 CharacterId = request.CharacterId
             };
 
-            Task.Run(() => _chatService.ProcessChatRequestAsync(command));
+            Task.Run(async () =>
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+                await chatService.ProcessChatRequestAsync(command);
+            });
 
             return Ok(new { 
                 success = true, 
