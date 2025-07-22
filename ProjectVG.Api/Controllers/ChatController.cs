@@ -22,7 +22,7 @@ namespace ProjectVG.Api.Controllers
         }
 
         [HttpPost]
-        public IActionResult ProcessChat([FromBody] ChatRequestDto request)
+        public async Task<IActionResult> ProcessChat([FromBody] ChatRequestDto request)
         {
             var command = new ProcessChatCommand
             {
@@ -33,12 +33,7 @@ namespace ProjectVG.Api.Controllers
                 CharacterId = request.CharacterId
             };
 
-            Task.Run(async () =>
-            {
-                using var scope = _scopeFactory.CreateScope();
-                var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
-                await chatService.ProcessChatRequestAsync(command);
-            });
+            await _chatService.EnqueueChatRequestAsync(command);
 
             return Ok(new { 
                 success = true, 

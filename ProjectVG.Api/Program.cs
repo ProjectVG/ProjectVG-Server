@@ -13,6 +13,7 @@ using ProjectVG.Infrastructure.Repositories;
 using ProjectVG.Infrastructure.Repositories.InMemory;
 using ProjectVG.Infrastructure.Repositories.SqlServer;
 using ProjectVG.Infrastructure.ExternalApis.TextToSpeech;
+using ProjectVG.Application.Services.Chat.Extensions;
 using ProjectVG.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -72,11 +73,13 @@ builder.Services.AddScoped<IVoiceService, VoiceService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 // Infrastructure Repositories 
-// SQL Server Repository 사용 (InMemory 대신)
 builder.Services.AddScoped<ICharacterRepository, SqlServerCharacterRepository>();
 builder.Services.AddScoped<IConversationRepository, SqlServerConversationRepository>();
 builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
 builder.Services.AddSingleton<ISessionRepository, InMemorySessionRepository>();
+
+// DI 확장 메서드 등록
+builder.Services.AddChatOrchestrationServices();
 
 var app = builder.Build();
 

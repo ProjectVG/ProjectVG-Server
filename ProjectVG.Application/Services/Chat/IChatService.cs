@@ -8,6 +8,6 @@ namespace ProjectVG.Application.Services.Chat
         /// 채팅 요청을 처리합니다
         /// </summary>
         /// <param name="command">채팅 처리 명령</param>
-        Task ProcessChatRequestAsync(ProcessChatCommand command);
+        Task EnqueueChatRequestAsync(ProcessChatCommand command);
     }
 } 
