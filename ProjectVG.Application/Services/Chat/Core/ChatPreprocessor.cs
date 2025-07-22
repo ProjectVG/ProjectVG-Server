@@ -25,13 +25,20 @@ namespace ProjectVG.Application.Services.Chat.Core
 
         public async Task<ChatPreprocessContext> PreprocessAsync(ProcessChatCommand command)
         {
+            // 기억
             var memoryContext = await _memoryContextPreprocessor.CollectMemoryContextAsync(command.Message);
+            
+            // 대화 이력
             var conversationHistory = await _conversationHistoryPreprocessor.CollectConversationHistoryAsync(command.SessionId);
 
+            // todo : 지정된 캐릭터 설정 불러오기
             string voiceName = "Haru";
+
+            // todo : 지시사항 설정
             var allowedEmotions = _instructionPreprocessor.GetAllowedEmotions(voiceName);
             var instructions = _instructionPreprocessor.GetInstructions(allowedEmotions);
 
+            // todo : 시스템 프롬포트 작성 (캐릭터 설정에 맞게 작성)
             return new ChatPreprocessContext {
                 SessionId = command.SessionId,
                 UserMessage = command.Message,

@@ -4,6 +4,9 @@ namespace ProjectVG.Infrastructure.ExternalApis.TextToSpeech.Models
 {
     public class TextToSpeechRequest
     {
+        [JsonIgnore]
+        public string VoiceId { get; set; }
+
         /// <summary>
         /// 텍스트를 음성으로 변환할 내용 (최대 300자)
         /// </summary>
@@ -20,13 +23,14 @@ namespace ProjectVG.Infrastructure.ExternalApis.TextToSpeech.Models
         /// 적용할 감정 스타일(중립, 행복 등). 입력하지 않으면 기본 스타일이 사용됩니다
         /// </summary>
         [JsonPropertyName("style")]
-        public string? Style { get; set; }
+        public string? Emotion { get; set; }
 
         /// <summary>
         /// 사용할 음성 모델(sona_speech_1). 생략 시 자동 적용
         /// </summary>
+        [Obsolete("이 필드는 더 이상 사용하지 않습니다")]
         [JsonPropertyName("model")]
-        public string? Model { get; set; }
+        public string? Model { get; set; } 
 
         /// <summary>
         /// 음성 피치, 음조, 속도를 조정하는 고급 옵션
@@ -53,6 +57,6 @@ namespace ProjectVG.Infrastructure.ExternalApis.TextToSpeech.Models
         /// 음성 속도를 조절합니다. 값이 1보다 작으면 음성 속도가 느려지고, 값이 1보다 크면 음성 속도가 빨라집니다.
         /// </summary>
         [JsonPropertyName("speed")]
-        public float Speed { get; set; } = 1.0f;
+        public float Speed { get; set; } = 1.2f;
     }
 } 
