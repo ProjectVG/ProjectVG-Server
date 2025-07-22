@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>AI 채팅 + 음성 데모</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 2em auto; }
+    #chat-log { border: 1px solid #ccc; height: 300px; overflow-y: auto; padding: 1em; margin-bottom: 1em; }
+    #input-row { display: flex; }
+    #user-input { flex: 1; padding: 0.5em; }
+    #send-btn { padding: 0.5em 1em; }
+  </style>
+</head>
+<body>
+  <h2>AI 채팅 + 음성 데모</h2>
+  <div id="chat-log"></div>
+  <div id="input-row">
+    <input id="user-input" type="text" placeholder="메시지를 입력하세요" autocomplete="off" />
+    <button id="send-btn">전송</button>
+  </div>
+  <audio id="audio-player" controls style="display:none"></audio>
+
+  <script>
+    // 서버 주소에 맞게 수정
+    const WS_URL = "ws://localhost:5287/ws";
+    const HTTP_URL = "http://localhost:5287/api/v1/chat";
+    let sessionId = null;
+    let ws = null;
+
+    const chatLog = document.getElementById('chat-log');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const audioPlayer = document.getElementById('audio-player');
+
+    function appendLog(text) {
+      chatLog.innerHTML += `<div>${text}</div>`;
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    function connectWebSocket() {
+      ws = new WebSocket(sessionId ? `${WS_URL}?sessionId=${sessionId}` : WS_URL);
+      ws.binaryType = "arraybuffer";
+      ws.onopen = () => appendLog("<b>[WebSocket 연결됨]</b>");
+      ws.onmessage = (event) => {
+        if (typeof event.data === "string") {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === "session_id") {
+              sessionId = data.session_id;
+              appendLog(`<b>[세션 ID: ${sessionId}]</b>`);
+              return;
+            }
+          } catch {}
+          appendLog(`<b>AI:</b> ${event.data}`);
+        } else if (event.data instanceof ArrayBuffer) {
+          // 오디오(wav) 수신
+          const blob = new Blob([event.data], { type: "audio/wav" });
+          audioPlayer.src = URL.createObjectURL(blob);
+          audioPlayer.style.display = "";
+          audioPlayer.play();
+          appendLog(`<i>[오디오 재생]</i>`);
+        }
+      };
+      ws.onclose = () => appendLog("<b>[WebSocket 연결 종료]</b>");
+      ws.onerror = (e) => appendLog("<b>[WebSocket 오류]</b>");
+    }
+
+    function sendChat() {
+      const msg = userInput.value.trim();
+      if (!msg) return;
+      appendLog(`<b>나:</b> ${msg}`);
+      userInput.value = "";
+      // HTTP로 채팅 요청
+      const payload = {
+        actor: "web_user",
+        message: msg,
+        action: "chat"
+      };
+      if (sessionId) payload.session_id = sessionId;
+      fetch(HTTP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(res => {
+        if (!res.ok) {
+          appendLog(`<span style='color:red'>[HTTP 오류] 상태코드: ${res.status}</span>`);
+          console.error("HTTP 오류", res);
+        }
+        return res.json();
+      })
+      .then(data => {
+        if (data && data.id) sessionId = data.id;
+      })
+      .catch(err => {
+        appendLog(`<span style='color:red'>[HTTP 오류] ${err}</span>`);
+        console.error(err);
+      });
+    }
+
+    sendBtn.onclick = sendChat;
+    userInput.onkeydown = (e) => { if (e.key === "Enter") sendChat(); };
+
+    // 페이지 로드 시 WebSocket 연결
+    connectWebSocket();
+  </script>
+</body>
+</html> 
