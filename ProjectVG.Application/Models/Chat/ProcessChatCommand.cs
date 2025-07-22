@@ -6,9 +6,10 @@ namespace ProjectVG.Application.Models.Chat
     public class ProcessChatCommand
     {
         public string SessionId { get; set; } = string.Empty;
-        public string Actor { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
+        public Guid CharacterId { get; set; }
+        public DateTime RequestedAt { get; set; }
         public string? Action { get; set; }
-        public Guid? CharacterId { get; set; }
+        public string? Instruction { get; set; }
     }
 } 

@@ -22,16 +22,9 @@ namespace ProjectVG.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ProcessChat([FromBody] ChatRequestDto request)
+        public async Task<IActionResult> ProcessChat([FromBody] ChatRequest request)
         {
-            var command = new ProcessChatCommand
-            {
-                SessionId = request.SessionId,
-                Actor = request.Actor,
-                Message = request.Message,
-                Action = request.Action,
-                CharacterId = request.CharacterId
-            };
+            var command = request.ToProcessChatCommand();
 
             await _chatService.EnqueueChatRequestAsync(command);
 

@@ -42,7 +42,6 @@ namespace ProjectVG.Application.Services.Chat.Core
             return new ChatPreprocessContext {
                 SessionId = command.SessionId,
                 UserMessage = command.Message,
-                Actor = command.Actor,
                 Action = command.Action,
                 CharacterId = command.CharacterId,
                 MemoryContext = memoryContext,
