@@ -16,6 +16,7 @@ using ProjectVG.Infrastructure.ExternalApis.TextToSpeech;
 using ProjectVG.Application.Services.Chat.Extensions;
 using ProjectVG.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Cors;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,6 +82,13 @@ builder.Services.AddSingleton<ISessionRepository, InMemorySessionRepository>();
 // DI 확장 메서드 등록
 builder.Services.AddChatOrchestrationServices();
 
+// 개발용 CORS 정책 (모든 origin 허용)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+});
+
 var app = builder.Build();
 
 // 데이터베이스 마이그레이션 자동 적용
@@ -110,6 +118,9 @@ app.UseMiddleware<WebSocketMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// CORS 미들웨어 적용 (개발 환경에서만)
+app.UseCors("AllowAll");
 
 app.MapControllers();
 

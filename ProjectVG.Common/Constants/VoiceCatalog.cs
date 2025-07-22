@@ -16,42 +16,39 @@ namespace ProjectVG.Common.Constants
 
     public static class VoiceCatalog
     {
-        private static readonly Dictionary<string, VoiceProfile> _profiles = new()
-        {
-            ["Hyewon"] = new VoiceProfile
-            {
+        private static readonly Dictionary<string, VoiceProfile> _profiles = new() {
+            ["Hyewon"] = new VoiceProfile {
                 Name = "Hyewon",
                 VoiceId = "651d3de921570047a83b90",
                 DisplayName = "Hyewon",
                 SupportedLanguages = new[] { "ko" },
-                SupportedStyles = new[] { "Amused", "Angry", "Happay", "Sad", "Shy", "Neutral" },
+                SupportedStyles = new[] { "amused", "angry", "happay", "sad", "shy", "neutral" },
                 DefaultLanguage = "ko",
-                DefaultStyle = "Neutral",
+                DefaultStyle = "neutral",
                 Model = "sona_speech_1"
             },
-            ["Haru"] = new VoiceProfile
-            {
+            ["Haru"] = new VoiceProfile {
                 Name = "Haru",
                 VoiceId = "f4a2a3f41fc82de8616b84",
                 DisplayName = "Haru",
                 SupportedLanguages = new[] { "ko" },
-                SupportedStyles = new[] { "Angry", "Happay", "Sad", "Shy", "Surprised", "Neutral" },
+                SupportedStyles = new[] { "angry", "happay", "sad", "shy", "surprised", "neutral" },
                 DefaultLanguage = "ko",
-                DefaultStyle = "Neutral",
+                DefaultStyle = "neutral",
                 Model = "sona_speech_1"
             },
-            ["Miya"] = new VoiceProfile
-            {
+            ["Miya"] = new VoiceProfile {
                 Name = "Miya",
                 VoiceId = "ad965de9532e67f8c17d72",
                 DisplayName = "Miya",
                 SupportedLanguages = new[] { "ko" },
-                SupportedStyles = new[] { "Angry", "Happy", "Embarrassed", "Painful", "Sad", "Neutral" },
+                SupportedStyles = new[] { "angry", "happy", "embarrassed", "painful", "sad", "neutral" },
                 DefaultLanguage = "ko",
-                DefaultStyle = "Neutral",
+                DefaultStyle = "neutral",
                 Model = "sona_speech_1"
             }
         };
+
 
         public static VoiceProfile? GetProfile(string name)
             => _profiles.TryGetValue(name, out var profile) ? profile : null;

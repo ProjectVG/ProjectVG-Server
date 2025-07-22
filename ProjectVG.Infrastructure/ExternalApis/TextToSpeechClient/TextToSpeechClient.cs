@@ -20,11 +20,13 @@ namespace ProjectVG.Infrastructure.ExternalApis.TextToSpeech
         {
             try
             {
+                ValidateRequest(request);
                 // 기본 보이스 ID 사용 (설정에서 가져올 수 있음)
                 string voiceId = "f4a2a3f41fc82de8616b84";
-
+                
                 // request 메시지 생성
                 string json = JsonSerializer.Serialize(request);
+                _logger.LogInformation("[TextToSpeech][Request JSON] {Json}", json);
                 StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 // API 키 헤더 추가 (직접 환경변수에서 읽음)
@@ -79,6 +81,48 @@ namespace ProjectVG.Infrastructure.ExternalApis.TextToSpeech
                     Success = false,
                     ErrorMessage = ex.Message,
                 };
+            }
+        }
+
+        private void ValidateRequest(TextToSpeechRequest request)
+        {
+            // text: 필수, 1~300자
+            if (string.IsNullOrWhiteSpace(request.Text))
+                throw new ArgumentException("text 필드는 필수이며 비어 있을 수 없습니다.");
+            if (request.Text.Length > 300)
+                throw new ArgumentException("text 필드는 300자를 초과할 수 없습니다.");
+
+            // language: 필수, ko/en/ja
+            var allowedLanguages = new[] { "ko", "en", "ja" };
+            if (string.IsNullOrWhiteSpace(request.Language) || !allowedLanguages.Contains(request.Language))
+                throw new ArgumentException($"language 필드는 필수이며 {string.Join(", ", allowedLanguages)} 중 하나여야 합니다.");
+
+            // style: 존재 시 허용값(예시: neutral, happy, sad, angry 등. 실제 값은 API 문서/콘솔 참고)
+            if (!string.IsNullOrWhiteSpace(request.Style))
+            {
+                var allowedStyles = new[] { "neutral", "happy", "sad", "angry" }; // 필요시 확장
+                if (!allowedStyles.Contains(request.Style))
+                    throw new ArgumentException($"style 필드 값 '{request.Style}'는 허용되지 않습니다. 허용값: {string.Join(", ", allowedStyles)}");
+            }
+
+            // model: 존재 시 허용값(예시: sona_speech_1)
+            if (!string.IsNullOrWhiteSpace(request.Model))
+            {
+                var allowedModels = new[] { "sona_speech_1" }; // 필요시 확장
+                if (!allowedModels.Contains(request.Model))
+                    throw new ArgumentException($"model 필드 값 '{request.Model}'는 허용되지 않습니다. 허용값: {string.Join(", ", allowedModels)}");
+            }
+
+            // voice_settings: 존재 시 값 범위 체크
+            if (request.VoiceSettings != null)
+            {
+                if (request.VoiceSettings.PitchShift < -12 || request.VoiceSettings.PitchShift > 12)
+                    throw new ArgumentException("voice_settings.pitch_shift는 -12~12 범위여야 합니다.");
+                if (request.VoiceSettings.PitchVariance < 0.1f || request.VoiceSettings.PitchVariance > 2f)
+                    throw new ArgumentException("voice_settings.pitch_variance는 0.1~2 범위여야 합니다.");
+                // speed는 음수 불가, 0은 비정상, 일반적으로 0.5~2 정도 사용(문서엔 제한 없음)
+                if (request.VoiceSettings.Speed <= 0)
+                    throw new ArgumentException("voice_settings.speed는 0보다 커야 합니다.");
             }
         }
 

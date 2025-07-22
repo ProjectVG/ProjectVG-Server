@@ -28,7 +28,7 @@ namespace ProjectVG.Application.Services.Chat.Core
             var memoryContext = await _memoryContextPreprocessor.CollectMemoryContextAsync(command.Message);
             var conversationHistory = await _conversationHistoryPreprocessor.CollectConversationHistoryAsync(command.SessionId);
 
-            string voiceName = "Hyewon";
+            string voiceName = "Haru";
             var allowedEmotions = _instructionPreprocessor.GetAllowedEmotions(voiceName);
             var instructions = _instructionPreprocessor.GetInstructions(allowedEmotions);
 

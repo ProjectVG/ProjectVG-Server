@@ -104,6 +104,7 @@ namespace ProjectVG.Application.Services.Session
                     CancellationToken.None
                 );
 
+                _logger.LogInformation("오디오(wav) 전송 완료: {SessionId}, 바이트: {Length}", sessionId, audioData?.Length ?? 0);
                 _logger.LogDebug("오디오(wav) 전송 완료: {SessionId}", sessionId);
             }
             catch (Exception ex)
