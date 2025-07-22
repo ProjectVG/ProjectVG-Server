@@ -115,7 +115,7 @@ class ChatApp:
                 "action": "chat"
             }
             print("요청 전송 중...")
-            response = requests.post(f"{self.http_url}/api/chat", json=payload, timeout=30)
+            response = requests.post(f"{self.http_url}/api/v1/chat", json=payload, timeout=30)
             if response.status_code == 200:
                 result = response.json()
                 self.session_id = result.get("id", self.session_id)

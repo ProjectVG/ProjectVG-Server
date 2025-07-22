@@ -6,7 +6,7 @@ using ProjectVG.Application.Models.Character;
 namespace ProjectVG.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     public class CharacterController : ControllerBase
     {
         private readonly ICharacterService _characterService;

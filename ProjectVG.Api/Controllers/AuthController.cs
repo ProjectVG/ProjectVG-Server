@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 namespace ProjectVG.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly IUserService _userService;

@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace ProjectVG.Api.Controllers
 {
     [ApiController]
-    [Route("api/chat")]
+    [Route("api/v1/chat")]
     [AllowAnonymous]
     public class ChatController : ControllerBase
     {

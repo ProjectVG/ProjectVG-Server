@@ -22,8 +22,7 @@ namespace ProjectVG.Application.Middlewares
 
         public async Task InvokeAsync(HttpContext context)
         {
-            // WebSocket 경로 확인 (/ws 또는 루트 경로)
-            if (context.Request.Path == "/ws" || context.Request.Path == "/")
+            if (context.Request.Path == "/ws")
             {
                 if (!context.WebSockets.IsWebSocketRequest)
                 {
