@@ -34,8 +34,8 @@ namespace ProjectVG.Application.Services.Chat.Handlers
             var outputFormat = new ChatOutputFormat(context.AllowedEmotions);
             var parsed = outputFormat.Parse(llmResponse.Response);
 
-            _logger.LogInformation("채팅 응답 결과 - 응답: {Response}, 감정: {Emotion}, 요약: {Summary}, 토큰 사용량: {TokensUsed}", 
-                parsed.Response, parsed.Emotion, parsed.Summary, llmResponse.TokensUsed);
+            _logger.LogInformation("채팅 응답 결과 - 응답: {Response}, 감정: {Emotion}, 토큰 사용량: {TokensUsed}", 
+                parsed.Response, string.Join(",", parsed.Emotion), llmResponse.TokensUsed);
 
             double cost = 0;
             if (llmResponse.TokensUsed > 0)
@@ -47,7 +47,7 @@ namespace ProjectVG.Application.Services.Chat.Handlers
             {
                 Response = parsed.Response,
                 Emotion = parsed.Emotion,
-                Summary = parsed.Summary,
+                Text = parsed.Text,
                 TokensUsed = llmResponse.TokensUsed,
                 Cost = cost
             };

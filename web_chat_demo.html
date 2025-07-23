@@ -31,6 +31,28 @@
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
     const audioPlayer = document.getElementById('audio-player');
+    
+    // 오디오 재생 큐
+    const audioQueue = [];
+    let isPlayingAudio = false;
+
+    function playNextAudio() {
+      if (audioQueue.length === 0) {
+        isPlayingAudio = false;
+        audioPlayer.style.display = "none";
+        return;
+      }
+      const blob = audioQueue.shift();
+      audioPlayer.src = URL.createObjectURL(blob);
+      audioPlayer.style.display = "";
+      isPlayingAudio = true;
+      audioPlayer.play();
+      appendLog(`<i>[오디오 재생]</i>`);
+    }
+
+    audioPlayer.onended = () => {
+      playNextAudio();
+    };
 
     function appendLog(text) {
       chatLog.innerHTML += `<div>${text}</div>`;
@@ -55,10 +77,10 @@
         } else if (event.data instanceof ArrayBuffer) {
           // 오디오(wav) 수신
           const blob = new Blob([event.data], { type: "audio/wav" });
-          audioPlayer.src = URL.createObjectURL(blob);
-          audioPlayer.style.display = "";
-          audioPlayer.play();
-          appendLog(`<i>[오디오 재생]</i>`);
+          audioQueue.push(blob);
+          if (!isPlayingAudio) {
+            playNextAudio();
+          }
         }
       };
       ws.onclose = () => appendLog("<b>[WebSocket 연결 종료]</b>");

@@ -19,13 +19,20 @@ namespace ProjectVG.Application.Services.Chat.Handlers
         {
             try
             {
-                // 결과 전송 (텍스트)
-                await _sessionService.SendMessageAsync(context.SessionId, result.Response);
-
-                // 오디오(wav) 전송
-                if (result.AudioData != null && result.AudioData.Length > 0)
+                // 여러 텍스트/오디오 쌍을 순서대로 전송
+                for (int i = 0; i < result.Text.Count; i++)
                 {
-                    await _sessionService.SendAudioAsync(context.SessionId, result.AudioData, result.AudioContentType, result.AudioLength);
+                    await _sessionService.SendMessageAsync(context.SessionId, result.Text[i]);
+
+                    if (result.AudioDataList.Count > i && result.AudioDataList[i] != null && result.AudioDataList[i].Length > 0)
+                    {
+                        await _sessionService.SendAudioAsync(
+                            context.SessionId,
+                            result.AudioDataList[i],
+                            result.AudioContentTypeList.Count > i ? result.AudioContentTypeList[i] : null,
+                            result.AudioLengthList.Count > i ? result.AudioLengthList[i] : null
+                        );
+                    }
                 }
             }
             catch (Exception ex)
