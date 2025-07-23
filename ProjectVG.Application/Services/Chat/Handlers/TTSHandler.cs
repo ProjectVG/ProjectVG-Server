@@ -32,6 +32,11 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                         result.AudioData = ttsResult.AudioData;
                         result.AudioContentType = ttsResult.ContentType;
                         result.AudioLength = ttsResult.AudioLength;
+                        // 0.1초당 1Cost, 올림
+                        if (result.AudioLength.HasValue)
+                        {
+                            result.Cost += Math.Ceiling(result.AudioLength.Value / 0.1);
+                        }
                     }
                     else if (!ttsResult.Success)
                     {

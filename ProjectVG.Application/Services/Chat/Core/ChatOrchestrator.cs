@@ -53,15 +53,13 @@ namespace ProjectVG.Application.Services.Chat.Core
                 sw.Restart();
                 var processResult = await _llmHandler.ProcessLLMAsync(preContext);
                 sw.Stop();
-                var llmCost = processResult.TokensUsed * TOKEN_UNIT_COST;
-                metrics.Add(new StepMetrics { StepName = "LLM", TimeMs = sw.Elapsed.TotalMilliseconds, Cost = llmCost });
+                metrics.Add(new StepMetrics { StepName = "LLM", TimeMs = sw.Elapsed.TotalMilliseconds, Cost = processResult.Cost });
 
                 // TTS
                 sw.Restart();
                 await _ttsHandler.ApplyTTSAsync(preContext, processResult);
                 sw.Stop();
-                var ttsCost = (processResult.Response?.Length ?? 0) * TTS_UNIT_COST;
-                metrics.Add(new StepMetrics { StepName = "TTS", TimeMs = sw.Elapsed.TotalMilliseconds, Cost = ttsCost });
+                metrics.Add(new StepMetrics { StepName = "TTS", TimeMs = sw.Elapsed.TotalMilliseconds, Cost = processResult.Cost });
 
                 // Persist
                 sw.Restart();
@@ -80,11 +78,12 @@ namespace ProjectVG.Application.Services.Chat.Core
                 // 종합 결과 로그
                 var totalTime = metrics.Sum(m => m.TimeMs);
                 var totalCost = metrics.Sum(m => m.Cost);
+                var totalUsd = totalCost * 0.001;
 
                 _logger.LogInformation("=== Chat 처리 메트릭 ===");
                 foreach (var m in metrics)
-                    _logger.LogInformation("{Step}: {Time:F2}ms, Cost: ${Cost:F6}", m.StepName, m.TimeMs, m.Cost);
-                _logger.LogInformation("총 소요시간: {TotalTime:F2}ms, 총 비용: ${TotalCost:F6}", totalTime, totalCost);
+                    _logger.LogInformation("{Step}: {Time:F2}ms, Cost: {Cost:F2}", m.StepName, m.TimeMs, m.Cost);
+                _logger.LogInformation("총 소요시간: {TotalTime:F2}ms, 총 Cost: {TotalCost:F2}, (USD: ${TotalUsd:F6})", totalTime, totalCost, totalUsd);
 
                 // 기존 완료 로그
                 _logger.LogInformation("채팅 요청 처리 완료: 세션 {SessionId}, 소요시간: {ProcessingTime:F2}ms, 토큰: {TokensUsed}",

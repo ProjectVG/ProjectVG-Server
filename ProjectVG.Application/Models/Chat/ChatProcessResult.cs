@@ -6,6 +6,7 @@ namespace ProjectVG.Application.Models.Chat
         public string Emotion { get; set; } = string.Empty;
         public string Summary { get; set; } = string.Empty;
         public int TokensUsed { get; set; }
+        public double Cost { get; set; }
         public byte[]? AudioData { get; set; }
         public string? AudioContentType { get; set; }
         public float? AudioLength { get; set; }

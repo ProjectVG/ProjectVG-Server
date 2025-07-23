@@ -57,6 +57,6 @@ namespace ProjectVG.Infrastructure.ExternalApis.TextToSpeech.Models
         /// 음성 속도를 조절합니다. 값이 1보다 작으면 음성 속도가 느려지고, 값이 1보다 크면 음성 속도가 빨라집니다.
         /// </summary>
         [JsonPropertyName("speed")]
-        public float Speed { get; set; } = 1.2f;
+        public float Speed { get; set; } = 1.1f;
     }
 } 
