@@ -26,7 +26,8 @@ namespace ProjectVG.Application.Services.Chat.Core
         public async Task<ChatPreprocessContext> PreprocessAsync(ProcessChatCommand command)
         {
             // 기억
-            var memoryContext = await _memoryContextPreprocessor.CollectMemoryContextAsync(command.Message);
+            string owner = "MyDB";
+            var memoryContext = await _memoryContextPreprocessor.CollectMemoryContextAsync(owner, command.Message);
             
             // 대화 이력
             var conversationHistory = await _conversationHistoryPreprocessor.CollectConversationHistoryAsync(command.SessionId);
@@ -42,6 +43,7 @@ namespace ProjectVG.Application.Services.Chat.Core
             return new ChatPreprocessContext {
                 SessionId = command.SessionId,
                 UserMessage = command.Message,
+                UserMemory = owner,
                 Action = command.Action,
                 CharacterId = command.CharacterId,
                 MemoryContext = memoryContext,

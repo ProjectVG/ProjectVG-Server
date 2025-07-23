@@ -4,7 +4,9 @@ namespace ProjectVG.Application.Models.Chat
     {
         public string SessionId { get; set; } = string.Empty;
         public string UserMessage { get; set; } = string.Empty;
-        public string Actor { get; set; } = string.Empty;
+        public string User { get; set; } = string.Empty;
+
+        public string UserMemory { get; set; } = string.Empty;
         public string? Action { get; set; }
         public Guid? CharacterId { get; set; }
         public List<string> MemoryContext { get; set; } = new();

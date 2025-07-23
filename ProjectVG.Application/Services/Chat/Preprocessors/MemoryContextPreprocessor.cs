@@ -14,11 +14,11 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
             _logger = logger;
         }
 
-        public async Task<List<string>> CollectMemoryContextAsync(string userMessage)
+        public async Task<List<string>> CollectMemoryContextAsync(string collection, string userMessage)
         {
             try
             {
-                var searchResults = await _memoryClient.SearchAsync(userMessage, 3);
+                var searchResults = await _memoryClient.SearchAsync(collection, userMessage, 3);
                 return searchResults.Select(r => r.Text).ToList();
             }
             catch (Exception ex)

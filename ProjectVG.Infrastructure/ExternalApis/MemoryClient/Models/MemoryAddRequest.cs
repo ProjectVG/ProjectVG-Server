@@ -9,5 +9,11 @@ namespace ProjectVG.Infrastructure.ExternalApis.MemoryClient.Models
 
         [JsonPropertyName("metadata")]
         public Dictionary<string, string> Metadata { get; set; } = new();
+
+        [JsonPropertyName("timestamp")]
+        public string? Timestamp { get; set; }
+
+        [JsonPropertyName("collection")]
+        public string Collection { get; set; } = string.Empty;
     }
 } 

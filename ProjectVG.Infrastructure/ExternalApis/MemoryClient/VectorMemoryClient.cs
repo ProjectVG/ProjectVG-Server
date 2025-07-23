@@ -16,11 +16,13 @@ namespace ProjectVG.Infrastructure.ExternalApis.MemoryClient
             _logger = logger;
         }
 
-        public async Task<bool> AddMemoryAsync(string text, Dictionary<string, string>? metadata = null)
+        public async Task<bool> AddMemoryAsync(string collection, string text,  Dictionary<string, string>? metadata = null)
         {
             var request = new MemoryAddRequest {
                 Text = text,
-                Metadata = metadata ?? new Dictionary<string, string>()
+                Metadata = metadata ?? new Dictionary<string, string>(),
+                Timestamp = DateTime.UtcNow.ToString("o"),
+                Collection = collection
             };
 
             var json = JsonSerializer.Serialize(request);
@@ -41,11 +43,14 @@ namespace ProjectVG.Infrastructure.ExternalApis.MemoryClient
             }
         }
 
-        public async Task<List<MemorySearchResult>> SearchAsync(string query, int topK = 3)
+        public async Task<List<MemorySearchResult>> SearchAsync(string collection, string query, int topK = 3)
         {
             var request = new MemorySearchRequest {
                 Query = query,
-                TopK = topK
+                TopK = topK,
+                TimeWeight = 0.3f,
+                ReferenceTime = DateTime.UtcNow.ToString("o"),
+                Collection = collection
             };
 
             var json = JsonSerializer.Serialize(request);

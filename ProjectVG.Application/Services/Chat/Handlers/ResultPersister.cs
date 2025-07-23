@@ -28,8 +28,7 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                 await _conversationService.AddMessageAsync(context.SessionId, ChatRole.Assistant, result.Response);
 
                 // 메모리 클라이언트에 동록
-                await _memoryClient.AddMemoryAsync(context.UserMessage);
-                await _memoryClient.AddMemoryAsync(result.Response);
+                await _memoryClient.AddMemoryAsync(context.UserMemory, result.Summary);
             }
             catch (Exception ex)
             {
