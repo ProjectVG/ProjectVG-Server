@@ -3,6 +3,8 @@ using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Services.Chat.Core;
 using ProjectVG.Application.Services.Chat.Handlers;
 using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 
 namespace ProjectVG.Application.Services.Chat.Core
 {
@@ -34,8 +36,9 @@ namespace ProjectVG.Application.Services.Chat.Core
         public async Task ProcessChatRequestAsync(ProcessChatCommand command)
         {
             var metrics = new List<StepMetrics>();
-            const double TOKEN_UNIT_COST = 0.002 / 1000; // 1K 토큰당 $0.002
-            const double TTS_UNIT_COST = 0.00001;        // 1자당 $0.00001
+            var metricsDto = new ChatProcessMetricsDto();
+            var requestId = command.RequestId;
+            var timestamp = DateTime.UtcNow;
 
             var totalSw = Stopwatch.StartNew();
 
@@ -47,31 +50,42 @@ namespace ProjectVG.Application.Services.Chat.Core
                 var sw = Stopwatch.StartNew();
                 var preContext = await _preprocessor.PreprocessAsync(command);
                 sw.Stop();
-                metrics.Add(new StepMetrics { StepName = "Preprocess", TimeMs = sw.Elapsed.TotalMilliseconds, Cost = 0 });
+                metrics.Add(new StepMetrics { StepName = "[Preprocess]", TimeMs = sw.Elapsed.TotalMilliseconds, Cost = 0 });
+                metricsDto.PreprocessTimeMs = sw.Elapsed.TotalMilliseconds;
 
                 // LLM
                 sw.Restart();
                 var processResult = await _llmHandler.ProcessLLMAsync(preContext);
                 sw.Stop();
-                metrics.Add(new StepMetrics { StepName = "LLM", TimeMs = sw.Elapsed.TotalMilliseconds, Cost = processResult.Cost });
+                metrics.Add(new StepMetrics { StepName = "[LLM]", TimeMs = sw.Elapsed.TotalMilliseconds, Cost = processResult.Cost });
+                metricsDto.LLMTimeMs = sw.Elapsed.TotalMilliseconds;
+                metricsDto.LLMTokenUsed = processResult.TokensUsed;
+                metricsDto.LLMCost = processResult.Cost;
+                metricsDto.LLMResponse = processResult.Response;
 
                 // TTS
                 sw.Restart();
                 await _ttsHandler.ApplyTTSAsync(preContext, processResult);
                 sw.Stop();
-                metrics.Add(new StepMetrics { StepName = "TTS", TimeMs = sw.Elapsed.TotalMilliseconds, Cost = processResult.Cost });
+                metrics.Add(new StepMetrics { StepName = "[TTS]", TimeMs = sw.Elapsed.TotalMilliseconds, Cost = processResult.Cost });
+                metricsDto.TTSTimeMs = sw.Elapsed.TotalMilliseconds;
+                metricsDto.TTSEnabled = !string.IsNullOrWhiteSpace(preContext.VoiceName);
+                metricsDto.TTSAudioLength = processResult.AudioLength;
+                metricsDto.TTSCost = processResult.Cost - metricsDto.LLMCost;
 
                 // Persist
                 sw.Restart();
                 await _resultPersister.PersistResultAsync(preContext, processResult);
                 sw.Stop();
-                metrics.Add(new StepMetrics { StepName = "Persist", TimeMs = sw.Elapsed.TotalMilliseconds, Cost = 0 });
+                metrics.Add(new StepMetrics { StepName = "[Persist]", TimeMs = sw.Elapsed.TotalMilliseconds, Cost = 0 });
+                metricsDto.PersistTimeMs = sw.Elapsed.TotalMilliseconds;
 
                 // Send
                 sw.Restart();
                 await _resultSender.SendResultAsync(preContext, processResult);
                 sw.Stop();
-                metrics.Add(new StepMetrics { StepName = "Send", TimeMs = sw.Elapsed.TotalMilliseconds, Cost = 0 });
+                metrics.Add(new StepMetrics { StepName = "[Send]", TimeMs = sw.Elapsed.TotalMilliseconds, Cost = 0 });
+                metricsDto.SendTimeMs = sw.Elapsed.TotalMilliseconds;
 
                 totalSw.Stop();
 
@@ -79,7 +93,44 @@ namespace ProjectVG.Application.Services.Chat.Core
                 var totalTime = metrics.Sum(m => m.TimeMs);
                 var totalCost = metrics.Sum(m => m.Cost);
                 var totalUsd = totalCost * 0.001;
+                metricsDto.TotalTimeMs = totalTime;
+                metricsDto.TotalCost = totalCost;
+                metricsDto.Timestamp = timestamp;
+                metricsDto.RequestId = requestId;
+                metricsDto.SessionId = command.SessionId;
+                metricsDto.Message = command.Message;
+                metricsDto.UserId = preContext.User ?? string.Empty;
 
+                // CSV 기록
+                var csvFile = "chat_metrics.csv";
+                var csvHeader = "RequestId,Timestamp,UserId,SessionId,Message,LLMResponse,TTSEnabled,TTSAudioLength,LLMTokenUsed,LLMCost,TTSCost,TotalCost,PreprocessTimeMs,LLMTimeMs,TTSTimeMs,PersistTimeMs,SendTimeMs,TotalTimeMs";
+                if (!File.Exists(csvFile))
+                {
+                    File.AppendAllText(csvFile, csvHeader + "\n");
+                }
+                var csvLine = string.Join(",",
+                    metricsDto.RequestId,
+                    metricsDto.Timestamp.ToString("o", CultureInfo.InvariantCulture),
+                    metricsDto.UserId,
+                    metricsDto.SessionId,
+                    metricsDto.Message.Replace("\n", " ").Replace(",", ";"),
+                    metricsDto.LLMResponse.Replace("\n", " ").Replace(",", ";"),
+                    metricsDto.TTSEnabled,
+                    metricsDto.TTSAudioLength,
+                    metricsDto.LLMTokenUsed,
+                    metricsDto.LLMCost,
+                    metricsDto.TTSCost,
+                    metricsDto.TotalCost,
+                    metricsDto.PreprocessTimeMs,
+                    metricsDto.LLMTimeMs,
+                    metricsDto.TTSTimeMs,
+                    metricsDto.PersistTimeMs,
+                    metricsDto.SendTimeMs,
+                    metricsDto.TotalTimeMs
+                );
+                File.AppendAllText(csvFile, csvLine + "\n");
+
+                // 기존 로그
                 _logger.LogInformation("=== Chat 처리 메트릭 ===");
                 foreach (var m in metrics)
                     _logger.LogInformation("{Step}: {Time:F2}ms, Cost: {Cost:F2}", m.StepName, m.TimeMs, m.Cost);
