@@ -28,7 +28,13 @@ namespace ProjectVG.Common.Constants
                 SupportedStyles = new[] { "amused", "angry", "happy", "sad", "shy", "neutral" },
                 DefaultLanguage = "ko",
                 DefaultStyle = "neutral",
-                Model = "sona_speech_1"
+                Model = "sona_speech_1",
+                EmotionMap = new Dictionary<string, string> {
+                    ["embarrassed"] = "neutral",
+                    ["painful"] = "neutral",
+                    ["sleepy"] = "neutral",
+                    ["surprised"] = "neutral"
+                }
             },
             ["haru"] = new VoiceProfile {
                 Name = "Haru",
@@ -40,10 +46,11 @@ namespace ProjectVG.Common.Constants
                 DefaultStyle = "neutral",
                 Model = "sona_speech_1",
                 EmotionMap = new Dictionary<string, string> {
-                    // 예시: amused → surprised로 매핑
                     ["amused"] = "neutral",
                     ["embarrassed"] = "shy",
                     ["sleepy"] = "neutral",
+                    ["disgusted"] = "neutral",
+                    ["painful"] = "neutral"
                 }
             },
             ["miya"] = new VoiceProfile {
@@ -57,7 +64,10 @@ namespace ProjectVG.Common.Constants
                 Model = "sona_speech_1",
                 EmotionMap = new Dictionary<string, string> {
                     ["amused"] = "happy",
-                    ["surprised"] = "happy"
+                    ["surprised"] = "happy",
+                    ["shy"] = "neutral",
+                    ["disgusted"] = "neutral",
+                    ["sleepy"] = "neutral"
                 }
             },
             ["sophia"] = new VoiceProfile {
@@ -68,8 +78,28 @@ namespace ProjectVG.Common.Constants
                 SupportedStyles = new[] { "sleepy", "happy", "curios", "admiring", "sad", "neutral" },
                 EmotionMap = new Dictionary<string, string> {
                     ["amused"] = "happy",
-                    ["angry"] = "sad",
-                    ["surprised"] = "happy"
+                    ["angry"] = "neutral",
+                    ["surprised"] = "happy",
+                    ["shy"] = "neutral",
+                    ["embarrassed"] = "neutral",
+                    ["painful"] = "neutral",
+                    ["disgusted"] = "neutral"
+                }
+            },
+            ["amantha"] = new VoiceProfile {
+                Name = "Amantha",
+                VoiceId = "451e6fa92768affdcced52",
+                DisplayName = "Amantha",
+                SupportedLanguages = new[] { "ko" },
+                SupportedStyles = new[] { "angry", "disgusted", "happy", "sad", "surprised", "neutral" },
+                DefaultLanguage = "ko",
+                DefaultStyle = "neutral",
+                Model = "sona_speech_1",
+                EmotionMap = new Dictionary<string, string> {
+                    ["shy"] = "neutral",
+                    ["embarrassed"] = "neutral",
+                    ["painful"] = "neutral",
+                    ["sleepy"] = "neutral"
                 }
             }
         };

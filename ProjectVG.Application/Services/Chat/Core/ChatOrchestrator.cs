@@ -42,7 +42,7 @@ namespace ProjectVG.Application.Services.Chat.Core
 
             var totalSw = Stopwatch.StartNew();
 
-            command.UserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+            command.UserId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
             try
             {
