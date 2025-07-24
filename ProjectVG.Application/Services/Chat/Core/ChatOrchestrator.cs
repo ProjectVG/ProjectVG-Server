@@ -42,6 +42,8 @@ namespace ProjectVG.Application.Services.Chat.Core
 
             var totalSw = Stopwatch.StartNew();
 
+            command.UserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
             try
             {
                 _logger.LogInformation("채팅 요청 처리 시작: 세션 {SessionId}, 메시지: {Message}", command.SessionId, command.Message);
@@ -99,7 +101,7 @@ namespace ProjectVG.Application.Services.Chat.Core
                 metricsDto.RequestId = requestId;
                 metricsDto.SessionId = command.SessionId;
                 metricsDto.Message = command.Message;
-                metricsDto.UserId = preContext.User ?? string.Empty;
+                metricsDto.UserId = command.UserId.ToString();
 
                 // CSV 기록
                 var csvFile = "chat_metrics.csv";

@@ -9,7 +9,6 @@ namespace ProjectVG.Infrastructure.Repositories.SqlServer
     {
         private readonly ProjectVGDbContext _context;
         private readonly ILogger<SqlServerConversationRepository> _logger;
-        private const int MAX_CONVERSATION_MESSAGES = 50;
 
         public SqlServerConversationRepository(ProjectVGDbContext context, ILogger<SqlServerConversationRepository> logger)
         {
@@ -17,16 +16,16 @@ namespace ProjectVG.Infrastructure.Repositories.SqlServer
             _logger = logger;
         }
 
-        public async Task<IEnumerable<ConversationHistory>> GetBySessionIdAsync(string sessionId, int count = 10)
+        public async Task<IEnumerable<ConversationHistory>> GetByUserIdAsync(Guid userId, Guid characterId, int count = 10)
         {
             var messages = await _context.ConversationHistories
-                .Where(ch => ch.SessionId == sessionId && !ch.IsDeleted)
+                .Where(ch => ch.UserId == userId && ch.CharacterId == characterId && !ch.IsDeleted)
                 .OrderByDescending(ch => ch.Timestamp)
                 .Take(count)
                 .OrderBy(ch => ch.Timestamp)
                 .ToListAsync();
 
-            _logger.LogDebug("세션 {SessionId}에서 메시지 {Count}개를 조회했습니다", sessionId, messages.Count);
+            _logger.LogDebug("유저 {UserId}, 캐릭터 {CharacterId}에서 메시지 {Count}개를 조회했습니다", userId, characterId, messages.Count);
             return messages;
         }
 
@@ -40,34 +39,18 @@ namespace ProjectVG.Infrastructure.Repositories.SqlServer
 
             _context.ConversationHistories.Add(message);
 
-            // 최대 메시지 수 제한을 위해 오래된 메시지 삭제
-            var sessionMessages = await _context.ConversationHistories
-                .Where(ch => ch.SessionId == message.SessionId && !ch.IsDeleted)
-                .OrderByDescending(ch => ch.Timestamp)
-                .Skip(MAX_CONVERSATION_MESSAGES)
-                .ToListAsync();
-
-            if (sessionMessages.Any())
-            {
-                foreach (var oldMessage in sessionMessages)
-                {
-                    oldMessage.IsDeleted = true;
-                    oldMessage.Update();
-                }
-            }
-
             await _context.SaveChangesAsync();
 
-            _logger.LogDebug("세션 {SessionId}에 메시지를 추가했습니다. 메시지 ID: {MessageId}", 
-                message.SessionId, message.Id);
+            _logger.LogDebug("유저 {UserId}, 캐릭터 {CharacterId}에 메시지를 추가했습니다. 메시지 ID: {MessageId}", 
+                message.UserId, message.CharacterId, message.Id);
 
             return message;
         }
 
-        public async Task ClearSessionAsync(string sessionId)
+        public async Task ClearSessionAsync(Guid userId, Guid characterId)
         {
             var messages = await _context.ConversationHistories
-                .Where(ch => ch.SessionId == sessionId && !ch.IsDeleted)
+                .Where(ch => ch.UserId == userId && ch.CharacterId == characterId && !ch.IsDeleted)
                 .ToListAsync();
 
             foreach (var message in messages)
@@ -77,13 +60,13 @@ namespace ProjectVG.Infrastructure.Repositories.SqlServer
             }
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation("대화 세션을 삭제했습니다: {SessionId}", sessionId);
+            _logger.LogInformation("대화 세션을 삭제했습니다: {UserId}:{CharacterId}", userId, characterId);
         }
 
-        public async Task<int> GetMessageCountAsync(string sessionId)
+        public async Task<int> GetMessageCountAsync(Guid userId, Guid characterId)
         {
             var count = await _context.ConversationHistories
-                .CountAsync(ch => ch.SessionId == sessionId && !ch.IsDeleted);
+                .CountAsync(ch => ch.UserId == userId && ch.CharacterId == characterId && !ch.IsDeleted);
 
             return count;
         }

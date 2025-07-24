@@ -1,6 +1,9 @@
-using ProjectVG.Application.Models.Chat;
 using Microsoft.Extensions.Logging;
+using ProjectVG.Application.Models.Character;
+using ProjectVG.Application.Models.Chat;
+using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.Chat.Preprocessors;
+using ProjectVG.Domain.Entities.User;
 
 namespace ProjectVG.Application.Services.Chat.Core
 {
@@ -8,50 +11,59 @@ namespace ProjectVG.Application.Services.Chat.Core
     {
         private readonly MemoryContextPreprocessor _memoryContextPreprocessor;
         private readonly ConversationHistoryPreprocessor _conversationHistoryPreprocessor;
-        private readonly InstructionPreprocessor _instructionPreprocessor;
+        private readonly ICharacterService _characterService;
+        private readonly SystemPromptGenerator _systemPromptGenerator;
+        private readonly InstructionGenerator _instructionGenerator;
         private readonly ILogger<ChatPreprocessor> _logger;
 
         public ChatPreprocessor(
             MemoryContextPreprocessor memoryContextPreprocessor,
             ConversationHistoryPreprocessor conversationHistoryPreprocessor,
-            InstructionPreprocessor instructionPreprocessor,
+            ICharacterService characterService,
+            SystemPromptGenerator systemPromptGenerator,
+            InstructionGenerator instructionGenerator,
             ILogger<ChatPreprocessor> logger)
         {
             _memoryContextPreprocessor = memoryContextPreprocessor;
             _conversationHistoryPreprocessor = conversationHistoryPreprocessor;
-            _instructionPreprocessor = instructionPreprocessor;
+            _characterService = characterService;
+            _systemPromptGenerator = systemPromptGenerator;
+            _instructionGenerator = instructionGenerator;
             _logger = logger;
         }
 
         public async Task<ChatPreprocessContext> PreprocessAsync(ProcessChatCommand command)
         {
             // 기억
-            string owner = "MyDB";
-            var memoryContext = await _memoryContextPreprocessor.CollectMemoryContextAsync(owner, command.Message);
+            var memoryContext = await _memoryContextPreprocessor
+                .CollectMemoryContextAsync(command.UserId.ToString(), command.Message);
             
             // 대화 이력
-            var conversationHistory = await _conversationHistoryPreprocessor.CollectConversationHistoryAsync(command.SessionId);
+            var conversationHistory = await _conversationHistoryPreprocessor
+                .CollectConversationHistoryAsync(command.UserId, command.CharacterId);
 
             // todo : 지정된 캐릭터 설정 불러오기
-            string voiceName = "Haru";
 
-            // todo : 지시사항 설정
-            var allowedEmotions = _instructionPreprocessor.GetAllowedEmotions(voiceName);
-            var instructions = _instructionPreprocessor.GetInstructions(allowedEmotions);
+            CharacterDto? characterDto = await _characterService.GetCharacterByIdAsync(command.CharacterId);
+
+            // 프롬포트 설정
+            var systemMessage = _systemPromptGenerator.Generate(characterDto);
+            var instructions = _instructionGenerator.Generate();
+
 
             // todo : 시스템 프롬포트 작성 (캐릭터 설정에 맞게 작성)
             return new ChatPreprocessContext {
                 SessionId = command.SessionId,
-                UserMessage = command.Message,
-                UserMemory = owner,
-                Action = command.Action,
+                UserId = command.UserId,
                 CharacterId = command.CharacterId,
+                SystemMessage = systemMessage,
+                Instructions = instructions,
+                UserMessage = command.Message,
+                MemoryStore = command.UserId.ToString(),
+                Action = command.Action,
                 MemoryContext = memoryContext,
                 ConversationHistory = conversationHistory,
-                SystemMessage = ProjectVG.Common.Constants.LLMSettings.Chat.SystemPrompt,
-                Instructions = instructions,
-                VoiceName = voiceName,
-                AllowedEmotions = allowedEmotions
+                VoiceName = characterDto.VoiceId,
             };
         }
     }

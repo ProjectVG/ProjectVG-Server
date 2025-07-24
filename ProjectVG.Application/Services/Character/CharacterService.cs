@@ -8,9 +8,9 @@ namespace ProjectVG.Application.Services.Character
     public class CharacterService : ICharacterService
     {
         private readonly ICharacterRepository _characterRepository;
-        private readonly ILogger<CharacterService> _logger;
+        private readonly ILogger<ICharacterService> _logger;
 
-        public CharacterService(ICharacterRepository characterRepository, ILogger<CharacterService> logger)
+        public CharacterService(ICharacterRepository characterRepository, ILogger<ICharacterService> logger)
         {
             _characterRepository = characterRepository;
             _logger = logger;

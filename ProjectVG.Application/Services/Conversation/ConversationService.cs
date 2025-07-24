@@ -16,72 +16,73 @@ namespace ProjectVG.Application.Services.Conversation
             _logger = logger;
         }
 
-        public async Task<ConversationHistory> AddMessageAsync(string sessionId, ChatRole role, string content)
+        public async Task<ConversationHistory> AddMessageAsync(Guid userId, Guid chracterId, ChatRole role, string content)
         {
             try
             {
                 var message = new ConversationHistory
                 {
-                    SessionId = sessionId,
+                    UserId = userId,
+                    CharacterId = chracterId,
                     Role = role,
                     Content = content,
                     CreatedAt = DateTime.UtcNow
                 };
 
                 var addedMessage = await _conversationRepository.AddAsync(message);
-                _logger.LogDebug("대화 메시지 추가 완료: 세션 {SessionId}, 역할 {Role}", sessionId, role);
+                _logger.LogDebug("대화 메시지 추가 완료: 유저 {userId}, 역할 {Role}", userId, role);
                 
                 return addedMessage;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "대화 메시지 추가 중 오류 발생: 세션 {SessionId}", sessionId);
+                _logger.LogError(ex, "대화 메시지 추가 중 오류 발생: 유저 {userId}", userId);
                 throw;
             }
         }
 
-        public async Task<IEnumerable<ConversationHistory>> GetConversationHistoryAsync(string sessionId, int count = 10)
+        public async Task<IEnumerable<ConversationHistory>> GetConversationHistoryAsync(Guid userId, Guid chracterId, int count = 10)
         {
             try
             {
-                var history = await _conversationRepository.GetBySessionIdAsync(sessionId, count);
-                _logger.LogDebug("대화 기록 조회 완료: 세션 {SessionId}, {Count}개 메시지", sessionId, history.Count());
+                var history = await _conversationRepository.GetByUserIdAsync(userId, chracterId, count);
+                _logger.LogDebug("대화 기록 조회 완료: 유저 {userId}, {Count}개 메시지", userId, history.Count());
                 
                 return history;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "대화 기록 조회 중 오류 발생: 세션 {SessionId}", sessionId);
+                _logger.LogError(ex, "대화 기록 조회 중 오류 발생: 유저 {userId}", userId);
                 throw;
             }
         }
 
-        public async Task ClearConversationAsync(string sessionId)
+        public async Task ClearConversationAsync(Guid userId, Guid chracterId)
         {
             try
             {
-                await _conversationRepository.ClearSessionAsync(sessionId);
-                _logger.LogInformation("대화 기록 삭제 완료: 세션 {SessionId}", sessionId);
+                await _conversationRepository.ClearSessionAsync(userId, chracterId);
+                _logger.LogInformation("대화 기록 삭제 완료: 유저 {userId}", userId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "대화 기록 삭제 중 오류 발생: 세션 {SessionId}", sessionId);
+                _logger.LogError(ex, "대화 기록 삭제 중 오류 발생: 유저 {userId}", userId.ToString());
                 throw;
             }
         }
 
-        public async Task<int> GetMessageCountAsync(string sessionId)
+        public async Task<int> GetMessageCountAsync(Guid userId, Guid chracterId)
         {
             try
             {
-                var count = await _conversationRepository.GetMessageCountAsync(sessionId);
-                _logger.LogDebug("메시지 수 조회 완료: 세션 {SessionId}, {Count}개", sessionId, count);
+                var count = await _conversationRepository.GetMessageCountAsync(userId, chracterId);
+                _logger.LogDebug("메시지 수 조회 완료: 유저 {userId}, {Count}개", userId, count);
                 
                 return count;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "메시지 수 조회 중 오류 발생: 세션 {SessionId}", sessionId);
+                _logger.LogError(ex, "메시지 수 조회 중 오류 발생: 유저 {userId}", userId.ToString());
                 throw;
             }
         }

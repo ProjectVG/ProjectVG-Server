@@ -14,16 +14,16 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
             _logger = logger;
         }
 
-        public async Task<List<string>> CollectConversationHistoryAsync(string sessionId)
+        public async Task<List<string>> CollectConversationHistoryAsync(Guid userId, Guid chracterId)
         {
             try
             {
-                var history = await _conversationService.GetConversationHistoryAsync(sessionId, 10);
+                var history = await _conversationService.GetConversationHistoryAsync(userId, chracterId, 10);
                 return history.Select(h => $"{h.Role}: {h.Content}").ToList();
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "대화 기록 수집 실패: 세션 {SessionId}", sessionId);
+                _logger.LogWarning(ex, "대화 기록 수집 실패: 유저 {userId}", userId);
                 return new List<string>();
             }
         }

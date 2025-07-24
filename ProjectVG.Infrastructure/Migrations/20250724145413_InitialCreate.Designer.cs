@@ -12,7 +12,7 @@ using ProjectVG.Infrastructure.Data;
 namespace ProjectVG.Infrastructure.Migrations
 {
     [DbContext(typeof(ProjectVGDbContext))]
-    [Migration("20250719090856_InitialCreate")]
+    [Migration("20250724145413_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -66,8 +66,16 @@ namespace ProjectVG.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("SpeechStyle")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("VoiceId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -77,15 +85,47 @@ namespace ProjectVG.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
-                            Background = "test background",
-                            CreatedAt = new DateTime(2025, 7, 19, 9, 8, 55, 979, DateTimeKind.Utc).AddTicks(2228),
-                            Description = "test description",
+                            Background = "",
+                            CreatedAt = new DateTime(2025, 7, 24, 14, 54, 13, 93, DateTimeKind.Utc).AddTicks(3060),
+                            Description = "20대 대학생 여사친 느낌의 귀엽고 발랄한 AI 캐릭터",
                             IsActive = true,
-                            Metadata = "{\"test\":\"test\"}",
-                            Name = "Test Character",
-                            Personality = "test personality",
-                            Role = "test role",
-                            UpdatedAt = new DateTime(2025, 7, 19, 9, 8, 55, 979, DateTimeKind.Utc).AddTicks(2228)
+                            Metadata = "{}",
+                            Name = "하루",
+                            Personality = "장난기 많고 친근하며 감정 표현이 풍부함",
+                            Role = "여사친 또는 여친 같은 존재",
+                            SpeechStyle = "",
+                            UpdatedAt = new DateTime(2025, 7, 24, 14, 54, 13, 93, DateTimeKind.Utc).AddTicks(3060),
+                            VoiceId = "haru"
+                        },
+                        new
+                        {
+                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                            Background = "",
+                            CreatedAt = new DateTime(2025, 7, 24, 14, 54, 13, 93, DateTimeKind.Utc).AddTicks(3063),
+                            Description = "게임 속 조력자 같은 꼬마 마법사 느낌의 AI 캐릭터",
+                            IsActive = true,
+                            Metadata = "{}",
+                            Name = "미야",
+                            Personality = "조금 새침하고 똑똑하며, 호기심이 많고 귀여움",
+                            Role = "어린 조력자",
+                            SpeechStyle = "",
+                            UpdatedAt = new DateTime(2025, 7, 24, 14, 54, 13, 93, DateTimeKind.Utc).AddTicks(3063),
+                            VoiceId = "miya"
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
+                            Background = "",
+                            CreatedAt = new DateTime(2025, 7, 24, 14, 54, 13, 93, DateTimeKind.Utc).AddTicks(3065),
+                            Description = "조용하고 나긋나긋한 말투의 메이드 느낌 AI 캐릭터",
+                            IsActive = true,
+                            Metadata = "{}",
+                            Name = "소피아",
+                            Personality = "차분하고 배려심 깊으며 살짝 순종적",
+                            Role = "헌신적인 메이드",
+                            SpeechStyle = "",
+                            UpdatedAt = new DateTime(2025, 7, 24, 14, 54, 13, 93, DateTimeKind.Utc).AddTicks(3065),
+                            VoiceId = "sophia"
                         });
                 });
 
@@ -95,7 +135,7 @@ namespace ProjectVG.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("CharacterId")
+                    b.Property<Guid>("CharacterId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Content")
@@ -117,29 +157,24 @@ namespace ProjectVG.Infrastructure.Migrations
                     b.Property<int>("Role")
                         .HasColumnType("int");
 
-                    b.Property<string>("SessionId")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid?>("UserId")
+                    b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CharacterId");
 
-                    b.HasIndex("SessionId");
-
                     b.HasIndex("Timestamp");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "CharacterId", "Timestamp");
 
                     b.ToTable("ConversationHistories");
                 });
@@ -197,13 +232,13 @@ namespace ProjectVG.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-                            CreatedAt = new DateTime(2025, 7, 19, 9, 8, 55, 979, DateTimeKind.Utc).AddTicks(2234),
+                            CreatedAt = new DateTime(2025, 7, 24, 14, 54, 13, 93, DateTimeKind.Utc).AddTicks(3082),
                             Email = "test@test.com",
                             IsActive = true,
                             Name = "Test User",
                             Provider = "test",
                             ProviderId = "test",
-                            UpdatedAt = new DateTime(2025, 7, 19, 9, 8, 55, 979, DateTimeKind.Utc).AddTicks(2235),
+                            UpdatedAt = new DateTime(2025, 7, 24, 14, 54, 13, 93, DateTimeKind.Utc).AddTicks(3082),
                             Username = "testuser"
                         });
                 });
@@ -213,12 +248,14 @@ namespace ProjectVG.Infrastructure.Migrations
                     b.HasOne("ProjectVG.Domain.Entities.Character.Character", null)
                         .WithMany()
                         .HasForeignKey("CharacterId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("ProjectVG.Domain.Entities.User.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

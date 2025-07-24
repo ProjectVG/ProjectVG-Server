@@ -13,6 +13,8 @@ namespace ProjectVG.Common.Constants
         public string DefaultLanguage { get; set; } = "ko";
         public string DefaultStyle { get; set; } = "neutral";
         public string Model { get; set; } = "sona_speech_1";
+        // 고정 감정 → 실제 보이스 감정 매핑
+        public Dictionary<string, string> EmotionMap { get; set; } = new();
     }
 
     public static class VoiceCatalog
@@ -36,7 +38,13 @@ namespace ProjectVG.Common.Constants
                 SupportedStyles = new[] { "angry", "happy", "sad", "shy", "surprised", "neutral" },
                 DefaultLanguage = "ko",
                 DefaultStyle = "neutral",
-                Model = "sona_speech_1"
+                Model = "sona_speech_1",
+                EmotionMap = new Dictionary<string, string> {
+                    // 예시: amused → surprised로 매핑
+                    ["amused"] = "neutral",
+                    ["embarrassed"] = "shy",
+                    ["sleepy"] = "neutral",
+                }
             },
             ["miya"] = new VoiceProfile {
                 Name = "Miya",
@@ -46,7 +54,11 @@ namespace ProjectVG.Common.Constants
                 SupportedStyles = new[] { "angry", "happy", "embarrassed", "painful", "sad", "neutral" },
                 DefaultLanguage = "ko",
                 DefaultStyle = "neutral",
-                Model = "sona_speech_1"
+                Model = "sona_speech_1",
+                EmotionMap = new Dictionary<string, string> {
+                    ["amused"] = "happy",
+                    ["surprised"] = "happy"
+                }
             },
             ["sophia"] = new VoiceProfile {
                 Name = "Sophia",
@@ -54,6 +66,11 @@ namespace ProjectVG.Common.Constants
                 DisplayName = "Sophia",
                 SupportedLanguages = new[] { "ko" },
                 SupportedStyles = new[] { "sleepy", "happy", "curios", "admiring", "sad", "neutral" },
+                EmotionMap = new Dictionary<string, string> {
+                    ["amused"] = "happy",
+                    ["angry"] = "sad",
+                    ["surprised"] = "happy"
+                }
             }
         };
 

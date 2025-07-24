@@ -16,6 +16,7 @@ namespace ProjectVG.Application.Services.Voice
             string voiceName,
             string text,
             string? emotion = null,
+            string? language = null,
             VoiceSettings? voiceSettings = null);
     }
 } 

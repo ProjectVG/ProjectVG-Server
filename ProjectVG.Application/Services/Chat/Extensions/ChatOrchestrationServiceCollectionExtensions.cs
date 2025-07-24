@@ -17,7 +17,8 @@ namespace ProjectVG.Application.Services.Chat.Extensions
             services.AddScoped<ResultPersister>();
             services.AddScoped<MemoryContextPreprocessor>();
             services.AddScoped<ConversationHistoryPreprocessor>();
-            services.AddScoped<InstructionPreprocessor>();
+            services.AddScoped<SystemPromptGenerator>();
+            services.AddScoped<InstructionGenerator>();
             return services;
         }
     }

@@ -13,6 +13,8 @@ namespace ProjectVG.Application.Models.Chat
         }
         public string SessionId { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
+
+        public Guid UserId { get; set; }
         public Guid CharacterId { get; set; }
         public DateTime RequestedAt { get; set; }
         public string? Action { get; set; }

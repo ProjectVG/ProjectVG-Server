@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ProjectVG.Domain.Entities.Character;
 using ProjectVG.Domain.Entities.ConversationHistory;
 using ProjectVG.Domain.Entities.User;
+using ProjectVG.Common.Constants;
 
 namespace ProjectVG.Infrastructure.Data
 {
@@ -59,23 +60,24 @@ namespace ProjectVG.Infrastructure.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).ValueGeneratedOnAdd();
-                entity.Property(e => e.SessionId).IsRequired().HasMaxLength(255);
                 entity.Property(e => e.Content).IsRequired().HasMaxLength(4000);
                 entity.Property(e => e.MetadataJson).HasMaxLength(4000);
-                
-                // 외래키 관계 설정 (Navigation Properties 없이)
+
+                // 외래키 관계 설정 (UserId, CharacterId는 필수)
                 entity.HasOne<User>()
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
                 entity.HasOne<Character>()
                     .WithMany()
                     .HasForeignKey(e => e.CharacterId)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                // 인덱스 설정
-                entity.HasIndex(e => e.SessionId);
+                // 복합 인덱스: UserId + CharacterId + Timestamp
+                entity.HasIndex(e => new { e.UserId, e.CharacterId, e.Timestamp });
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.CharacterId);
                 entity.HasIndex(e => e.Timestamp);
@@ -87,41 +89,33 @@ namespace ProjectVG.Infrastructure.Data
 
         private void SeedData(ModelBuilder modelBuilder)
         {
-            var defaultCharacters = new List<Character>
+            var defaultCharacters = AppConstants.DefaultCharacterPool.Select(p => new Character
             {
-                new Character
-                {
-                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
-                    Name = "Test Character",
-                    Description = "test description",
-                    Role = "test role",
-                    Personality = "test personality",
-                    Background = "test background",
-                    IsActive = true,
-                    Metadata = new Dictionary<string, string>
-                    {
-                        { "test", "test" }
-                    },
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                }
-            };
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Role = p.Role,
+                Personality = p.Personality,
+                Background = "",
+                IsActive = p.IsActive,
+                Metadata = new Dictionary<string, string>(),
+                VoiceId = p.VoiceId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            }).ToList();
 
-            var defaultUsers = new List<User>
+            var defaultUsers = AppConstants.DefaultUserPool.Select(p => new User
             {
-                new User
-                {
-                    Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-                    Username = "testuser",
-                    Name = "Test User",
-                    Email = "test@test.com",
-                    Provider = "test",
-                    ProviderId = "test",
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                }
-            };
+                Id = p.Id,
+                Username = p.Username,
+                Name = p.Name,
+                Email = p.Email,
+                Provider = p.Provider,
+                ProviderId = p.ProviderId,
+                IsActive = p.IsActive,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            }).ToList();
 
             modelBuilder.Entity<Character>().HasData(defaultCharacters);
             modelBuilder.Entity<User>().HasData(defaultUsers);

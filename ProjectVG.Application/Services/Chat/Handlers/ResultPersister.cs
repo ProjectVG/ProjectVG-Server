@@ -23,12 +23,12 @@ namespace ProjectVG.Application.Services.Chat.Handlers
         {
             try
             {
-                // 대화 기록
-                await _conversationService.AddMessageAsync(context.SessionId, ChatRole.User, context.UserMessage);
-                await _conversationService.AddMessageAsync(context.SessionId, ChatRole.Assistant, result.Response);
+                // 대화 기록 저장
+                await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.User, context.UserMessage);
+                await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.Assistant, result.Response);
 
                 // 메모리 클라이언트에 동록
-                await _memoryClient.AddMemoryAsync(context.UserMemory, result.Response);
+                await _memoryClient.AddMemoryAsync(context.MemoryStore, result.Response);
             }
             catch (Exception ex)
             {

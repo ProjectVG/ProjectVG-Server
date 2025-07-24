@@ -31,8 +31,7 @@ namespace ProjectVG.Application.Services.Chat.Handlers
 
             _logger.LogInformation("LLM 원본 응답: {RawResponse}", llmResponse.Response);
 
-            var outputFormat = new ChatOutputFormat(context.AllowedEmotions);
-            var parsed = outputFormat.Parse(llmResponse.Response);
+            var parsed = ChatOutputFormat.Parse(llmResponse.Response, context.VoiceName);
 
             _logger.LogInformation("채팅 응답 결과 - 응답: {Response}, 감정: {Emotion}, 토큰 사용량: {TokensUsed}", 
                 parsed.Response, string.Join(",", parsed.Emotion), llmResponse.TokensUsed);

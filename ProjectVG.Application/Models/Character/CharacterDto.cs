@@ -12,6 +12,9 @@ namespace ProjectVG.Application.Models.Character
         public string Description { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
+        public string Personality { get; set; } = string.Empty;
+        public string SpeechStyle { get; set; } = string.Empty;
+        public string VoiceId { get; set; } = string.Empty;
 
         /// <summary>
         /// 기본 생성자
@@ -31,6 +34,9 @@ namespace ProjectVG.Application.Models.Character
             Description = character.Description;
             Role = character.Role;            
             IsActive = character.IsActive;
+            Personality = character.Personality;
+            SpeechStyle = character.SpeechStyle;
+            VoiceId = character.VoiceId;
         }
 
         /// <summary>
@@ -45,7 +51,10 @@ namespace ProjectVG.Application.Models.Character
                 Name = Name,
                 Description = Description,
                 Role = Role,
-                IsActive = IsActive
+                IsActive = IsActive,
+                Personality = Personality,
+                SpeechStyle = SpeechStyle,
+                VoiceId = VoiceId
             };
         }
     }

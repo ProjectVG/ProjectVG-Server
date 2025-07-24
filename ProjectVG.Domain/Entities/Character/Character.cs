@@ -19,11 +19,15 @@ namespace ProjectVG.Domain.Entities.Character
         public string Role { get; set; } = string.Empty;
         // 캐릭터 성격
         public string Personality { get; set; } = string.Empty;
+        // 캐릭터 말투 화법
+        public string SpeechStyle { get; set; } = string.Empty;
         // 캐릭터 배경
         public string Background { get; set; } = string.Empty;
         // 활성화 여부
         public bool IsActive { get; set; } = true;
         // 유동적 메타데이터 (나이, 키, 취미 등)
         public Dictionary<string, string> Metadata { get; set; } = new();
+        // 캐릭터 보이스 ID
+        public string VoiceId { get; set; } = string.Empty;
     }
 } 

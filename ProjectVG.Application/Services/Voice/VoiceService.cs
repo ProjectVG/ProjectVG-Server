@@ -18,16 +18,17 @@ namespace ProjectVG.Application.Services.Voice
         }
 
         public async Task<TextToSpeechResponse> TextToSpeechAsync(
-            string voiceName,
+            string voiceName, 
             string text,
-            string emotion,
+            string? emotion,
+            string? language = "ko",
             VoiceSettings? voiceSettings = null)
         {
             var startTime = DateTime.UtcNow;
 
             try
             {
-                var profile = ValidateVoiceRequest(voiceName, text, emotion);
+                var profile = ValidateVoiceRequest(voiceName, text, emotion, language, voiceSettings);
 
                 var request = new TextToSpeechRequest
                 {
@@ -69,7 +70,7 @@ namespace ProjectVG.Application.Services.Voice
             }
         }
 
-        private VoiceProfile ValidateVoiceRequest(string voiceName, string text, string style, string language = "ko", VoiceSettings? voiceSettings = null)
+        private VoiceProfile ValidateVoiceRequest(string voiceName, string text, string? style = "netural", string? language = "ko", VoiceSettings? voiceSettings = null)
         {
             if (string.IsNullOrWhiteSpace(text))
                 throw new ValidationException("텍스트가 비어있습니다.");

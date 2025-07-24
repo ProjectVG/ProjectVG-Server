@@ -15,6 +15,11 @@
   <h2>AI 채팅 + 음성 데모</h2>
   <div id="chat-log"></div>
   <div id="input-row">
+    <select id="character-select">
+      <option value="11111111-1111-1111-1111-111111111111">하루</option>
+      <option value="22222222-2222-2222-2222-222222222222">미야</option>
+      <option value="33333333-3333-3333-3333-333333333333">소피아</option>
+    </select>
     <input id="user-input" type="text" placeholder="메시지를 입력하세요" autocomplete="off" />
     <button id="send-btn">전송</button>
   </div>
@@ -31,6 +36,7 @@
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
     const audioPlayer = document.getElementById('audio-player');
+    const characterSelect = document.getElementById('character-select');
     
     // 오디오 재생 큐
     const audioQueue = [];
@@ -96,7 +102,8 @@
       const payload = {
         actor: "web_user",
         message: msg,
-        action: "chat"
+        action: "chat",
+        character_id: characterSelect.value
       };
       if (sessionId) payload.session_id = sessionId;
       fetch(HTTP_URL, {

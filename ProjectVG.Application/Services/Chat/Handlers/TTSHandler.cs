@@ -31,6 +31,9 @@ namespace ProjectVG.Application.Services.Chat.Handlers
             //         return (idx, null as TextToSpeechResponse);
             //     }
             // }));
+            
+            _logger.LogInformation("[TTS 진입 조건] VoiceName={VoiceName}, TextNull={TextNull}, EmotionNull={EmotionNull}, TextCount={TextCount}",
+                context.VoiceName, result.Text == null, result.Emotion == null, result.Text?.Count ?? -1);
             if (!string.IsNullOrWhiteSpace(context.VoiceName) && result.Text != null && result.Emotion != null && result.Text.Count > 0)
             {
                 var ttsTasks = new List<Task<(int idx, TextToSpeechResponse)>>();
@@ -39,10 +42,12 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                     int idx = i;
                     string text = result.Text[idx];
                     string emotion = result.Emotion.Count > idx ? result.Emotion[idx] : "neutral";
+                    _logger.LogInformation("[TTS 요청] idx={Idx}, Voice={Voice}, Emotion={Emotion}, Text={Text}", idx, context.VoiceName, emotion, text);
                     ttsTasks.Add(Task.Run(async () => (idx, await _voiceService.TextToSpeechAsync(
                         context.VoiceName,
                         text,
                         emotion,
+                        "ko",
                         null // VoiceSettings 확장 가능
                     ))));
                 }
@@ -50,7 +55,8 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                 // idx 기준으로 정렬 (혹시라도 순서가 어긋날 경우 대비)
                 foreach (var (idx, ttsResult) in ttsResults.OrderBy(x => x.idx))
                 {
-                    if (ttsResult.Success && ttsResult.AudioData != null)
+                    _logger.LogInformation("[TTS 결과] idx={Idx}, Success={Success}, Error={Error}, AudioLength={AudioLength}", idx, ttsResult?.Success, ttsResult?.ErrorMessage, ttsResult?.AudioLength);
+                    if (ttsResult != null && ttsResult.Success && ttsResult.AudioData != null)
                     {
                         result.AudioDataList.Add(ttsResult.AudioData);
                         result.AudioContentTypeList.Add(ttsResult.ContentType);
@@ -68,9 +74,9 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                             result.Cost += Math.Ceiling(ttsResult.AudioLength.Value / 0.1);
                         }
                     }
-                    else if (!ttsResult.Success)
+                    else if (ttsResult == null || !ttsResult.Success)
                     {
-                        _logger.LogWarning("TTS 변환 실패: {Error}", ttsResult.ErrorMessage);
+                        _logger.LogWarning("TTS 변환 실패: {Error}", ttsResult?.ErrorMessage);
                         result.AudioDataList.Add(null);
                         result.AudioContentTypeList.Add(null);
                         result.AudioLengthList.Add(null);

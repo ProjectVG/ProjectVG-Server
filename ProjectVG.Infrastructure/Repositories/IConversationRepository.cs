@@ -4,9 +4,9 @@ namespace ProjectVG.Infrastructure.Repositories
 {
     public interface IConversationRepository
     {
-        Task<IEnumerable<ConversationHistory>> GetBySessionIdAsync(string sessionId, int count = 10);
-        Task<ConversationHistory> AddAsync(ConversationHistory message);
-        Task ClearSessionAsync(string sessionId);
-        Task<int> GetMessageCountAsync(string sessionId);
+        Task<IEnumerable<ConversationHistory>> GetByUserIdAsync(Guid userId, Guid characterId, int count = 10);
+        Task<ConversationHistory> AddAsync(ConversationHistory conversationHistory);
+        Task ClearSessionAsync(Guid userId, Guid characterId);
+        Task<int> GetMessageCountAsync(Guid userId, Guid characterId);
     }
 } 

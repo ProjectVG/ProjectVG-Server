@@ -1,39 +1,25 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace ProjectVG.Application.Models.Chat
+namespace ProjectVG.Common.Constants
 {
-    public class ChatOutputFormat
+    public static class ChatOutputFormat
     {
-        public string[] AllowedEmotions { get; }
-
-        public ChatOutputFormat(string[] allowedEmotions)
+        public static string GetFormatInstructions()
         {
-            AllowedEmotions = allowedEmotions ?? Array.Empty<string>();
+            string emotionList = string.Join(", ", EmotionConstants.SupportedEmotions);
+            return $@"Reply ONLY in this format:
+[emotion] text [emotion] text ...
+
+Emotion must be one of: {emotionList}
+
+# 예시
+[neutral] 내가 그런다고 좋아할 것 같아? [shy] 하지만 츄 해준다면 좀 달라질지도...
+";
         }
 
-        public string GetInstructionBlock()
-        {
-            string emotionList = AllowedEmotions.Length > 0 ? string.Join(", ", AllowedEmotions) : "자유롭게 감정을 작성";
-            return $@"응답은 반드시 다음 형식으로만 작성하세요:
-[감정] 답변 [감정] 답변 ...
-
-감정은 {emotionList} 중 하나여야 합니다.
-
-예시:
-[neutral] 오늘 점심 맛있게 먹었어?
-[neutral] 내가 그런다고 좋아 할것 같아? [shy] 하지만 츄 해준다면 좀 달라질지도...";
-        }
-
-        public string GetFullInstructions(string baseInstructions)
-        {
-            return $"{baseInstructions}\n\n{GetInstructionBlock()}";
-        }
-
-        public ChatOutputFormatResult Parse(string llmText)
+        public static ChatOutputFormatResult Parse(string llmText, string voiceName = null)
         {
             if (string.IsNullOrWhiteSpace(llmText))
                 return new ChatOutputFormatResult();
@@ -44,20 +30,33 @@ namespace ProjectVG.Application.Models.Chat
 
             // [감정] 답변 패턴 추출
             var matches = Regex.Matches(response, @"\[(.*?)\]\s*([^\[]+)");
+            // 보이스별 감정 매핑
+            Dictionary<string, string> emotionMap = null;
+            if (!string.IsNullOrWhiteSpace(voiceName))
+            {
+                var profile = VoiceCatalog.GetProfile(voiceName);
+                if (profile != null && profile.EmotionMap != null)
+                    emotionMap = profile.EmotionMap;
+            }
+
             if (matches.Count > 0)
             {
                 foreach (Match match in matches)
                 {
                     if (match.Groups.Count >= 3)
                     {
-                        emotions.Add(match.Groups[1].Value.Trim());
+                        var originalEmotion = match.Groups[1].Value.Trim();
+                        var mappedEmotion = emotionMap != null && emotionMap.ContainsKey(originalEmotion)
+                            ? emotionMap[originalEmotion]
+                            : originalEmotion;
+                        emotions.Add(mappedEmotion);
                         texts.Add(match.Groups[2].Value.Trim());
                     }
                 }
             }
             else
             {
-                emotions.Add("unknown");
+                emotions.Add("netural");
                 texts.Add(response);
             }
 
