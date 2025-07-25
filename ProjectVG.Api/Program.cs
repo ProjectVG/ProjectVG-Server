@@ -23,26 +23,28 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-    {
+builder.Services.AddSwaggerGen(c => {
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo {
         Title = "ProjectVG API",
         Version = "v1",
         Description = "ProjectVG API Server"
     });
 });
 
+// Kestrel 7900 포트로 리스닝 (외부접속 허용)
+builder.WebHost.ConfigureKestrel(options => {
+    options.ListenAnyIP(7900);
+});
+
 builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
    .AddNegotiate();
 
 // [Authorize]가 붙은 엔드포인트만 인증을 요구하도록 설정
-builder.Services.AddAuthorization(options =>
-{
+builder.Services.AddAuthorization(options => {
     options.FallbackPolicy = null;
 });
 
-// Entity Framework Core 설정
+// EF Core 설정
 builder.Services.AddDbContext<ProjectVGDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -63,7 +65,6 @@ builder.Services.AddHttpClient<ITextToSpeechClient, TextToSpeechClient>((sp, cli
     return new TextToSpeechClient(httpClient, logger);
 });
 
-
 // Application Services
 builder.Services.AddScoped<ILLMService, ChatLLMService>();
 builder.Services.AddScoped<IChatService, ChatService>();
@@ -83,8 +84,7 @@ builder.Services.AddSingleton<ISessionRepository, InMemorySessionRepository>();
 builder.Services.AddChatOrchestrationServices();
 
 // 개발용 CORS 정책 (모든 origin 허용)
-builder.Services.AddCors(options =>
-{
+builder.Services.AddCors(options => {
     options.AddPolicy("AllowAll",
         policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
@@ -92,29 +92,32 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // 데이터베이스 마이그레이션 자동 적용
-using (var scope = app.Services.CreateScope())
-{
+using (var scope = app.Services.CreateScope()) {
     var context = scope.ServiceProvider.GetRequiredService<ProjectVGDbContext>();
     context.Database.Migrate();
 }
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+if (app.Environment.IsDevelopment()) {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
+    app.UseSwaggerUI(c => {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "ProjectVG API V1");
         c.RoutePrefix = "swagger";
     });
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseWebSockets();
 
 // WebSocket 미들웨어를 특정 경로에만 적용
 app.UseMiddleware<WebSocketMiddleware>();
+
+app.Use(async (ctx, next) => {
+    var logger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("REQ {method} {path} from {remote}", ctx.Request.Method, ctx.Request.Path, ctx.Connection.RemoteIpAddress);
+    await next();
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -124,7 +127,4 @@ app.UseCors("AllowAll");
 
 app.MapControllers();
 
-// WebSocket 전용 포트 추가
-app.Urls.Add("http://localhost:5287");
-
-app.Run(); 
+app.Run();
