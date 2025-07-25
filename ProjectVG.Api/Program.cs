@@ -1,24 +1,31 @@
-using ProjectVG.Application.Middlewares;
 using Microsoft.AspNetCore.Authentication.Negotiate;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using ProjectVG.Api.Properties;
+using ProjectVG.Application.Middlewares;
+using ProjectVG.Application.Services.Character;
+using ProjectVG.Application.Services.Chat;
+using ProjectVG.Application.Services.Chat.Extensions;
+using ProjectVG.Application.Services.Conversation;
+using ProjectVG.Application.Services.LLM;
+using ProjectVG.Application.Services.Session;
+using ProjectVG.Application.Services.User;
+using ProjectVG.Application.Services.Voice;
+using ProjectVG.Infrastructure.Data;
 using ProjectVG.Infrastructure.ExternalApis.LLMClient;
 using ProjectVG.Infrastructure.ExternalApis.MemoryClient;
-using ProjectVG.Application.Services.LLM;
-using ProjectVG.Application.Services.Chat;
-using ProjectVG.Application.Services.Character;
-using ProjectVG.Application.Services.Conversation;
-using ProjectVG.Application.Services.Session;
-using ProjectVG.Application.Services.Voice;
-using ProjectVG.Application.Services.User;
+using ProjectVG.Infrastructure.ExternalApis.TextToSpeech;
 using ProjectVG.Infrastructure.Repositories;
 using ProjectVG.Infrastructure.Repositories.InMemory;
 using ProjectVG.Infrastructure.Repositories.SqlServer;
-using ProjectVG.Infrastructure.ExternalApis.TextToSpeech;
-using ProjectVG.Application.Services.Chat.Extensions;
-using ProjectVG.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Cors;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddOptions<ExternalApisOptions>()
+    .Bind(builder.Configuration.GetSection("ExternalApis"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -47,20 +54,23 @@ builder.Services.AddDbContext<ProjectVGDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // External API Clients
-builder.Services.AddHttpClient<ILLMClient, LLMClient>(client => {
-    client.BaseAddress = new Uri("http://localhost:5601");
+builder.Services.AddHttpClient<ILLMClient, LLMClient>((sp, client) => {
+    var opts = sp.GetRequiredService<IOptions<ExternalApisOptions>>().Value;
+    client.BaseAddress = new Uri(opts.LLM.BaseUrl);
 });
 
-builder.Services.AddHttpClient<IMemoryClient, VectorMemoryClient>(client => {
-    client.BaseAddress = new Uri("http://localhost:5602");
+builder.Services.AddHttpClient<IMemoryClient, VectorMemoryClient>((sp, client) => {
+    var opts = sp.GetRequiredService<IOptions<ExternalApisOptions>>().Value;
+    client.BaseAddress = new Uri(opts.Memory.BaseUrl);
 });
 
 builder.Services.AddHttpClient<ITextToSpeechClient, TextToSpeechClient>((sp, client) => {
-    client.BaseAddress = new Uri("https://supertoneapi.com");
+    var opts = sp.GetRequiredService<IOptions<ExternalApisOptions>>().Value;
+    client.BaseAddress = new Uri(opts.TTS.BaseUrl);
 })
-.AddTypedClient((httpClient, sp) => {
+.AddTypedClient((http, sp) => {
     var logger = sp.GetRequiredService<ILogger<TextToSpeechClient>>();
-    return new TextToSpeechClient(httpClient, logger);
+    return new TextToSpeechClient(http, logger);
 });
 
 
