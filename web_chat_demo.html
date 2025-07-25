@@ -104,7 +104,8 @@
         actor: "web_user",
         message: msg,
         action: "chat",
-        character_id: characterSelect.value
+        character_id: characterSelect.value,
+        user_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
       };
       if (sessionId) payload.session_id = sessionId;
       fetch(HTTP_URL, {

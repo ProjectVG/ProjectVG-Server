@@ -42,8 +42,6 @@ namespace ProjectVG.Application.Services.Chat.Core
 
             var totalSw = Stopwatch.StartNew();
 
-            command.UserId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-
             try
             {
                 _logger.LogInformation("채팅 요청 처리 시작: 세션 {SessionId}, 메시지: {Message}", command.SessionId, command.Message);
