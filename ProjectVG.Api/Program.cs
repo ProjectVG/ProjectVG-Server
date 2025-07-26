@@ -18,6 +18,7 @@ using ProjectVG.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Cors;
 using ProjectVG.Api.Configuration;
+using ProjectVG.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -98,6 +99,9 @@ builder.Services.AddSingleton<ISessionRepository, InMemorySessionRepository>();
 // DI 확장 메서드 등록
 builder.Services.AddChatOrchestrationServices();
 
+// 개발용 서비스 등록
+builder.Services.AddSingleton<TestClientLauncher>();
+
 // 개발용 CORS 정책 (모든 origin 허용)
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowAll",
@@ -141,5 +145,11 @@ app.UseAuthorization();
 app.UseCors("AllowAll");
 
 app.MapControllers();
+
+// 개발 환경에서 테스트 클라이언트 자동 실행
+if (app.Environment.IsDevelopment())
+{
+    app.Services.GetRequiredService<TestClientLauncher>().Launch();
+}
 
 app.Run();

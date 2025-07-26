@@ -15,7 +15,7 @@
       "executablePath": "powershell.exe",
       "commandLineArgs": "-ExecutionPolicy Bypass -File \"$(ProjectDir)..\\run-prod.ps1\"",
       "workingDirectory": "$(ProjectDir)..",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "launchUrl": "http://localhost:7900/swagger",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Production"
