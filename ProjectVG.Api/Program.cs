@@ -17,8 +17,12 @@ using ProjectVG.Application.Services.Chat.Extensions;
 using ProjectVG.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Cors;
+using ProjectVG.Api.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 환경 변수 치환 활성화 (${ENV_VAR} 문법 지원)
+builder.Configuration.AddEnvironmentVariableSubstitution(builder.Configuration);
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -48,9 +52,9 @@ builder.Services.AddAuthorization(options => {
 builder.Services.AddDbContext<ProjectVGDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// External API Clients
-var llmBaseUrl = builder.Configuration["LLM:BaseUrl"] ?? "http://localhost:5601";
-var memoryBaseUrl = builder.Configuration["MEMORY:BaseUrl"] ?? "http://localhost:5602";
+// External API Clients - 환경 변수 우선, 설정 파일 차선
+var llmBaseUrl = builder.Configuration.GetValueWithEnvPriority("LLM:BaseUrl", "LLM_BASE_URL", "http://localhost:5601");
+var memoryBaseUrl = builder.Configuration.GetValueWithEnvPriority("MEMORY:BaseUrl", "MEMORY_BASE_URL", "http://localhost:5602");
 
 builder.Services.AddHttpClient<ILLMClient, LLMClient>(client => {
     client.BaseAddress = new Uri(llmBaseUrl);
@@ -64,9 +68,7 @@ builder.Services.AddHttpClient<ITextToSpeechClient, TextToSpeechClient>((sp, cli
     client.BaseAddress = new Uri("https://supertoneapi.com");
     
     var configuration = sp.GetRequiredService<IConfiguration>();
-    var apiKey = Environment.GetEnvironmentVariable("TTSApiKey") ?? 
-                 Environment.GetEnvironmentVariable("TTS__ApiKey") ?? 
-                 configuration["TTSApiKey"];
+    var apiKey = configuration.GetValueWithEnvPriority("TTSApiKey", "TTS_API_KEY");
     
     if (!string.IsNullOrWhiteSpace(apiKey))
     {

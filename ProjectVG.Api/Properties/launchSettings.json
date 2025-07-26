@@ -1,20 +1,51 @@
 {
   "profiles": {
-    "ProjectVG.Api": {
+    "Development": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "http://localhost:7900",
-      "TTSApiKey": "0fccf9a0bdcda5c36210124973325171",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:7900"
+    },
+    "Production": {
+      "commandName": "DockerCompose",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Production"
+      },
+      "applicationUrl": "http://localhost:7900",
+      "composeLaunchServiceName": "projectvg.api",
+      "composeFiles": [
+        "docker-compose.yml"
+      ],
+      "composeLaunchServiceUrl": "http://localhost:7900",
+      "composeEnvironmentVariables": {
+        "COMPOSE_PROJECT_NAME": "projectvg-prod"
       }
     },
-    "Docker": {
+    "Development (Docker)": {
+      "commandName": "DockerCompose",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "http://localhost:7901",
+      "composeLaunchServiceName": "projectvg.api",
+      "composeLaunchServiceUrl": "http://localhost:7901",
+      "composeFiles": [
+        "docker-compose.dev.yml"
+      ]
+    },
+    "Container (Dockerfile)": {
       "commandName": "Docker",
       "launchBrowser": true,
-      "applicationUrl": "http://localhost:7900",
-      "publishAllPorts": false,
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "environmentVariables": {
+        "ASPNETCORE_HTTP_PORTS": "8080"
+      },
+      "publishAllPorts": true,
       "useSSL": false
     }
   }

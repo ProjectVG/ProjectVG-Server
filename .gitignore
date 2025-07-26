@@ -126,6 +126,9 @@ Generated_Code/
 # Secrets (if using secrets.json for config)
 secrets.json
 
+# Environment variables
+.env
+
 # Global tool restore
 **/.store/
 **/.tools/
