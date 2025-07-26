@@ -49,12 +49,15 @@ builder.Services.AddDbContext<ProjectVGDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // External API Clients
+var llmBaseUrl = builder.Configuration["LLM:BaseUrl"] ?? "http://localhost:5601";
+var memoryBaseUrl = builder.Configuration["MEMORY:BaseUrl"] ?? "http://localhost:5602";
+
 builder.Services.AddHttpClient<ILLMClient, LLMClient>(client => {
-    client.BaseAddress = new Uri("http://localhost:5601");
+    client.BaseAddress = new Uri(llmBaseUrl);
 });
 
 builder.Services.AddHttpClient<IMemoryClient, VectorMemoryClient>(client => {
-    client.BaseAddress = new Uri("http://localhost:5602");
+    client.BaseAddress = new Uri(memoryBaseUrl);
 });
 
 builder.Services.AddHttpClient<ITextToSpeechClient, TextToSpeechClient>((sp, client) => {
