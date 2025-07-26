@@ -137,20 +137,7 @@ secrets.json
 *.temp
 ~$*
 
-# commit
-*.exe
-*.dll
-*.pdb
-*.log
-*.csv
-*.xlsx
-config.ini
-
-# Project documentation
-project_structure.txt
-
-
-#output
+# Media files
 *.wav
 *.mp3
 *.mp4
@@ -165,6 +152,10 @@ project_structure.txt
 *.m4r
 *.m4p
 
-# appsettings.json
-ProjectVG.Api/Properties/launchSettings.json
+# Data files
+*.csv
+*.xlsx
+
+# Demo files
 web_chat_demo.html
+time_travel_commit.exe

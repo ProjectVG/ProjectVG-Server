@@ -62,6 +62,16 @@ builder.Services.AddHttpClient<IMemoryClient, VectorMemoryClient>(client => {
 
 builder.Services.AddHttpClient<ITextToSpeechClient, TextToSpeechClient>((sp, client) => {
     client.BaseAddress = new Uri("https://supertoneapi.com");
+    
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var apiKey = Environment.GetEnvironmentVariable("TTSApiKey") ?? 
+                 Environment.GetEnvironmentVariable("TTS__ApiKey") ?? 
+                 configuration["TTSApiKey"];
+    
+    if (!string.IsNullOrWhiteSpace(apiKey))
+    {
+        client.DefaultRequestHeaders.Add("x-sup-api-key", apiKey);
+    }
 })
 .AddTypedClient((httpClient, sp) => {
     var logger = sp.GetRequiredService<ILogger<TextToSpeechClient>>();

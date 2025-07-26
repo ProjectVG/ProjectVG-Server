@@ -28,12 +28,6 @@ namespace ProjectVG.Infrastructure.ExternalApis.TextToSpeech
                 _logger.LogDebug("[TTS][Request JSON] {Json}", json);
                 StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var apiKey = Environment.GetEnvironmentVariable("TTSApiKey");
-                if (string.IsNullOrWhiteSpace(apiKey))
-                    throw new InvalidOperationException("환경 변수 TTSApiKey가 설정되어 있지 않습니다.");
-                _httpClient.DefaultRequestHeaders.Clear();
-                _httpClient.DefaultRequestHeaders.Add("x-sup-api-key", apiKey);
-
                 var startTime = DateTime.UtcNow;
                 _logger.LogDebug("[TTS] 요청 전송: {Text}", request.Text.Substring(0, Math.Min(50, request.Text.Length)) + "...");
                 HttpResponseMessage response = await _httpClient.PostAsync($"/v1/text-to-speech/{voiceId}", content);
@@ -93,12 +87,6 @@ namespace ProjectVG.Infrastructure.ExternalApis.TextToSpeech
                 string endpoint = $"/v1/predict-duration/{request.VoiceId}";
                 string json = JsonSerializer.Serialize(request);
                 StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                var apiKey = Environment.GetEnvironmentVariable("TTSApiKey");
-                if (string.IsNullOrWhiteSpace(apiKey))
-                    throw new InvalidOperationException("환경 변수 TTSApiKey가 설정되어 있지 않습니다.");
-                _httpClient.DefaultRequestHeaders.Clear();
-                _httpClient.DefaultRequestHeaders.Add("x-sup-api-key", apiKey);
 
                 var startTime = DateTime.UtcNow;
                 _logger.LogDebug("[TTS] 지속 시간 예측 요청 전송: {Text}", request.Text.Substring(0, Math.Min(50, request.Text.Length)) + "...");
