@@ -35,9 +35,9 @@ builder.Services.AddSwaggerGen(c => {
     });
 });
 
-// Kestrel 7900 포트로 리스닝 (외부접속 허용)
+var port = builder.Configuration.GetValue<int>("Port", 7900);
 builder.WebHost.ConfigureKestrel(options => {
-    options.ListenAnyIP(7900);
+    options.ListenAnyIP(port);
 });
 
 builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)

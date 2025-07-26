@@ -7,46 +7,19 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "dotnetRunMessages": true,
-      "applicationUrl": "http://localhost:7900"
+      "applicationUrl": "http://localhost:7901",
+      "launchUrl": "http://localhost:7901/swagger"
     },
     "Production": {
-      "commandName": "DockerCompose",
+      "commandName": "Executable",
+      "executablePath": "powershell.exe",
+      "commandLineArgs": "-ExecutionPolicy Bypass -File \"$(ProjectDir)..\\run-prod.ps1\"",
+      "workingDirectory": "$(ProjectDir)..",
       "launchBrowser": true,
+      "launchUrl": "http://localhost:7900/swagger",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Production"
-      },
-      "applicationUrl": "http://localhost:7900",
-      "composeLaunchServiceName": "projectvg.api",
-      "composeFiles": [
-        "docker-compose.yml"
-      ],
-      "composeLaunchServiceUrl": "http://localhost:7900",
-      "composeEnvironmentVariables": {
-        "COMPOSE_PROJECT_NAME": "projectvg-prod"
       }
-    },
-    "Development (Docker)": {
-      "commandName": "DockerCompose",
-      "launchBrowser": true,
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "applicationUrl": "http://localhost:7901",
-      "composeLaunchServiceName": "projectvg.api",
-      "composeLaunchServiceUrl": "http://localhost:7901",
-      "composeFiles": [
-        "docker-compose.dev.yml"
-      ]
-    },
-    "Container (Dockerfile)": {
-      "commandName": "Docker",
-      "launchBrowser": true,
-      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
-      "environmentVariables": {
-        "ASPNETCORE_HTTP_PORTS": "8080"
-      },
-      "publishAllPorts": true,
-      "useSSL": false
     }
   }
 }
