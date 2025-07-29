@@ -17,5 +17,18 @@ namespace ProjectVG.Api.Controllers
                 version = "1.0.0"
             });
         }
+        
+        [HttpGet("health")]
+        [HttpGet("/health")]
+        public IActionResult Health()
+        {
+            return Ok(new
+            {
+                status = "healthy",
+                timestamp = DateTime.UtcNow,
+                version = "1.0.0",
+                uptime = Environment.TickCount / 1000.0
+            });
+        }
     }
 } 

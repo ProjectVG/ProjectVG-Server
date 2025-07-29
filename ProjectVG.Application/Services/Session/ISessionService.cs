@@ -1,5 +1,6 @@
 using ProjectVG.Infrastructure.Services.Session;
 using System.Net.WebSockets;
+using ProjectVG.Application.Models.Chat;
 
 namespace ProjectVG.Application.Services.Session
 {
@@ -70,5 +71,18 @@ namespace ProjectVG.Application.Services.Session
         /// <param name="sessionId">세션 ID</param>
         /// <returns>세션 존재 여부</returns>
         Task<bool> SessionExistsAsync(string sessionId);
+
+        /// <summary>
+        /// WebSocket 메시지를 전송합니다
+        /// </summary>
+        /// <param name="sessionId">세션 ID</param>
+        /// <param name="message">전송할 WebSocket 메시지</param>
+        Task SendWebSocketMessageAsync(string sessionId, WebSocketMessage message);
+
+        /// <summary>
+        /// 세션 ID를 클라이언트에게 전송합니다
+        /// </summary>
+        /// <param name="sessionId">세션 ID</param>
+        Task SendSessionIdAsync(string sessionId);
     }
 } 

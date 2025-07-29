@@ -139,7 +139,9 @@ namespace ProjectVG.Application.Services.Session
                 // 오디오 데이터를 Base64로 변환
                 integratedMessage.SetAudioData(audioData);
 
-                var jsonMessage = JsonSerializer.Serialize(integratedMessage);
+                // WebSocket 메시지로 래핑
+                var wsMessage = new WebSocketMessage("chat", integratedMessage);
+                var jsonMessage = JsonSerializer.Serialize(wsMessage);
                 var buffer = Encoding.UTF8.GetBytes(jsonMessage);
                 
                 await connection.WebSocket.SendAsync(
@@ -274,6 +276,54 @@ namespace ProjectVG.Application.Services.Session
             {
                 _logger.LogError(ex, "세션 존재 확인 중 오류 발생: {SessionId}", sessionId);
                 return false;
+            }
+        }
+
+        public async Task SendWebSocketMessageAsync(string sessionId, WebSocketMessage message)
+        {
+            try
+            {
+                var connection = await _sessionRepository.GetAsync(sessionId);
+                if (connection == null)
+                {
+                    _logger.LogWarning("세션을 찾을 수 없음: {SessionId}", sessionId);
+                    return;
+                }
+
+                var jsonMessage = JsonSerializer.Serialize(message);
+                var buffer = Encoding.UTF8.GetBytes(jsonMessage);
+                
+                await connection.WebSocket.SendAsync(
+                    new ArraySegment<byte>(buffer),
+                    WebSocketMessageType.Text,
+                    true,
+                    CancellationToken.None
+                );
+
+                _logger.LogInformation("WebSocket 메시지 전송 완료: {SessionId}, 타입: {MessageType}", 
+                    sessionId, message.Type);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "WebSocket 메시지 전송 실패: {SessionId}", sessionId);
+                throw;
+            }
+        }
+
+        public async Task SendSessionIdAsync(string sessionId)
+        {
+            try
+            {
+                var sessionData = new { session_id = sessionId };
+                var wsMessage = new WebSocketMessage("session_id", sessionData);
+                await SendWebSocketMessageAsync(sessionId, wsMessage);
+                
+                _logger.LogInformation("세션 ID 전송 완료: {SessionId}", sessionId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "세션 ID 전송 실패: {SessionId}", sessionId);
+                throw;
             }
         }
     }

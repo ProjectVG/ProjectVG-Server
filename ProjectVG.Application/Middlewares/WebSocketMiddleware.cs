@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using ProjectVG.Application.Services.Session;
+using ProjectVG.Application.Models.Chat;
 
 namespace ProjectVG.Application.Middlewares
 {
@@ -53,7 +54,7 @@ namespace ProjectVG.Application.Middlewares
                 await sessionService.RegisterSessionAsync(sessionId, socket);
                 
                 // 클라이언트에게 세션 ID 전송
-                await SendSessionIdToClient(socket, sessionId);
+                await sessionService.SendSessionIdAsync(sessionId);
 
                 // WebSocket 연결 유지
                 await KeepWebSocketAlive(socket, sessionId, sessionService);
@@ -67,25 +68,6 @@ namespace ProjectVG.Application.Middlewares
         private string GenerateSessionId()
         {
             return $"session_{DateTime.UtcNow.Ticks}_{Guid.NewGuid().ToString("N")[..8]}";
-        }
-        
-        private async Task SendSessionIdToClient(WebSocket socket, string sessionId)
-        {
-            try
-            {
-                var message = $"{{\"type\":\"session_id\",\"session_id\":\"{sessionId}\"}}";
-                var buffer = System.Text.Encoding.UTF8.GetBytes(message);
-                await socket.SendAsync(
-                    new ArraySegment<byte>(buffer),
-                    WebSocketMessageType.Text,
-                    true,
-                    CancellationToken.None
-                );
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "세션 ID 전송 실패: {SessionId}", sessionId);
-            }
         }
         
         private async Task KeepWebSocketAlive(WebSocket socket, string sessionId, ISessionService sessionService)

@@ -251,21 +251,76 @@
         if (typeof event.data === "string") {
           try {
             const data = JSON.parse(event.data);
+            console.log("수신된 메시지:", data);
             
-            // 세션 ID 처리
+            // 새로운 WebSocket 메시지 구조 처리 (우선순위)
+            if (data.type && data.data !== undefined) {
+              console.log(`메시지 타입: ${data.type}`);
+              
+              // 세션 ID 처리
+              if (data.type === "session_id") {
+                sessionId = data.data.session_id;
+                appendLog(`<b>[세션 ID: ${sessionId}]</b>`);
+                return;
+              }
+              
+              // 채팅 메시지 처리
+              if (data.type === "chat") {
+                const chatData = data.data;
+                let messageText = "";
+                
+                // 텍스트 메시지가 있는 경우
+                if (chatData.text) {
+                  messageText += `<b>AI:</b> ${chatData.text}`;
+                }
+                
+                // 오디오 데이터가 있는 경우
+                if (chatData.audioData) {
+                  try {
+                    // Base64 디코딩
+                    const audioBytes = atob(chatData.audioData);
+                    const audioArray = new Uint8Array(audioBytes.length);
+                    for (let i = 0; i < audioBytes.length; i++) {
+                      audioArray[i] = audioBytes.charCodeAt(i);
+                    }
+                    
+                    const blob = new Blob([audioArray], { type: `audio/${chatData.audioFormat || 'wav'}` });
+                    audioQueue.push(blob);
+                    if (!isPlayingAudio) playNextAudio();
+                    
+                    messageText += chatData.text ? " [오디오 포함]" : "<b>AI:</b> [음성 메시지]";
+                  } catch (e) {
+                    console.error("오디오 데이터 파싱 오류:", e);
+                    messageText += " [오디오 파싱 오류]";
+                  }
+                }
+                
+                if (messageText) {
+                  appendLog(messageText);
+                }
+                
+                // 메타데이터 표시 (개발용)
+                if (chatData.metadata) {
+                  appendLog(`<small style='color:#666'>[메타데이터: ${JSON.stringify(chatData.metadata)}]</small>`);
+                }
+                
+                return;
+              }
+              
+              // 기타 메시지 타입 처리
+              appendLog(`<small style='color:#666'>[메시지 타입: ${data.type}]</small>`);
+              return;
+            }
+            
+            // 하위 호환성을 위한 기존 구조 처리
             if (data.type === "session_id") {
               sessionId = data.session_id;
               appendLog(`<b>[세션 ID: ${sessionId}]</b>`);
               return;
             }
             
-            // 통합 메시지 처리
             if (data.type === "chat") {
               let messageText = "";
-              
-              // 메시지 타입 확인
-              const messageType = data.messageType || "json";
-              console.log(`메시지 타입: ${messageType}`);
               
               // 텍스트 메시지가 있는 경우
               if (data.text) {

@@ -29,14 +29,21 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                         continue;
                     }
                     
-                    // 통합 메시지로 전송
-                    await _sessionService.SendIntegratedMessageAsync(
-                        context.SessionId,
-                        segment.Text,
-                        segment.AudioData,
-                        segment.AudioContentType ?? "wav",
-                        segment.AudioLength
-                    );
+                    // WebSocket 메시지로 래핑하여 전송
+                    var integratedMessage = new IntegratedChatMessage
+                    {
+                        SessionId = context.SessionId,
+                        Text = segment.Text,
+                        AudioFormat = segment.AudioContentType ?? "wav",
+                        AudioLength = segment.AudioLength,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    
+                    // 오디오 데이터를 Base64로 변환
+                    integratedMessage.SetAudioData(segment.AudioData);
+                    
+                    var wsMessage = new WebSocketMessage("chat", integratedMessage);
+                    await _sessionService.SendWebSocketMessageAsync(context.SessionId, wsMessage);
                     
                     _logger.LogDebug("세그먼트 전송 완료: 세션 {SessionId}, 순서 {Order}, 텍스트: {HasText}, 오디오: {HasAudio}", 
                         context.SessionId, segment.Order, segment.HasText, segment.HasAudio);
