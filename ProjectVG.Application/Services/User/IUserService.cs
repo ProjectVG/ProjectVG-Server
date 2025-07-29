@@ -9,5 +9,6 @@ namespace ProjectVG.Application.Services.User
         Task<UserDto> CreateUserAsync(UserDto userDto);
         Task<bool> EmailExistsAsync(string email);
         Task<bool> UsernameExistsAsync(string username);
+        Task<bool> UserExistsAsync(Guid userId);
     }
 } 

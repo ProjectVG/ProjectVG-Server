@@ -53,5 +53,12 @@ namespace ProjectVG.Application.Services.Session
         /// </summary>
         /// <returns>활성 세션 수</returns>
         Task<int> GetActiveSessionCountAsync();
+
+        /// <summary>
+        /// 세션이 존재하는지 확인합니다
+        /// </summary>
+        /// <param name="sessionId">세션 ID</param>
+        /// <returns>세션 존재 여부</returns>
+        Task<bool> SessionExistsAsync(string sessionId);
     }
 } 

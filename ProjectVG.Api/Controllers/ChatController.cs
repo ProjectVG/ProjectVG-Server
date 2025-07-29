@@ -4,6 +4,7 @@ using ProjectVG.Application.Models.Chat;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace ProjectVG.Api.Controllers
 {
@@ -14,19 +15,35 @@ namespace ProjectVG.Api.Controllers
     {
         private readonly IChatService _chatService;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly ILogger<ChatController> _logger;
 
-        public ChatController(IChatService chatService, IServiceScopeFactory scopeFactory)
+        public ChatController(IChatService chatService, IServiceScopeFactory scopeFactory, ILogger<ChatController> logger)
         {
             _chatService = chatService;
             _scopeFactory = scopeFactory;
+            _logger = logger;
         }
 
         [HttpPost]
         public async Task<IActionResult> ProcessChat([FromBody] ChatRequest request)
         {
+            // 요청 데이터 로깅
+            _logger.LogInformation("채팅 요청 데이터: SessionId={SessionId}, UserId={UserId}, CharacterId={CharacterId}, Message={Message}", 
+                request.SessionId, request.UserId, request.CharacterId, request.Message);
+
             var command = request.ToProcessChatCommand();
 
-            await _chatService.EnqueueChatRequestAsync(command);
+            var validationResult = await _chatService.EnqueueChatRequestAsync(command);
+
+            if (!validationResult.IsValid)
+            {
+                _logger.LogWarning("채팅 요청 검증 실패: {ErrorMessage}", validationResult.ErrorMessage);
+                return BadRequest(new { 
+                    success = false, 
+                    message = validationResult.ErrorMessage,
+                    errorCode = validationResult.ErrorCode
+                });
+            }
 
             return Ok(new { 
                 success = true, 

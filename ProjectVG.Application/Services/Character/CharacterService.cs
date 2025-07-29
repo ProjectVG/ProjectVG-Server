@@ -118,5 +118,19 @@ namespace ProjectVG.Application.Services.Character
                 throw;
             }
         }
+
+        public async Task<bool> CharacterExistsAsync(Guid id)
+        {
+            try
+            {
+                var character = await _characterRepository.GetByIdAsync(id);
+                return character != null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "캐릭터 존재 확인 중 오류 발생: ID {CharacterId}", id);
+                return false;
+            }
+        }
     }
 } 

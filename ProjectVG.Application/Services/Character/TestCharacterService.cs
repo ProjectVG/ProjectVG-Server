@@ -83,5 +83,11 @@ namespace ProjectVG.Application.Services.Character
             _characters.TryRemove(id, out _);
             return Task.CompletedTask;
         }
+
+        public Task<bool> CharacterExistsAsync(Guid id)
+        {
+            var exists = _characters.ContainsKey(id);
+            return Task.FromResult(exists);
+        }
     }
 } 

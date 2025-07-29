@@ -122,5 +122,19 @@ namespace ProjectVG.Application.Services.User
                 throw;
             }
         }
+
+        public async Task<bool> UserExistsAsync(Guid userId)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(userId);
+                return user != null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "사용자 ID {UserId} 존재 여부 확인 중 오류가 발생했습니다", userId);
+                return false;
+            }
+        }
     }
 }

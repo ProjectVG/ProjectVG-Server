@@ -180,5 +180,26 @@ namespace ProjectVG.Application.Services.Session
                 throw;
             }
         }
+
+        public async Task<bool> SessionExistsAsync(string sessionId)
+        {
+            try
+            {
+                // 활성 연결에서 확인
+                if (_activeConnections.ContainsKey(sessionId))
+                {
+                    return true;
+                }
+
+                // Repository에서 확인
+                var connection = await _sessionRepository.GetAsync(sessionId);
+                return connection != null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "세션 존재 확인 중 오류 발생: {SessionId}", sessionId);
+                return false;
+            }
+        }
     }
 } 
