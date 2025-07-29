@@ -70,7 +70,13 @@ namespace ProjectVG.Application.Services.Chat.Core
                 metrics.Add(new StepMetrics { StepName = "[TTS]", TimeMs = sw.Elapsed.TotalMilliseconds, Cost = processResult.Cost });
                 metricsDto.TTSTimeMs = sw.Elapsed.TotalMilliseconds;
                 metricsDto.TTSEnabled = !string.IsNullOrWhiteSpace(preContext.VoiceName);
-                metricsDto.TTSAudioLength = processResult.AudioLength;
+                
+                // 세그먼트에서 오디오 길이 계산
+                var totalAudioLength = processResult.Segments
+                    .Where(s => s.HasAudio && s.AudioLength.HasValue)
+                    .Sum(s => s.AudioLength.Value);
+                metricsDto.TTSAudioLength = totalAudioLength > 0 ? totalAudioLength : null;
+                
                 metricsDto.TTSCost = processResult.Cost - metricsDto.LLMCost;
 
                 // Persist

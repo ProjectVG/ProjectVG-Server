@@ -19,20 +19,27 @@ namespace ProjectVG.Application.Services.Chat.Handlers
         {
             try
             {
-                // 여러 텍스트/오디오 쌍을 순서대로 전송
-                for (int i = 0; i < result.Text.Count; i++)
+                // 세그먼트들을 순서대로 전송
+                foreach (var segment in result.Segments.OrderBy(s => s.Order))
                 {
-                    await _sessionService.SendMessageAsync(context.SessionId, result.Text[i]);
-
-                    if (result.AudioDataList.Count > i && result.AudioDataList[i] != null && result.AudioDataList[i].Length > 0)
+                    if (segment.IsEmpty)
                     {
-                        await _sessionService.SendAudioAsync(
-                            context.SessionId,
-                            result.AudioDataList[i],
-                            result.AudioContentTypeList.Count > i ? result.AudioContentTypeList[i] : null,
-                            result.AudioLengthList.Count > i ? result.AudioLengthList[i] : null
-                        );
+                        _logger.LogDebug("빈 세그먼트 건너뜀: 세션 {SessionId}, 순서 {Order}", 
+                            context.SessionId, segment.Order);
+                        continue;
                     }
+                    
+                    // 통합 메시지로 전송
+                    await _sessionService.SendIntegratedMessageAsync(
+                        context.SessionId,
+                        segment.Text,
+                        segment.AudioData,
+                        segment.AudioContentType ?? "wav",
+                        segment.AudioLength
+                    );
+                    
+                    _logger.LogDebug("세그먼트 전송 완료: 세션 {SessionId}, 순서 {Order}, 텍스트: {HasText}, 오디오: {HasAudio}", 
+                        context.SessionId, segment.Order, segment.HasText, segment.HasAudio);
                 }
             }
             catch (Exception ex)

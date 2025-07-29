@@ -36,6 +36,16 @@ namespace ProjectVG.Application.Services.Session
         Task SendAudioAsync(string sessionId, byte[] audioData, string? contentType = null, float? audioLength = null);
 
         /// <summary>
+        /// 통합 메시지를 전송합니다
+        /// </summary>
+        /// <param name="sessionId">세션 ID</param>
+        /// <param name="text">텍스트 메시지 (선택사항)</param>
+        /// <param name="audioData">오디오 데이터 (선택사항)</param>
+        /// <param name="audioFormat">오디오 형식 (선택사항)</param>
+        /// <param name="audioLength">오디오 길이 (선택사항)</param>
+        Task SendIntegratedMessageAsync(string sessionId, string? text = null, byte[]? audioData = null, string? audioFormat = null, float? audioLength = null);
+
+        /// <summary>
         /// 세션 정보를 조회합니다
         /// </summary>
         /// <param name="sessionId">세션 ID</param>

@@ -42,11 +42,20 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                 cost = Math.Ceiling(llmResponse.TokensUsed / 25.0);
             }
 
+            // 세그먼트 생성
+            var segments = new List<ChatMessageSegment>();
+            for (int i = 0; i < parsed.Text.Count; i++)
+            {
+                var emotion = parsed.Emotion.Count > i ? parsed.Emotion[i] : "neutral";
+                var segment = ChatMessageSegment.CreateTextOnly(parsed.Text[i], i);
+                segment.Emotion = emotion;
+                segments.Add(segment);
+            }
+
             return new ChatProcessResult
             {
                 Response = parsed.Response,
-                Emotion = parsed.Emotion,
-                Text = parsed.Text,
+                Segments = segments,
                 TokensUsed = llmResponse.TokensUsed,
                 Cost = cost
             };

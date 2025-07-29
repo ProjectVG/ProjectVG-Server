@@ -121,9 +121,10 @@
   </div>
 
   <script>
-    const ENDPOINT = "localhost:7901"
-    const WS_URL = `http://${ENDPOINT}/ws`;
+    const ENDPOINT = "localhost:7900"
+    const WS_URL = `ws://${ENDPOINT}/ws`;
     const HTTP_URL = `http://${ENDPOINT}/api/v1/chat`;
+    const SERVER_MESSAGE_TYPE = "json";
     let sessionId = null;
     let ws = null;
     let reconnectAttempts = 0;
@@ -138,6 +139,76 @@
 
     const audioQueue = [];
     let isPlayingAudio = false;
+    let serverConfig = null;
+
+    // 서버 설정 확인
+    async function checkServerConfig() {
+      try {
+        const response = await fetch(`${HTTP_URL.replace('/chat', '')}/config`);
+        if (response.ok) {
+          serverConfig = await response.json();
+          console.log("서버 설정:", serverConfig);
+          setStatus(`연결됨 (메시지 타입: ${serverConfig.messageType})`);
+        }
+      } catch (e) {
+        console.warn("서버 설정 확인 실패:", e);
+      }
+    }
+
+    // 바이너리 메시지 파싱 함수
+    function parseBinaryMessage(arrayBuffer) {
+      try {
+        const dataView = new DataView(arrayBuffer);
+        let offset = 0;
+        
+        // 메시지 타입 확인 (1바이트)
+        const messageType = dataView.getUint8(offset);
+        offset += 1;
+        
+        if (messageType !== 0x03) { // MESSAGE_TYPE_INTEGRATED
+          return null; // 지원하지 않는 메시지 타입
+        }
+        
+        // 세션 ID 읽기
+        const sessionIdLength = dataView.getUint32(offset, true); // little-endian
+        offset += 4;
+        const sessionIdBytes = new Uint8Array(arrayBuffer, offset, sessionIdLength);
+        const sessionId = new TextDecoder().decode(sessionIdBytes);
+        offset += sessionIdLength;
+        
+        // 텍스트 읽기
+        const textLength = dataView.getUint32(offset, true);
+        offset += 4;
+        let text = null;
+        if (textLength > 0) {
+          const textBytes = new Uint8Array(arrayBuffer, offset, textLength);
+          text = new TextDecoder().decode(textBytes);
+          offset += textLength;
+        }
+        
+        // 오디오 데이터 읽기
+        const audioLength = dataView.getUint32(offset, true);
+        offset += 4;
+        let audioData = null;
+        if (audioLength > 0) {
+          audioData = new Uint8Array(arrayBuffer, offset, audioLength);
+          offset += audioLength;
+        }
+        
+        // 오디오 길이 읽기 (float)
+        const audioDuration = dataView.getFloat32(offset, true);
+        
+        return {
+          sessionId,
+          text,
+          audioData,
+          audioLength: audioDuration
+        };
+      } catch (e) {
+        console.error("바이너리 메시지 파싱 오류:", e);
+        return null;
+      }
+    }
 
     function setStatus(message, isError = false) {
       statusBox.textContent = `[WebSocket 상태] ${message}`;
@@ -173,20 +244,104 @@
       ws.onopen = () => {
         setStatus("연결됨");
         reconnectAttempts = 0;
+        checkServerConfig();
       };
 
       ws.onmessage = (event) => {
         if (typeof event.data === "string") {
           try {
             const data = JSON.parse(event.data);
+            
+            // 세션 ID 처리
             if (data.type === "session_id") {
               sessionId = data.session_id;
               appendLog(`<b>[세션 ID: ${sessionId}]</b>`);
               return;
             }
-          } catch {}
-          appendLog(`<b>AI:</b> ${event.data}`);
+            
+            // 통합 메시지 처리
+            if (data.type === "chat") {
+              let messageText = "";
+              
+              // 메시지 타입 확인
+              const messageType = data.messageType || "json";
+              console.log(`메시지 타입: ${messageType}`);
+              
+              // 텍스트 메시지가 있는 경우
+              if (data.text) {
+                messageText += `<b>AI:</b> ${data.text}`;
+              }
+              
+              // 오디오 데이터가 있는 경우
+              if (data.audioData) {
+                try {
+                  // Base64 디코딩
+                  const audioBytes = atob(data.audioData);
+                  const audioArray = new Uint8Array(audioBytes.length);
+                  for (let i = 0; i < audioBytes.length; i++) {
+                    audioArray[i] = audioBytes.charCodeAt(i);
+                  }
+                  
+                  const blob = new Blob([audioArray], { type: `audio/${data.audioFormat || 'wav'}` });
+                  audioQueue.push(blob);
+                  if (!isPlayingAudio) playNextAudio();
+                  
+                  messageText += data.text ? " [오디오 포함]" : "<b>AI:</b> [음성 메시지]";
+                } catch (e) {
+                  console.error("오디오 데이터 파싱 오류:", e);
+                  messageText += " [오디오 파싱 오류]";
+                }
+              }
+              
+              if (messageText) {
+                appendLog(messageText);
+              }
+              
+              // 메타데이터 표시 (개발용)
+              if (data.metadata) {
+                appendLog(`<small style='color:#666'>[메타데이터: ${JSON.stringify(data.metadata)}]</small>`);
+              }
+              
+              return;
+            }
+            
+            // 기존 텍스트 메시지 처리 (하위 호환성)
+            appendLog(`<b>AI:</b> ${event.data}`);
+          } catch (e) {
+            // JSON 파싱 실패 시 일반 텍스트로 처리
+            appendLog(`<b>AI:</b> ${event.data}`);
+          }
         } else if (event.data instanceof ArrayBuffer) {
+          // 바이너리 메시지 처리
+          try {
+            // 바이너리 프로토콜 파싱 시도
+            const result = parseBinaryMessage(event.data);
+            if (result) {
+              let messageText = "";
+              
+              if (result.text) {
+                messageText += `<b>AI:</b> ${result.text}`;
+              }
+              
+              if (result.audioData && result.audioData.length > 0) {
+                const blob = new Blob([result.audioData], { type: "audio/wav" });
+                audioQueue.push(blob);
+                if (!isPlayingAudio) playNextAudio();
+                
+                messageText += result.text ? " [오디오 포함]" : "<b>AI:</b> [음성 메시지]";
+              }
+              
+              if (messageText) {
+                appendLog(messageText);
+              }
+              
+              return;
+            }
+          } catch (e) {
+            console.error("바이너리 메시지 파싱 오류:", e);
+          }
+          
+          // 기존 오디오 처리 (하위 호환성)
           const blob = new Blob([event.data], { type: "audio/wav" });
           audioQueue.push(blob);
           if (!isPlayingAudio) playNextAudio();

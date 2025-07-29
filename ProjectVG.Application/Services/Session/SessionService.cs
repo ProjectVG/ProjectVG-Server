@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using System.Net.WebSockets;
 using System.Text;
 using System.Collections.Concurrent;
+using ProjectVG.Application.Models.Chat;
+using System.Text.Json;
 
 namespace ProjectVG.Application.Services.Session
 {
@@ -110,6 +112,79 @@ namespace ProjectVG.Application.Services.Session
             catch (Exception ex)
             {
                 _logger.LogError(ex, "오디오(wav) 전송 실패: {SessionId}", sessionId);
+                throw;
+            }
+        }
+
+        public async Task SendIntegratedMessageAsync(string sessionId, string? text = null, byte[]? audioData = null, string? audioFormat = null, float? audioLength = null)
+        {
+            try
+            {
+                var connection = await _sessionRepository.GetAsync(sessionId);
+                if (connection == null)
+                {
+                    _logger.LogWarning("세션을 찾을 수 없음: {SessionId}", sessionId);
+                    return;
+                }
+
+                var integratedMessage = new IntegratedChatMessage
+                {
+                    SessionId = sessionId,
+                    Text = text,
+                    AudioFormat = audioFormat ?? "wav",
+                    AudioLength = audioLength,
+                    Timestamp = DateTime.UtcNow
+                };
+                
+                // 오디오 데이터를 Base64로 변환
+                integratedMessage.SetAudioData(audioData);
+
+                var jsonMessage = JsonSerializer.Serialize(integratedMessage);
+                var buffer = Encoding.UTF8.GetBytes(jsonMessage);
+                
+                await connection.WebSocket.SendAsync(
+                    new ArraySegment<byte>(buffer),
+                    WebSocketMessageType.Text,
+                    true,
+                    CancellationToken.None
+                );
+
+                _logger.LogInformation("통합 메시지 전송 완료: {SessionId}, 텍스트: {HasText}, 오디오: {HasAudio}", 
+                    sessionId, !string.IsNullOrEmpty(text), audioData?.Length > 0);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "통합 메시지 전송 실패: {SessionId}", sessionId);
+                throw;
+            }
+        }
+
+        public async Task SendBinaryIntegratedMessageAsync(string sessionId, string? text = null, byte[]? audioData = null, float? audioLength = null)
+        {
+            try
+            {
+                var connection = await _sessionRepository.GetAsync(sessionId);
+                if (connection == null)
+                {
+                    _logger.LogWarning("세션을 찾을 수 없음: {SessionId}", sessionId);
+                    return;
+                }
+
+                var binaryMessage = BinaryMessageProtocol.CreateIntegratedMessage(sessionId, text, audioData, audioLength);
+                
+                await connection.WebSocket.SendAsync(
+                    new ArraySegment<byte>(binaryMessage),
+                    WebSocketMessageType.Binary,
+                    true,
+                    CancellationToken.None
+                );
+
+                _logger.LogInformation("바이너리 통합 메시지 전송 완료: {SessionId}, 텍스트: {HasText}, 오디오: {HasAudio}", 
+                    sessionId, !string.IsNullOrEmpty(text), audioData?.Length > 0);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "바이너리 통합 메시지 전송 실패: {SessionId}", sessionId);
                 throw;
             }
         }
