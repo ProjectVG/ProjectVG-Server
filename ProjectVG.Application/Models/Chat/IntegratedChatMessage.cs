@@ -7,22 +7,22 @@ namespace ProjectVG.Application.Models.Chat
         [JsonPropertyName("type")]
         public string Type { get; set; } = "chat";
         
-        [JsonPropertyName("messageType")]
+        [JsonPropertyName("message_type")]
         public string MessageType { get; set; } = "json";
         
-        [JsonPropertyName("sessionId")]
+        [JsonPropertyName("session_id")]
         public string SessionId { get; set; } = string.Empty;
         
         [JsonPropertyName("text")]
         public string? Text { get; set; }
         
-        [JsonPropertyName("audioData")]
+        [JsonPropertyName("audio_data")]
         public string? AudioData { get; set; } // Base64 인코딩된 오디오 데이터
         
-        [JsonPropertyName("audioFormat")]
+        [JsonPropertyName("audio_format")]
         public string? AudioFormat { get; set; } = "wav";
         
-        [JsonPropertyName("audioLength")]
+        [JsonPropertyName("audio_length")]
         public float? AudioLength { get; set; }
         
         [JsonPropertyName("timestamp")]
