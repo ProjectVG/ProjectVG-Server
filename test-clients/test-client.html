@@ -217,17 +217,37 @@
     }
 
     function playNextAudio() {
+      console.log("playNextAudio 호출:", {
+        queueLength: audioQueue.length,
+        isPlayingAudio: isPlayingAudio
+      });
+      
       if (audioQueue.length === 0) {
         isPlayingAudio = false;
         audioPlayer.style.display = "none";
+        console.log("오디오 큐가 비어있음");
         return;
       }
       const blob = audioQueue.shift();
+      console.log("오디오 재생 시작:", {
+        blobSize: blob.size,
+        blobType: blob.type
+      });
+      
       audioPlayer.src = URL.createObjectURL(blob);
       audioPlayer.style.display = "";
       isPlayingAudio = true;
-      audioPlayer.play();
-      appendLog(`<i>[오디오 재생]</i>`);
+      
+      const playPromise = audioPlayer.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          console.log("오디오 재생 성공");
+          appendLog(`<i>[오디오 재생]</i>`);
+        }).catch(error => {
+          console.error("오디오 재생 실패:", error);
+          appendLog(`<i>[오디오 재생 실패: ${error.message}]</i>`);
+        });
+      }
     }
 
     audioPlayer.onended = () => playNextAudio();
@@ -258,7 +278,7 @@
               console.log(`메시지 타입: ${data.type}`);
               
               // 세션 ID 처리
-              if (data.type === "session_id") {
+              if (data.type === "session" || data.type === "session_id") {
                 sessionId = data.data.session_id;
                 appendLog(`<b>[세션 ID: ${sessionId}]</b>`);
                 return;
@@ -274,17 +294,33 @@
                   messageText += `<b>AI:</b> ${chatData.text}`;
                 }
                 
-                // 오디오 데이터가 있는 경우
-                if (chatData.audioData) {
+                                // 오디오 데이터가 있는 경우
+                if (chatData.audio_data) {
                   try {
+                    console.log("오디오 데이터 수신:", {
+                      audioDataLength: chatData.audio_data.length,
+                      audioFormat: chatData.audio_format,
+                      hasAudioData: !!chatData.audio_data
+                    });
+                    
                     // Base64 디코딩
-                    const audioBytes = atob(chatData.audioData);
+                    const audioBytes = atob(chatData.audio_data);
                     const audioArray = new Uint8Array(audioBytes.length);
                     for (let i = 0; i < audioBytes.length; i++) {
                       audioArray[i] = audioBytes.charCodeAt(i);
                     }
                     
-                    const blob = new Blob([audioArray], { type: `audio/${chatData.audioFormat || 'wav'}` });
+                    console.log("오디오 배열 생성:", {
+                      arrayLength: audioArray.length,
+                      blobType: chatData.audio_format || 'audio/wav'
+                    });
+                    
+                                         const blob = new Blob([audioArray], { type: `audio/${chatData.audio_format || 'wav'}` });
+                    console.log("Blob 생성 완료:", {
+                      blobSize: blob.size,
+                      blobType: blob.type
+                    });
+                    
                     audioQueue.push(blob);
                     if (!isPlayingAudio) playNextAudio();
                     
@@ -313,7 +349,7 @@
             }
             
             // 하위 호환성을 위한 기존 구조 처리
-            if (data.type === "session_id") {
+            if (data.type === "session" || data.type === "session_id") {
               sessionId = data.session_id;
               appendLog(`<b>[세션 ID: ${sessionId}]</b>`);
               return;
@@ -328,16 +364,16 @@
               }
               
               // 오디오 데이터가 있는 경우
-              if (data.audioData) {
+              if (data.audio_data) {
                 try {
                   // Base64 디코딩
-                  const audioBytes = atob(data.audioData);
+                  const audioBytes = atob(data.audio_data);
                   const audioArray = new Uint8Array(audioBytes.length);
                   for (let i = 0; i < audioBytes.length; i++) {
                     audioArray[i] = audioBytes.charCodeAt(i);
                   }
                   
-                  const blob = new Blob([audioArray], { type: `audio/${data.audioFormat || 'wav'}` });
+                  const blob = new Blob([audioArray], { type: data.audio_format || 'audio/wav' });
                   audioQueue.push(blob);
                   if (!isPlayingAudio) playNextAudio();
                   
@@ -368,6 +404,11 @@
           }
         } else if (event.data instanceof ArrayBuffer) {
           // 바이너리 메시지 처리
+          console.log("바이너리 메시지 수신:", {
+            dataLength: event.data.byteLength,
+            dataType: typeof event.data
+          });
+          
           try {
             // 바이너리 프로토콜 파싱 시도
             const result = parseBinaryMessage(event.data);
