@@ -33,6 +33,10 @@ namespace ProjectVG.Application.Services.Session
                     ConnectedAt = DateTime.UtcNow
                 };
 
+                // 활성 연결에 추가
+                _activeConnections.TryAdd(sessionId, connection);
+                
+                // Repository에도 저장
                 await _sessionRepository.CreateAsync(connection);
                 _logger.LogInformation("세션 등록 완료: {SessionId}", sessionId);
             }
@@ -47,6 +51,10 @@ namespace ProjectVG.Application.Services.Session
         {
             try
             {
+                // 활성 연결에서 제거
+                _activeConnections.TryRemove(sessionId, out _);
+                
+                // Repository에서도 제거
                 await _sessionRepository.DeleteAsync(sessionId);
                 _logger.LogInformation("세션 해제 완료: {SessionId}", sessionId);
             }
@@ -283,11 +291,16 @@ namespace ProjectVG.Application.Services.Session
         {
             try
             {
-                var connection = await _sessionRepository.GetAsync(sessionId);
-                if (connection == null)
+                // 먼저 활성 연결에서 확인
+                if (!_activeConnections.TryGetValue(sessionId, out var connection))
                 {
-                    _logger.LogWarning("세션을 찾을 수 없음: {SessionId}", sessionId);
-                    return;
+                    // Repository에서 조회
+                    connection = await _sessionRepository.GetAsync(sessionId);
+                    if (connection == null)
+                    {
+                        _logger.LogWarning("세션을 찾을 수 없음: {SessionId}", sessionId);
+                        return;
+                    }
                 }
 
                 var jsonMessage = JsonSerializer.Serialize(message);
@@ -315,7 +328,7 @@ namespace ProjectVG.Application.Services.Session
             try
             {
                 var sessionData = new { session_id = sessionId };
-                var wsMessage = new WebSocketMessage("session_id", sessionData);
+                var wsMessage = new WebSocketMessage("session", sessionData);
                 await SendWebSocketMessageAsync(sessionId, wsMessage);
                 
                 _logger.LogInformation("세션 ID 전송 완료: {SessionId}", sessionId);
