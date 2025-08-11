@@ -43,16 +43,13 @@ namespace ProjectVG.Application.Services.Chat.Core
                 .CollectConversationHistoryAsync(command.UserId, command.CharacterId);
 
             // todo : 지정된 캐릭터 설정 불러오기
-
             CharacterDto? characterDto = await _characterService.GetCharacterByIdAsync(command.CharacterId);
 
             // 프롬포트 설정
             var systemMessage = _systemPromptGenerator.Generate(characterDto);
             var instructions = _instructionGenerator.Generate();
 
-
-            // todo : 시스템 프롬포트 작성 (캐릭터 설정에 맞게 작성)
-            return new ChatPreprocessContext {
+            var context = new ChatPreprocessContext {
                 SessionId = command.SessionId,
                 UserId = command.UserId,
                 CharacterId = command.CharacterId,
@@ -65,6 +62,12 @@ namespace ProjectVG.Application.Services.Chat.Core
                 ConversationHistory = conversationHistory,
                 VoiceName = characterDto.VoiceId,
             };
+
+            // 컨텍스트 내용 출력
+            _logger.LogInformation("Preprocess 완료: {Context}", context);
+            _logger.LogInformation("상세 정보:\n{DetailedInfo}", context.GetDetailedInfo());
+
+            return context;
         }
     }
 }
