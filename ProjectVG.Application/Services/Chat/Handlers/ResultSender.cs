@@ -1,17 +1,17 @@
 using ProjectVG.Application.Models.Chat;
-using ProjectVG.Application.Services.Session;
+using ProjectVG.Application.Services.Messaging;
 using Microsoft.Extensions.Logging;
 
 namespace ProjectVG.Application.Services.Chat.Handlers
 {
     public class ResultSender
     {
-        private readonly ISessionService _sessionService;
+        private readonly IMessageBroker _messageBroker;
         private readonly ILogger<ResultSender> _logger;
 
-        public ResultSender(ISessionService sessionService, ILogger<ResultSender> logger)
+        public ResultSender(IMessageBroker messageBroker, ILogger<ResultSender> logger)
         {
-            _sessionService = sessionService;
+            _messageBroker = messageBroker;
             _logger = logger;
         }
 
@@ -43,7 +43,7 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                     integratedMessage.SetAudioData(segment.AudioData);
                     
                     var wsMessage = new WebSocketMessage("chat", integratedMessage);
-                    await _sessionService.SendWebSocketMessageAsync(context.SessionId, wsMessage);
+                    await _messageBroker.SendWebSocketMessageAsync(context.SessionId, wsMessage);
                     
                     _logger.LogDebug("세그먼트 전송 완료: 세션 {SessionId}, 순서 {Order}, 텍스트: {HasText}, 오디오: {HasAudio}", 
                         context.SessionId, segment.Order, segment.HasText, segment.HasAudio);

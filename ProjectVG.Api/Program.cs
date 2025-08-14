@@ -11,6 +11,7 @@ using ProjectVG.Application.Services.Voice;
 using ProjectVG.Application.Services.User;
 using ProjectVG.Infrastructure.Repositories;
 using ProjectVG.Infrastructure.Repositories.InMemory;
+using ProjectVG.Infrastructure.SessionStorage;
 using ProjectVG.Infrastructure.Repositories.SqlServer;
 using ProjectVG.Infrastructure.ExternalApis.TextToSpeech;
 using ProjectVG.Application.Services.Chat.Extensions;
@@ -19,6 +20,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Cors;
 using ProjectVG.Api.Configuration;
 using ProjectVG.Api.Services;
+using ProjectVG.Application.Services.Session;
+using ProjectVG.Infrastructure.Connections;
+using ProjectVG.Application.Services.Messaging;
+using ProjectVG.Common.Models.Session;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -86,15 +91,17 @@ builder.Services.AddScoped<ILLMService, ChatLLMService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<ICharacterService, CharacterService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
-builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IVoiceService, VoiceService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
+builder.Services.AddSingleton<IClientConnectionFactory, WebSocketClientConnectionFactory>();
+builder.Services.AddSingleton<IMessageBroker, MessageBroker>();
 
 // Infrastructure Repositories 
 builder.Services.AddScoped<ICharacterRepository, SqlServerCharacterRepository>();
 builder.Services.AddScoped<IConversationRepository, SqlServerConversationRepository>();
 builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
-builder.Services.AddSingleton<ISessionRepository, InMemorySessionRepository>();
+builder.Services.AddSingleton<ISessionStorage, InMemorySessionStorage>();
 
 // DI 확장 메서드 등록
 builder.Services.AddChatOrchestrationServices();

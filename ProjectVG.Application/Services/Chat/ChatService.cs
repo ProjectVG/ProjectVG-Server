@@ -2,7 +2,7 @@ using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Services.Chat.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
-using ProjectVG.Application.Services.Session;
+using ProjectVG.Infrastructure.SessionStorage;
 using ProjectVG.Application.Services.User;
 using ProjectVG.Application.Services.Character;
 
@@ -50,8 +50,8 @@ namespace ProjectVG.Application.Services.Chat
             if (!string.IsNullOrEmpty(command.SessionId))
             {
                 _logger.LogDebug("세션 ID 검증 중: {SessionId}", command.SessionId);
-                var sessionService = scope.ServiceProvider.GetRequiredService<ISessionService>();
-                var sessionExists = await sessionService.SessionExistsAsync(command.SessionId);
+                var sessionStorage = scope.ServiceProvider.GetRequiredService<ISessionStorage>();
+                var sessionExists = await sessionStorage.ExistsAsync(command.SessionId);
                 if (!sessionExists)
                 {
                     _logger.LogWarning("세션 ID 검증 실패: {SessionId}", command.SessionId);

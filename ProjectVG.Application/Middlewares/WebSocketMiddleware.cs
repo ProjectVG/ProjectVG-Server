@@ -2,9 +2,10 @@ using ProjectVG.Application.Services;
 using System.Net.WebSockets;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using ProjectVG.Application.Services.Session;
+using ProjectVG.Common.Models.Session;
 using ProjectVG.Application.Models.Chat;
+using ProjectVG.Infrastructure.SessionStorage;
 
 namespace ProjectVG.Application.Middlewares
 {
@@ -12,15 +13,30 @@ namespace ProjectVG.Application.Middlewares
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<WebSocketMiddleware> _logger;
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IConnectionRegistry _connectionRegistry;
+        private readonly IClientConnectionFactory _connectionFactory;
+        private readonly ISessionStorage _sessionStorage;
 
-        public WebSocketMiddleware(RequestDelegate next, ILogger<WebSocketMiddleware> logger, IServiceProvider serviceProvider)
+        /// <summary>
+        /// WebSocket 미들웨어를 초기화합니다
+        /// </summary>
+        public WebSocketMiddleware(
+            RequestDelegate next,
+            ILogger<WebSocketMiddleware> logger,
+            IConnectionRegistry connectionRegistry,
+            IClientConnectionFactory connectionFactory,
+            ISessionStorage sessionStorage)
         {
             _next = next;
             _logger = logger;
-            _serviceProvider = serviceProvider;
+            _connectionRegistry = connectionRegistry;
+            _connectionFactory = connectionFactory;
+            _sessionStorage = sessionStorage;
         }
 
+        /// <summary>
+        /// WebSocket 요청을 처리합니다
+        /// </summary>
         public async Task InvokeAsync(HttpContext context)
         {
             if (context.Request.Path == "/ws")
@@ -36,28 +52,29 @@ namespace ProjectVG.Application.Middlewares
                     return;
                 }
 
-                // 세션 ID 처리
-                var sessionId = context.Request.Query["sessionId"];
-                var isNewSession = string.IsNullOrEmpty(sessionId);
-                
-                if (isNewSession)
-                {
-                    sessionId = GenerateSessionId();
-                    _logger.LogInformation("새 WebSocket 세션 생성: {SessionId}", sessionId);
-                }
+                // 세션 ID 처리 (항상 순수 문자열로 강제)
+                var raw = context.Request.Query["sessionId"];
+                var sessionId = string.IsNullOrWhiteSpace(raw) ? GenerateSessionId() : raw.ToString();
+                _logger.LogInformation("새 WebSocket 세션 생성: {SessionId}", sessionId);
                 
                 var socket = await context.WebSockets.AcceptWebSocketAsync();
-                
-                // 서비스 로케이터를 사용하여 scoped 서비스 해결
-                using var scope = _serviceProvider.CreateScope();
-                var sessionService = scope.ServiceProvider.GetRequiredService<ISessionService>();
-                await sessionService.RegisterSessionAsync(sessionId, socket);
-                
-                // 클라이언트에게 세션 ID 전송
-                await sessionService.SendSessionIdAsync(sessionId);
+
+                var connection = _connectionFactory.Create(sessionId, socket, userId: null);
+                _connectionRegistry.Register(sessionId, connection);
+
+                await _sessionStorage.CreateAsync(new SessionInfo
+                {
+                    SessionId = sessionId,
+                    UserId = null,
+                    ConnectedAt = DateTime.UtcNow
+                });
+
+                var sessionData = new WebSocketMessage("session", new { session_id = sessionId });
+                var json = System.Text.Json.JsonSerializer.Serialize(sessionData);
+                await _connectionRegistry.SendTextAsync(sessionId, json);
 
                 // WebSocket 연결 유지
-                await KeepWebSocketAlive(socket, sessionId, sessionService);
+                await KeepWebSocketAlive(socket, sessionId);
 
                 return; 
             }
@@ -70,7 +87,10 @@ namespace ProjectVG.Application.Middlewares
             return $"session_{DateTime.UtcNow.Ticks}_{Guid.NewGuid().ToString("N")[..8]}";
         }
         
-        private async Task KeepWebSocketAlive(WebSocket socket, string sessionId, ISessionService sessionService)
+        /// <summary>
+        /// WebSocket 연결을 유지하고 종료 이벤트를 처리합니다
+        /// </summary>
+        private async Task KeepWebSocketAlive(WebSocket socket, string sessionId)
         {
             var buffer = new byte[1024];
             try
@@ -98,7 +118,7 @@ namespace ProjectVG.Application.Middlewares
             finally
             {
                 _logger.LogInformation("WebSocket 연결 해제: {SessionId}", sessionId);
-                await sessionService.UnregisterSessionAsync(sessionId);
+                _connectionRegistry.Unregister(sessionId);
             }
         }
     }
