@@ -21,19 +21,9 @@ namespace ProjectVG.Application.Services.Chat.Handlers
 
         public async Task PersistResultAsync(ChatPreprocessContext context, ChatProcessResult result)
         {
-            try
-            {
-                // 대화 기록 저장
-                await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.User, context.UserMessage);
-                await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.Assistant, result.Response);
-
-                // 메모리 클라이언트에 동록
-                await _memoryClient.AddMemoryAsync(context.MemoryStore, result.Response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "결과 저장 실패: 세션 {SessionId}", context.SessionId);
-            }
+            await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.User, context.UserMessage);
+            await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.Assistant, result.Response);
+            await _memoryClient.AddMemoryAsync(context.MemoryStore, result.Response);
         }
     }
 } 

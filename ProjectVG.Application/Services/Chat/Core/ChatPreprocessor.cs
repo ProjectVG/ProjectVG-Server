@@ -34,18 +34,13 @@ namespace ProjectVG.Application.Services.Chat.Core
 
         public async Task<ChatPreprocessContext> PreprocessAsync(ProcessChatCommand command)
         {
-            // 기억
             var memoryContext = await _memoryContextPreprocessor
                 .CollectMemoryContextAsync(command.UserId.ToString(), command.Message);
             
-            // 대화 이력
             var conversationHistory = await _conversationHistoryPreprocessor
                 .CollectConversationHistoryAsync(command.UserId, command.CharacterId);
 
-            // todo : 지정된 캐릭터 설정 불러오기
-            CharacterDto? characterDto = await _characterService.GetCharacterByIdAsync(command.CharacterId);
-
-            // 프롬포트 설정
+            var characterDto = await _characterService.GetCharacterByIdAsync(command.CharacterId);
             var systemMessage = _systemPromptGenerator.Generate(characterDto);
             var instructions = _instructionGenerator.Generate();
 
@@ -62,10 +57,6 @@ namespace ProjectVG.Application.Services.Chat.Core
                 ConversationHistory = conversationHistory,
                 VoiceName = characterDto.VoiceId,
             };
-
-            // 컨텍스트 내용 출력
-            _logger.LogInformation("Preprocess 완료: {Context}", context);
-            _logger.LogInformation("상세 정보:\n{DetailedInfo}", context.GetDetailedInfo());
 
             return context;
         }
