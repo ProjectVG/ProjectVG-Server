@@ -40,17 +40,9 @@ namespace ProjectVG.Application.Services.Messaging
 		/// </summary>
 		public async Task SendWebSocketMessageAsync(string sessionId, WebSocketMessage message)
 		{
-			try
-			{
-				var json = JsonSerializer.Serialize(message);
-				await _connectionRegistry.SendTextAsync(sessionId, json);
-				_logger.LogInformation("WebSocket 메시지 전송 완료: {SessionId}, 타입: {MessageType}", sessionId, message.Type);
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError(ex, "WebSocket 메시지 전송 실패: {SessionId}", sessionId);
-				throw;
-			}
+			var json = JsonSerializer.Serialize(message);
+			await _connectionRegistry.SendTextAsync(sessionId, json);
+			_logger.LogInformation("WebSocket 메시지 전송 완료: {SessionId}, 타입: {MessageType}", sessionId, message.Type);
 		}
 	}
 }

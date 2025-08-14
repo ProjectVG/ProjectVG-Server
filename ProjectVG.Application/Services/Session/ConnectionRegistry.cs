@@ -38,15 +38,7 @@ namespace ProjectVG.Application.Services.Session
 		{
 			if (_connections.TryRemove(sessionId, out var removed))
 			{
-				if (!string.IsNullOrEmpty(removed.UserId) && _userIdToSessionIds.TryGetValue(removed.UserId!, out var set))
-				{
-					set.TryRemove(sessionId, out _);
-					if (set.IsEmpty)
-					{
-						_userIdToSessionIds.TryRemove(removed.UserId!, out _);
-					}
-				}
-
+				RemoveFromUserMapping(removed.UserId, sessionId);
 				_logger.LogDebug("연결 해제: {SessionId}", sessionId);
 			}
 			else
@@ -82,13 +74,10 @@ namespace ProjectVG.Application.Services.Session
 		/// </summary>
 		public async Task SendTextAsync(string sessionId, string message)
 		{
-			if (!_connections.TryGetValue(sessionId, out var connection))
+			if (TryGetConnection(sessionId, out var connection))
 			{
-				_logger.LogWarning("세션을 찾을 수 없음: {SessionId}", sessionId);
-				return;
+				await connection.SendTextAsync(message);
 			}
-
-			await connection.SendTextAsync(message);
 		}
 
 		/// <summary>
@@ -96,13 +85,33 @@ namespace ProjectVG.Application.Services.Session
 		/// </summary>
 		public async Task SendBinaryAsync(string sessionId, byte[] data)
 		{
-			if (!_connections.TryGetValue(sessionId, out var connection))
+			if (TryGetConnection(sessionId, out var connection))
 			{
-				_logger.LogWarning("세션을 찾을 수 없음: {SessionId}", sessionId);
-				return;
+				await connection.SendBinaryAsync(data);
+			}
+		}
+
+		private void RemoveFromUserMapping(string? userId, string sessionId)
+		{
+			if (!string.IsNullOrEmpty(userId) && _userIdToSessionIds.TryGetValue(userId!, out var set))
+			{
+				set.TryRemove(sessionId, out _);
+				if (set.IsEmpty)
+				{
+					_userIdToSessionIds.TryRemove(userId!, out _);
+				}
+			}
+		}
+
+		private bool TryGetConnection(string sessionId, out IClientConnection? connection)
+		{
+			if (_connections.TryGetValue(sessionId, out connection))
+			{
+				return true;
 			}
 
-			await connection.SendBinaryAsync(data);
+			_logger.LogWarning("세션을 찾을 수 없음: {SessionId}", sessionId);
+			return false;
 		}
 	}
 }

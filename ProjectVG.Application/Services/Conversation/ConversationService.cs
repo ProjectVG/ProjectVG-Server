@@ -16,75 +16,43 @@ namespace ProjectVG.Application.Services.Conversation
             _logger = logger;
         }
 
-        public async Task<ConversationHistory> AddMessageAsync(Guid userId, Guid chracterId, ChatRole role, string content)
+        public async Task<ConversationHistory> AddMessageAsync(Guid userId, Guid characterId, ChatRole role, string content)
         {
-            try
+            var message = new ConversationHistory
             {
-                var message = new ConversationHistory
-                {
-                    UserId = userId,
-                    CharacterId = chracterId,
-                    Role = role,
-                    Content = content,
-                    CreatedAt = DateTime.UtcNow
-                };
+                UserId = userId,
+                CharacterId = characterId,
+                Role = role,
+                Content = content,
+                CreatedAt = DateTime.UtcNow
+            };
 
-                var addedMessage = await _conversationRepository.AddAsync(message);
-                _logger.LogDebug("대화 메시지 추가 완료: 유저 {userId}, 역할 {Role}", userId, role);
-                
-                return addedMessage;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "대화 메시지 추가 중 오류 발생: 유저 {userId}", userId);
-                throw;
-            }
+            var addedMessage = await _conversationRepository.AddAsync(message);
+            _logger.LogDebug("대화 메시지 추가 완료: 유저 {UserId}, 역할 {Role}", userId, role);
+            
+            return addedMessage;
         }
 
-        public async Task<IEnumerable<ConversationHistory>> GetConversationHistoryAsync(Guid userId, Guid chracterId, int count = 10)
+        public async Task<IEnumerable<ConversationHistory>> GetConversationHistoryAsync(Guid userId, Guid characterId, int count = 10)
         {
-            try
-            {
-                var history = await _conversationRepository.GetByUserIdAsync(userId, chracterId, count);
-                _logger.LogDebug("대화 기록 조회 완료: 유저 {userId}, {Count}개 메시지", userId, history.Count());
-                
-                return history;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "대화 기록 조회 중 오류 발생: 유저 {userId}", userId);
-                throw;
-            }
+            var history = await _conversationRepository.GetByUserIdAsync(userId, characterId, count);
+            _logger.LogDebug("대화 기록 조회 완료: 유저 {UserId}, {Count}개 메시지", userId, history.Count());
+            
+            return history;
         }
 
-        public async Task ClearConversationAsync(Guid userId, Guid chracterId)
+        public async Task ClearConversationAsync(Guid userId, Guid characterId)
         {
-            try
-            {
-                await _conversationRepository.ClearSessionAsync(userId, chracterId);
-                _logger.LogInformation("대화 기록 삭제 완료: 유저 {userId}", userId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "대화 기록 삭제 중 오류 발생: 유저 {userId}", userId.ToString());
-                throw;
-            }
+            await _conversationRepository.ClearSessionAsync(userId, characterId);
+            _logger.LogInformation("대화 기록 삭제 완료: 유저 {UserId}", userId);
         }
 
-        public async Task<int> GetMessageCountAsync(Guid userId, Guid chracterId)
+        public async Task<int> GetMessageCountAsync(Guid userId, Guid characterId)
         {
-            try
-            {
-                var count = await _conversationRepository.GetMessageCountAsync(userId, chracterId);
-                _logger.LogDebug("메시지 수 조회 완료: 유저 {userId}, {Count}개", userId, count);
-                
-                return count;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "메시지 수 조회 중 오류 발생: 유저 {userId}", userId.ToString());
-                throw;
-            }
+            var count = await _conversationRepository.GetMessageCountAsync(userId, characterId);
+            _logger.LogDebug("메시지 수 조회 완료: 유저 {UserId}, {Count}개", userId, count);
+            
+            return count;
         }
     }
 } 

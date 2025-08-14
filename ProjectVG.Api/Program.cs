@@ -4,6 +4,7 @@ using ProjectVG.Infrastructure.Integrations.LLMClient;
 using ProjectVG.Infrastructure.Integrations.MemoryClient;
 using ProjectVG.Application.Services.LLM;
 using ProjectVG.Application.Services.Chat;
+using ProjectVG.Application.Services;
 using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Session;
@@ -88,10 +89,9 @@ builder.Services.AddHttpClient<ITextToSpeechClient, TextToSpeechClient>((sp, cli
 // Application Services
 builder.Services.AddScoped<ILLMService, ChatLLMService>();
 builder.Services.AddScoped<IChatService, ChatService>();
-builder.Services.AddScoped<ICharacterService, CharacterService>();
+builder.Services.AddApplicationServices();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<IVoiceService, VoiceService>();
-builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
 builder.Services.AddSingleton<IClientConnectionFactory, WebSocketClientConnectionFactory>();
 builder.Services.AddSingleton<IMessageBroker, MessageBroker>();
