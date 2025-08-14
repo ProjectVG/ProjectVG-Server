@@ -12,7 +12,7 @@ using ProjectVG.Application.Services.Voice;
 using ProjectVG.Application.Services.User;
 using ProjectVG.Infrastructure.Persistence.Session;
 using ProjectVG.Infrastructure.Integrations.TextToSpeechClient;
-using ProjectVG.Application.Services.Chat.Extensions;
+
 using ProjectVG.Api.Configuration;
 using ProjectVG.Api.Services;
 using ProjectVG.Infrastructure.Realtime.WebSocketConnection;
@@ -102,8 +102,7 @@ builder.Services.AddScoped<IConversationRepository, SqlServerConversationReposit
 builder.Services.AddScoped<IUserRepository, SqlServerUserRepository>();
 builder.Services.AddSingleton<ISessionStorage, InMemorySessionStorage>();
 
-// DI 확장 메서드 등록
-builder.Services.AddChatOrchestrationServices();
+
 
 // 개발용 서비스 등록
 builder.Services.AddSingleton<TestClientLauncher>();
