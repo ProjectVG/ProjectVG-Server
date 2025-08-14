@@ -1,4 +1,4 @@
-using ProjectVG.Domain.Entities.Character;
+using ProjectVG.Domain.Entities.Characters;
 
 namespace ProjectVG.Application.Models.Character
 {
@@ -24,10 +24,10 @@ namespace ProjectVG.Application.Models.Character
         }
 
         /// <summary>
-        /// Character 엔티티로부터 DTO를 생성하는 생성자
+        /// Characters 엔티티로부터 DTO를 생성하는 생성자
         /// </summary>
-        /// <param name="character">Character 엔티티</param>
-        public CharacterDto(ProjectVG.Domain.Entities.Character.Character character)
+        /// <param name="character">Characters 엔티티</param>
+        public CharacterDto(ProjectVG.Domain.Entities.Characters.Character character)
         {
             Id = character.Id;
             Name = character.Name;
@@ -40,12 +40,12 @@ namespace ProjectVG.Application.Models.Character
         }
 
         /// <summary>
-        /// DTO를 Character 엔티티로 변환
+        /// DTO를 Characters 엔티티로 변환
         /// </summary>
-        /// <returns>Character 엔티티</returns>
-        public ProjectVG.Domain.Entities.Character.Character ToCharacter()
+        /// <returns>Characters 엔티티</returns>
+        public ProjectVG.Domain.Entities.Characters.Character ToCharacter()
         {
-            return new ProjectVG.Domain.Entities.Character.Character
+            return new ProjectVG.Domain.Entities.Characters.Character
             {
                 Id = Id,
                 Name = Name,

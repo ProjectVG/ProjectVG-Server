@@ -1,5 +1,5 @@
-using ProjectVG.Infrastructure.ExternalApis.MemoryClient;
 using Microsoft.Extensions.Logging;
+using ProjectVG.Infrastructure.Integrations.MemoryClient;
 
 namespace ProjectVG.Application.Services.Chat.Preprocessors
 {

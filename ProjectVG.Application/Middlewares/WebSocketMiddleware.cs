@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 using ProjectVG.Application.Services.Session;
 using ProjectVG.Common.Models.Session;
 using ProjectVG.Application.Models.Chat;
-using ProjectVG.Infrastructure.SessionStorage;
+using ProjectVG.Infrastructure.Persistence.Session;
 
 namespace ProjectVG.Application.Middlewares
 {

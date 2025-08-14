@@ -1,4 +1,4 @@
-using ProjectVG.Infrastructure.ExternalApis.LLMClient.Models;
+using ProjectVG.Infrastructure.Integrations.LLMClient.Models;
 
 namespace ProjectVG.Application.Services.LLM
 {

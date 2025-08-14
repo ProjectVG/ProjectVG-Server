@@ -20,7 +20,7 @@ namespace ProjectVG.Application.Models.Chat
 
         public override string ToString()
         {
-            return $"ChatPreprocessContext(SessionId={SessionId}, UserId={UserId}, CharacterId={CharacterId}, UserMessage='{UserMessage}', MemoryContext.Count={MemoryContext.Count}, ConversationHistory.Count={ConversationHistory.Count})";
+            return $"ChatPreprocessContext(SessionId={SessionId}, UserId={UserId}, CharacterId={CharacterId}, UserMessage='{UserMessage}', MemoryContext.Count={MemoryContext.Count}, ConversationHistorys.Count={ConversationHistory.Count})";
         }
 
         public string GetDetailedInfo()
@@ -43,7 +43,7 @@ namespace ProjectVG.Application.Models.Chat
                 info.AppendLine($"  [{i}]: {MemoryContext[i]}");
             }
             
-            info.AppendLine($"ConversationHistory ({ConversationHistory.Count} items):");
+            info.AppendLine($"ConversationHistorys ({ConversationHistory.Count} items):");
             for (int i = 0; i < ConversationHistory.Count; i++)
             {
                 info.AppendLine($"  [{i}]: {ConversationHistory[i]}");

@@ -1,7 +1,7 @@
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Services.Voice;
 using Microsoft.Extensions.Logging;
-using ProjectVG.Infrastructure.ExternalApis.TextToSpeech.Models;
+using ProjectVG.Infrastructure.Integrations.TextToSpeechClient.Models;
 
 namespace ProjectVG.Application.Services.Chat.Handlers
 {

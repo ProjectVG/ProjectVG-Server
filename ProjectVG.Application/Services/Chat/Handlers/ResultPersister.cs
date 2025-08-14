@@ -1,8 +1,8 @@
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Services.Conversation;
-using ProjectVG.Infrastructure.ExternalApis.MemoryClient;
 using ProjectVG.Domain.Enums;
 using Microsoft.Extensions.Logging;
+using ProjectVG.Infrastructure.Integrations.MemoryClient;
 
 namespace ProjectVG.Application.Services.Chat.Handlers
 {

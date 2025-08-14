@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ProjectVG.Domain.Entities.User;
-using ProjectVG.Infrastructure.Repositories;
+using ProjectVG.Infrastructure.Persistence.Repositories.Users;
 using ProjectVG.Application.Models.User;
 using Microsoft.Extensions.Logging;
 

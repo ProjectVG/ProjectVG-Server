@@ -1,7 +1,7 @@
-using ProjectVG.Infrastructure.ExternalApis.LLMClient;
-using ProjectVG.Infrastructure.ExternalApis.LLMClient.Models;
 using ProjectVG.Common.Configuration;
 using Microsoft.Extensions.Logging;
+using ProjectVG.Infrastructure.Integrations.LLMClient;
+using ProjectVG.Infrastructure.Integrations.LLMClient.Models;
 
 namespace ProjectVG.Application.Services.LLM
 {

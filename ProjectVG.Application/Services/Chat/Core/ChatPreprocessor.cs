@@ -3,7 +3,7 @@ using ProjectVG.Application.Models.Character;
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.Chat.Preprocessors;
-using ProjectVG.Domain.Entities.User;
+using ProjectVG.Domain.Entities.Users;
 
 namespace ProjectVG.Application.Services.Chat.Core
 {

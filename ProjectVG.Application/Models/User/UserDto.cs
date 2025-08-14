@@ -1,4 +1,4 @@
-using ProjectVG.Domain.Entities.User;
+using ProjectVG.Domain.Entities.Users;
 
 namespace ProjectVG.Application.Models.User
 {
@@ -18,7 +18,7 @@ namespace ProjectVG.Application.Models.User
         {
         }
 
-        public UserDto(ProjectVG.Domain.Entities.User.User user)
+        public UserDto(ProjectVG.Domain.Entities.Users.User user)
         {
             Id = user.Id;
             Username = user.Username;
@@ -29,9 +29,9 @@ namespace ProjectVG.Application.Models.User
             IsActive = user.IsActive;
         }
 
-        public ProjectVG.Domain.Entities.User.User ToEntity()
+        public ProjectVG.Domain.Entities.Users.User ToEntity()
         {
-            return new ProjectVG.Domain.Entities.User.User {
+            return new ProjectVG.Domain.Entities.Users.User {
                 Id = Id,
                 Username = Username,
                 Name = Name,

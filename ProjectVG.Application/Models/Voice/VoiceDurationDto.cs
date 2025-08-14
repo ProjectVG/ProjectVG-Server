@@ -1,4 +1,4 @@
-using ProjectVG.Infrastructure.ExternalApis.TextToSpeech.Models;
+using ProjectVG.Infrastructure.Integrations.TextToSpeechClient.Models;
 
 namespace ProjectVG.Application.Models.Voice
 {

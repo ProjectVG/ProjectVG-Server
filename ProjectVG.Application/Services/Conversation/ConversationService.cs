@@ -1,5 +1,5 @@
-using ProjectVG.Domain.Entities.ConversationHistory;
-using ProjectVG.Infrastructure.Repositories;
+using ProjectVG.Domain.Entities.ConversationHistorys;
+using ProjectVG.Infrastructure.Persistence.Repositories.Conversation;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Domain.Enums;
 

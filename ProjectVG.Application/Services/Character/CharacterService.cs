@@ -1,5 +1,4 @@
-using ProjectVG.Domain.Entities.Character;
-using ProjectVG.Infrastructure.Repositories;
+using ProjectVG.Infrastructure.Persistence.Repositories.Characters;
 using ProjectVG.Application.Models.Character;
 using Microsoft.Extensions.Logging;
 
@@ -58,7 +57,7 @@ namespace ProjectVG.Application.Services.Character
         {
             try
             {
-                var character = new ProjectVG.Domain.Entities.Character.Character
+                var character = new ProjectVG.Domain.Entities.Characters.Character
                 {
                     Name = command.Name,
                     Description = command.Description,

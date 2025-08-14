@@ -2,7 +2,7 @@ using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Services.Chat.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
-using ProjectVG.Infrastructure.SessionStorage;
+using ProjectVG.Infrastructure.Persistence.Session;
 using ProjectVG.Application.Services.User;
 using ProjectVG.Application.Services.Character;
 

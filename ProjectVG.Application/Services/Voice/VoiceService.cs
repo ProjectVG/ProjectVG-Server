@@ -1,8 +1,8 @@
-using ProjectVG.Infrastructure.ExternalApis.TextToSpeech;
-using ProjectVG.Infrastructure.ExternalApis.TextToSpeech.Models;
 using ProjectVG.Common.Constants;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Common.Exceptions;
+using ProjectVG.Infrastructure.Integrations.TextToSpeechClient;
+using ProjectVG.Infrastructure.Integrations.TextToSpeechClient.Models;
 
 namespace ProjectVG.Application.Services.Voice
 {
