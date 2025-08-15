@@ -60,23 +60,5 @@ namespace ProjectVG.Application.Services.Chat
             _logger.LogDebug("채팅 결과 전송 완료: 세션 {SessionId}, 세그먼트 {SegmentCount}개", 
                 context.SessionId, result.Segments.Count(s => !s.IsEmpty));
         }
-
-        public static double CalculateCost(int tokensUsed)
-        {
-            return tokensUsed > 0 ? Math.Ceiling(tokensUsed / 25.0) : 0;
-        }
-
-        public static List<ChatMessageSegment> CreateSegments(ChatOutputFormatResult parsed)
-        {
-            var segments = new List<ChatMessageSegment>();
-            for (int i = 0; i < parsed.Text.Count; i++)
-            {
-                var emotion = parsed.Emotion.Count > i ? parsed.Emotion[i] : "neutral";
-                var segment = ChatMessageSegment.CreateTextOnly(parsed.Text[i], i);
-                segment.Emotion = emotion;
-                segments.Add(segment);
-            }
-            return segments;
-        }
     }
 }

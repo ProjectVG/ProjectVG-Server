@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -16,6 +16,10 @@
     <ProjectReference Include="..\ProjectVG.Domain\ProjectVG.Domain.csproj" />
     <ProjectReference Include="..\ProjectVG.Common\ProjectVG.Common.csproj" />
     <ProjectReference Include="..\ProjectVG.Infrastructure\ProjectVG.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\LLM\" />
   </ItemGroup>
 
 </Project> 
