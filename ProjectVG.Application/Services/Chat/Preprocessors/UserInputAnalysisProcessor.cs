@@ -45,8 +45,8 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
                 // 결과 파싱
                 var analysis = format.Parse(llmResponse.Response, userInput);
                 
-                _logger.LogDebug("사용자 입력 분석 완료: '{Input}' -> 의도: {Intent}, 액션: {Action}", 
-                    userInput, analysis.Intent, analysis.Action);
+                _logger.LogDebug("사용자 입력 분석 완료: '{Input}' -> 맥락: {Context}, 의도: {Intent}, 액션: {Action}", 
+                    userInput, analysis.ConversationContext, analysis.UserIntent, analysis.Action);
 
                 return analysis;
             }
@@ -54,7 +54,7 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
             {
                 _logger.LogError(ex, "사용자 입력 분석 중 오류 발생: '{Input}'", userInput);
                 // 오류 발생 시 기본값 반환
-                return UserInputAnalysis.Valid("대화", null, new List<string>(), "proceed");
+                return UserInputAnalysis.CreateValid("일반적인 대화", "대화", UserInputAction.Chat, new List<string>());
             }
         }
     }
