@@ -37,84 +37,98 @@ namespace ProjectVG.Application.Services.Chat
             _logger = logger;
         }
 
-        public async Task<ChatValidationResult> EnqueueChatRequestAsync(ProcessChatCommand command)
+        public async Task<ChatRequestResponse> EnqueueChatRequestAsync(ProcessChatCommand command)
         {
+            // 사전 준비 단계: 검증 + 전처리 (동기 처리)
             var validationResult = await ValidateChatRequestAsync(command);
             if (!validationResult.IsValid)
             {
-                return validationResult;
+                return ChatRequestResponse.Rejected(validationResult.ErrorMessage, validationResult.ErrorCode, command.SessionId, command.UserId, command.CharacterId);
             }
 
+            var preprocessContext = await PrepareChatRequestAsync(command);
+            if (!preprocessContext.IsValid)
+            {
+                return preprocessContext.RequestResponse;
+            }
+
+            // 작업 처리 단계: LLM -> TTS -> 결과 전송 + 저장 (비동기 처리)
             _ = Task.Run(async () =>
             {
                 using var scope = _scopeFactory.CreateScope();
-                await ProcessChatRequestInternalAsync(command, scope.ServiceProvider);
+                await ProcessChatRequestInternalAsync(preprocessContext.Context, scope.ServiceProvider);
             });
 
-            return ChatValidationResult.Success();
+            return ChatRequestResponse.Accepted(command.SessionId, command.UserId, command.CharacterId);
         }
 
-        private async Task ProcessChatRequestInternalAsync(ProcessChatCommand command, IServiceProvider services)
+        private async Task<ChatPreprocessResult> PrepareChatRequestAsync(ProcessChatCommand command)
         {
             try
             {
-                _logger.LogInformation("채팅 요청 처리 시작: {SessionId}", command.SessionId);
+                using var scope = _scopeFactory.CreateScope();
+                var services = scope.ServiceProvider;
+                
+                var memoryClient = services.GetRequiredService<IMemoryClient>();
+                var conversationService = services.GetRequiredService<IConversationService>();
+                var characterService = services.GetRequiredService<ICharacterService>();
+                var memoryPreprocessor = new MemoryContextPreprocessor(memoryClient, services.GetRequiredService<ILogger<MemoryContextPreprocessor>>());
+                var conversationPreprocessor = new ConversationHistoryPreprocessor(conversationService, services.GetRequiredService<ILogger<ConversationHistoryPreprocessor>>());
+                var systemPromptGenerator = new SystemPromptGenerator();
+                var instructionGenerator = new InstructionGenerator();
 
-                // 1. 전처리: 컨텍스트 수집 및 준비
-                var context = await PreprocessChatRequestAsync(command, services);
+                var memoryContext = await memoryPreprocessor.CollectMemoryContextAsync(command.UserId.ToString(), command.Message);
+                var conversationHistory = await conversationPreprocessor.CollectConversationHistoryAsync(command.UserId, command.CharacterId);
+                var characterDto = await characterService.GetCharacterByIdAsync(command.CharacterId);
+                var systemMessage = systemPromptGenerator.Generate(characterDto);
+                var instructions = instructionGenerator.Generate();
 
-                // 2. LLM 처리: 텍스트 생성
-                var llmResult = await ProcessLLMAsync(context, services);
+                var context = new ChatPreprocessContext
+                {
+                    SessionId = command.SessionId,
+                    UserId = command.UserId,
+                    CharacterId = command.CharacterId,
+                    SystemMessage = systemMessage,
+                    Instructions = instructions,
+                    UserMessage = command.Message,
+                    MemoryStore = command.UserId.ToString(),
+                    Action = command.Action,
+                    MemoryContext = memoryContext,
+                    ConversationHistory = conversationHistory,
+                    VoiceName = characterDto.VoiceId,
+                };
 
-                // 3. TTS 처리: 음성 변환
-                await ProcessTTSAsync(context, llmResult, services);
-
-                // 4. 결과 전송: WebSocket으로 클라이언트에게 전송
-                await SendResultsAsync(context, llmResult, services);
-
-                // 5. 결과 저장: 대화 기록 및 메모리 저장
-                await PersistResultsAsync(context, llmResult, services);
-
-                _logger.LogInformation("채팅 요청 처리 완료: {SessionId}, 토큰: {TokensUsed}",
-                    command.SessionId, llmResult.TokensUsed);
+                return ChatPreprocessResult.Success(context);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "채팅 요청 처리 중 오류 발생: {SessionId}", command.SessionId);
+                _logger.LogError(ex, "채팅 요청 사전 준비 중 오류 발생: {SessionId}", command.SessionId);
+                return ChatPreprocessResult.Failure(ChatRequestResponse.Rejected("사전 준비 중 오류가 발생했습니다.", "PREPROCESS_ERROR", command.SessionId, command.UserId, command.CharacterId));
             }
         }
 
-        private async Task<ChatPreprocessContext> PreprocessChatRequestAsync(ProcessChatCommand command, IServiceProvider services)
+        private async Task ProcessChatRequestInternalAsync(ChatPreprocessContext context, IServiceProvider services)
         {
-            var memoryClient = services.GetRequiredService<IMemoryClient>();
-            var conversationService = services.GetRequiredService<IConversationService>();
-            var characterService = services.GetRequiredService<ICharacterService>();
-            var memoryPreprocessor = new MemoryContextPreprocessor(memoryClient, services.GetRequiredService<ILogger<MemoryContextPreprocessor>>());
-            var conversationPreprocessor = new ConversationHistoryPreprocessor(conversationService, services.GetRequiredService<ILogger<ConversationHistoryPreprocessor>>());
-            var systemPromptGenerator = new SystemPromptGenerator();
-            var instructionGenerator = new InstructionGenerator();
-
-            var memoryContext = await memoryPreprocessor.CollectMemoryContextAsync(command.UserId.ToString(), command.Message);
-            var conversationHistory = await conversationPreprocessor.CollectConversationHistoryAsync(command.UserId, command.CharacterId);
-            var characterDto = await characterService.GetCharacterByIdAsync(command.CharacterId);
-            var systemMessage = systemPromptGenerator.Generate(characterDto);
-            var instructions = instructionGenerator.Generate();
-
-            return new ChatPreprocessContext
+            try
             {
-                SessionId = command.SessionId,
-                UserId = command.UserId,
-                CharacterId = command.CharacterId,
-                SystemMessage = systemMessage,
-                Instructions = instructions,
-                UserMessage = command.Message,
-                MemoryStore = command.UserId.ToString(),
-                Action = command.Action,
-                MemoryContext = memoryContext,
-                ConversationHistory = conversationHistory,
-                VoiceName = characterDto.VoiceId,
-            };
+                _logger.LogInformation("채팅 요청 처리 시작: {SessionId}", context.SessionId);
+
+                // 작업 처리 단계: LLM -> TTS -> 결과 전송 + 저장
+                var llmResult = await ProcessLLMAsync(context, services);
+                await ProcessTTSAsync(context, llmResult, services);
+                await SendResultsAsync(context, llmResult, services);
+                await PersistResultsAsync(context, llmResult, services);
+
+                _logger.LogInformation("채팅 요청 처리 완료: {SessionId}, 토큰: {TokensUsed}",
+                    context.SessionId, llmResult.TokensUsed);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "채팅 요청 처리 중 오류 발생: {SessionId}", context.SessionId);
+            }
         }
+
+
 
         private async Task<ChatProcessResult> ProcessLLMAsync(ChatPreprocessContext context, IServiceProvider services)
         {

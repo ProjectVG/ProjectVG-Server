@@ -33,22 +33,28 @@ namespace ProjectVG.Api.Controllers
 
             var command = request.ToProcessChatCommand();
 
-            var validationResult = await _chatService.EnqueueChatRequestAsync(command);
+            var requestResponse = await _chatService.EnqueueChatRequestAsync(command);
 
-            if (!validationResult.IsValid)
+            if (!requestResponse.IsAccepted)
             {
-                _logger.LogWarning("채팅 요청 검증 실패: {ErrorMessage}", validationResult.ErrorMessage);
+                _logger.LogWarning("채팅 요청 거부: {Message}", requestResponse.Message);
                 return BadRequest(new { 
                     success = false, 
-                    message = validationResult.ErrorMessage,
-                    errorCode = validationResult.ErrorCode
+                    status = requestResponse.Status,
+                    message = requestResponse.Message,
+                    errorCode = requestResponse.ErrorCode,
+                    requestedAt = requestResponse.RequestedAt
                 });
             }
 
             return Ok(new { 
                 success = true, 
-                message = "채팅 요청이 처리되었습니다",
-                sessionId = request.SessionId 
+                status = requestResponse.Status,
+                message = requestResponse.Message,
+                sessionId = requestResponse.SessionId,
+                userId = requestResponse.UserId,
+                characterId = requestResponse.CharacterId,
+                requestedAt = requestResponse.RequestedAt
             });
         }
     }
