@@ -1,3 +1,5 @@
+using ProjectVG.Application.Models.Character;
+
 namespace ProjectVG.Application.Models.Chat
 {
     /// <summary>
@@ -19,5 +21,23 @@ namespace ProjectVG.Application.Models.Chat
         public DateTime RequestedAt { get; set; }
         public string? Action { get; set; }
         public string? Instruction { get; set; }
+
+        /// <summary>
+        /// 캐릭터 정보 (지연 로딩)
+        /// </summary>
+        public CharacterDto? Character { get; private set; }
+
+        /// <summary>
+        /// 캐릭터 정보 설정 (내부에서만 사용)
+        /// </summary>
+        internal void SetCharacter(CharacterDto character)
+        {
+            Character = character;
+        }
+
+        /// <summary>
+        /// 캐릭터 정보가 로드되었는지 확인
+        /// </summary>
+        public bool IsCharacterLoaded => Character != null;
     }
 } 

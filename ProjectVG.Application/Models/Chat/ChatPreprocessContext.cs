@@ -18,6 +18,35 @@ namespace ProjectVG.Application.Models.Chat
         public string MemoryStore { get; set; } = string.Empty;
         public string VoiceName { get; set; } = string.Empty;
 
+        public ChatPreprocessContext(
+            ProcessChatCommand command,
+            string systemMessage,
+            string instructions,
+            List<string> memoryContext,
+            List<string> conversationHistory)
+        {
+            SessionId = command.SessionId;
+            UserId = command.UserId;
+            CharacterId = command.CharacterId;
+            SystemMessage = systemMessage;
+            Instructions = instructions;
+            UserMessage = command.Message;
+            MemoryStore = command.UserId.ToString();
+            Action = command.Action;
+            MemoryContext = memoryContext ?? new List<string>();
+            ConversationHistory = conversationHistory ?? new List<string>();
+            
+            // 내부에서 캐릭터 정보 검사 및 설정
+            if (command.IsCharacterLoaded)
+            {
+                VoiceName = command.Character!.VoiceId;
+            }
+            else
+            {
+                VoiceName = string.Empty;
+            }
+        }
+
         public override string ToString()
         {
             return $"ChatPreprocessContext(SessionId={SessionId}, UserId={UserId}, CharacterId={CharacterId}, UserMessage='{UserMessage}', MemoryContext.Count={MemoryContext.Count}, ConversationHistorys.Count={ConversationHistory.Count})";

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.User;
+using ProjectVG.Application.Services.Chat;
 
 namespace ProjectVG.Application.Services
 {
@@ -16,6 +17,16 @@ namespace ProjectVG.Application.Services
         {
             services.AddScoped<ICharacterService, CharacterService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<ChatRequestValidator>();
+            services.AddScoped<ChatLLMProcessor>();
+            services.AddScoped<ChatTTSProcessor>();
+            services.AddScoped<ChatResultProcessor>();
+            
+            // 전처리기들 등록
+            services.AddScoped<MemoryContextPreprocessor>();
+            services.AddScoped<ConversationHistoryPreprocessor>();
+            services.AddScoped<PromptGenerator>();
+            
             return services;
         }
     }
