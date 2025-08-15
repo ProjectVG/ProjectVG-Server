@@ -30,5 +30,17 @@ namespace ProjectVG.Api.Controllers
                 uptime = Environment.TickCount / 1000.0
             });
         }
+
+        [HttpGet("test-exception/{type}")]
+        public IActionResult TestException(string type)
+        {
+            return type switch
+            {
+                "notfound" => throw new NotFoundException(ErrorCode.NOT_FOUND, "테스트 리소스를 찾을 수 없습니다"),
+                "validation" => throw new ValidationException(ErrorCode.VALIDATION_FAILED, "유효성 검사 실패"),
+                "external" => throw new ExternalServiceException("테스트서비스", "http://test.com/api", "외부 서비스 오류", ErrorCode.EXTERNAL_SERVICE_ERROR),
+                _ => throw new ProjectVGException(ErrorCode.BAD_REQUEST, "알 수 없는 예외 타입", 400)
+            };
+        }
     }
 } 

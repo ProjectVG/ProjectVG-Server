@@ -1,5 +1,4 @@
 using ProjectVG.Common.Exceptions;
-using ProjectVG.Common.Constants;
 
 namespace ProjectVG.Common.Extensions
 {
@@ -14,7 +13,6 @@ namespace ProjectVG.Common.Extensions
             {
                 NotFoundException => 404,
                 ValidationException => 400,
-                UnauthorizedException => 401,
                 ExternalServiceException => 502,
                 _ => 500
             };
@@ -23,15 +21,14 @@ namespace ProjectVG.Common.Extensions
         public static string GetErrorCode(this Exception exception)
         {
             if (exception is ProjectVGException pgException)
-                return pgException.ErrorCode;
+                return pgException.ErrorCode.GetCode();
             
             return exception switch
             {
-                NotFoundException => ErrorCodes.일반_찾을_수_없음,
-                ValidationException => ErrorCodes.일반_유효성_검사_실패,
-                UnauthorizedException => ErrorCodes.인증_실패,
-                ExternalServiceException => ErrorCodes.외부_서비스_오류,
-                _ => ErrorCodes.일반_내부_오류
+                NotFoundException => ErrorCode.NOT_FOUND.GetCode(),
+                ValidationException => ErrorCode.VALIDATION_FAILED.GetCode(),
+                ExternalServiceException => ErrorCode.EXTERNAL_SERVICE_ERROR.GetCode(),
+                _ => ErrorCode.INTERNAL_SERVER_ERROR.GetCode()
             };
         }
 

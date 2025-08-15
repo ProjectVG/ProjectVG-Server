@@ -6,14 +6,20 @@ namespace ProjectVG.Common.Exceptions
     {
         public List<ValidationResult> ValidationErrors { get; }
 
-        public ValidationException(string message, List<ValidationResult> validationErrors, string errorCode = "일반_유효성_검사_실패") 
-            : base(message, errorCode, 400)
+        public ValidationException(ErrorCode errorCode, string message, List<ValidationResult> validationErrors) 
+            : base(errorCode, message, 400)
         {
             ValidationErrors = validationErrors;
         }
 
-        public ValidationException(string message, string errorCode = "일반_유효성_검사_실패") 
-            : base(message, errorCode, 400)
+        public ValidationException(ErrorCode errorCode, string message) 
+            : base(errorCode, message, 400)
+        {
+            ValidationErrors = new List<ValidationResult>();
+        }
+
+        public ValidationException(ErrorCode errorCode, object value) 
+            : base(errorCode, $"{errorCode.GetMessage()}: {value}", 400)
         {
             ValidationErrors = new List<ValidationResult>();
         }

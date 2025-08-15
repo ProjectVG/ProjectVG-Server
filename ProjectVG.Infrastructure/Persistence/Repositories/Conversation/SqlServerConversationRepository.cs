@@ -25,7 +25,6 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Conversation
                 .OrderBy(ch => ch.Timestamp)
                 .ToListAsync();
 
-            _logger.LogDebug("유저 {UserId}, 캐릭터 {CharacterId}에서 메시지 {Count}개를 조회했습니다", userId, characterId, messages.Count);
             return messages;
         }
 
@@ -38,11 +37,7 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Conversation
             message.IsDeleted = false;
 
             _context.ConversationHistories.Add(message);
-
             await _context.SaveChangesAsync();
-
-            _logger.LogDebug("유저 {UserId}, 캐릭터 {CharacterId}에 메시지를 추가했습니다. 메시지 ID: {MessageId}", 
-                message.UserId, message.CharacterId, message.Id);
 
             return message;
         }
@@ -53,22 +48,18 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Conversation
                 .Where(ch => ch.UserId == userId && ch.CharacterId == characterId && !ch.IsDeleted)
                 .ToListAsync();
 
-            foreach (var message in messages)
-            {
+            foreach (var message in messages) {
                 message.IsDeleted = true;
                 message.Update();
             }
 
             await _context.SaveChangesAsync();
-            _logger.LogInformation("대화 세션을 삭제했습니다: {UserId}:{CharacterId}", userId, characterId);
         }
 
         public async Task<int> GetMessageCountAsync(Guid userId, Guid characterId)
         {
-            var count = await _context.ConversationHistories
+            return await _context.ConversationHistories
                 .CountAsync(ch => ch.UserId == userId && ch.CharacterId == characterId && !ch.IsDeleted);
-
-            return count;
         }
     }
-} 
+}

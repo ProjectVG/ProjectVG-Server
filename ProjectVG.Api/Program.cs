@@ -13,6 +13,7 @@ using ProjectVG.Infrastructure.Integrations.TextToSpeechClient;
 
 using ProjectVG.Api.Configuration;
 using ProjectVG.Api.Services;
+using ProjectVG.Api.Middleware;
 using ProjectVG.Infrastructure.Realtime.WebSocketConnection;
 using ProjectVG.Application.Services.Messaging;
 using ProjectVG.Common.Models.Session;
@@ -128,6 +129,8 @@ if (app.Environment.IsDevelopment()) {
 }
 
 //app.UseHttpsRedirection();
+
+app.UseGlobalExceptionHandler();
 
 app.UseWebSockets();
 

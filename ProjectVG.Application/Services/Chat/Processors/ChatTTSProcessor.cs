@@ -196,9 +196,9 @@ namespace ProjectVG.Application.Services.Chat
         private void ValidateText(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
-                throw new ValidationException("텍스트가 비어있습니다.");
+                throw new ValidationException(ErrorCode.MESSAGE_EMPTY, "텍스트가 비어있습니다.");
             if (text.Length > 300)
-                throw new ValidationException("텍스트는 300자를 초과할 수 없습니다.");
+                throw new ValidationException(ErrorCode.MESSAGE_TOO_LONG, "텍스트는 300자를 초과할 수 없습니다.");
         }
     }
 }

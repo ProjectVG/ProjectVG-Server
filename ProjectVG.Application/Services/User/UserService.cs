@@ -15,25 +15,21 @@ namespace ProjectVG.Application.Services.User
             _logger = logger;
         }
 
-        public async Task<UserDto?> GetUserByUsernameAsync(string username)
+        public async Task<UserDto> GetUserByUsernameAsync(string username)
         {
             var user = await _userRepository.GetByUsernameAsync(username);
-            if (user == null)
-            {
-                _logger.LogWarning("사용자명 {Username}인 사용자를 찾을 수 없습니다", username);
-                return null;
+            if (user == null) {
+                throw new NotFoundException(ErrorCode.USER_NOT_FOUND, username);
             }
 
             return new UserDto(user);
         }
 
-        public async Task<UserDto?> GetUserByEmailAsync(string email)
+        public async Task<UserDto> GetUserByEmailAsync(string email)
         {
             var user = await _userRepository.GetByEmailAsync(email);
-            if (user == null)
-            {
-                _logger.LogWarning("이메일 {Email}인 사용자를 찾을 수 없습니다", email);
-                return null;
+            if (user == null) {
+                throw new NotFoundException(ErrorCode.USER_NOT_FOUND, email);
             }
 
             return new UserDto(user);
@@ -45,10 +41,9 @@ namespace ProjectVG.Application.Services.User
 
             var user = userDto.ToEntity();
             var createdUser = await _userRepository.CreateAsync(user);
-            
-            _logger.LogInformation("사용자 생성 완료: ID {UserId}, 사용자명 {Username}", 
-                createdUser.Id, createdUser.Username);
-            
+
+            _logger.LogInformation("사용자 생성 완료: ID {UserId}, 사용자명 {Username}", createdUser.Id, createdUser.Username);
+
             return new UserDto(createdUser);
         }
 
@@ -70,16 +65,42 @@ namespace ProjectVG.Application.Services.User
             return user != null;
         }
 
-        private async Task ValidateUserUniqueness(UserDto userDto)
+        public async Task<UserDto> UpdateUserAsync(Guid userId, UserDto userDto)
         {
-            if (await EmailExistsAsync(userDto.Email))
-            {
-                throw new InvalidOperationException($"이메일 '{userDto.Email}'이 이미 존재합니다.");
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) {
+                throw new NotFoundException(ErrorCode.USER_NOT_FOUND, userId);
             }
 
-            if (await UsernameExistsAsync(userDto.Username))
-            {
-                throw new InvalidOperationException($"사용자명 '{userDto.Username}'이 이미 존재합니다.");
+            user.Name = userDto.Name;
+            user.Username = userDto.Username;
+            user.Email = userDto.Email;
+            user.IsActive = userDto.IsActive;
+
+            var updatedUser = await _userRepository.UpdateAsync(user);
+            return new UserDto(updatedUser);
+        }
+
+        public async Task<bool> DeleteUserAsync(Guid userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) {
+                throw new NotFoundException(ErrorCode.USER_NOT_FOUND, userId);
+            }
+
+            await _userRepository.DeleteAsync(userId);
+            _logger.LogInformation("사용자 삭제 완료: ID {UserId}, 사용자명 {Username}", userId, user.Username);
+            return true;
+        }
+
+        private async Task ValidateUserUniqueness(UserDto userDto)
+        {
+            if (await EmailExistsAsync(userDto.Email)) {
+                throw new ValidationException(ErrorCode.EMAIL_ALREADY_EXISTS, userDto.Email);
+            }
+
+            if (await UsernameExistsAsync(userDto.Username)) {
+                throw new ValidationException(ErrorCode.USERNAME_ALREADY_EXISTS, userDto.Username);
             }
         }
     }

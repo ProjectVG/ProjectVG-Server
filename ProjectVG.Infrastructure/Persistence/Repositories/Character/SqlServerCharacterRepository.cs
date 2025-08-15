@@ -40,7 +40,6 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
             _context.Characters.Add(character);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("캐릭터를 생성했습니다. 이름: {CharacterName}, ID: {CharacterId}", character.Name, character.Id);
             return character;
         }
 
@@ -49,8 +48,7 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
             var existingCharacter = await _context.Characters
                 .FirstOrDefaultAsync(c => c.Id == character.Id && c.IsActive);
 
-            if (existingCharacter == null)
-            {
+            if (existingCharacter == null) {
                 throw new KeyNotFoundException($"ID {character.Id}인 캐릭터를 찾을 수 없습니다.");
             }
 
@@ -65,7 +63,6 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("캐릭터를 수정했습니다. 이름: {CharacterName}, ID: {CharacterId}", character.Name, character.Id);
             return existingCharacter;
         }
 
@@ -74,18 +71,14 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
             var character = await _context.Characters
                 .FirstOrDefaultAsync(c => c.Id == id && c.IsActive);
 
-            if (character != null)
-            {
-                character.IsActive = false;
-                character.Update();
-                await _context.SaveChangesAsync();
+            if (character == null) {
+                throw new KeyNotFoundException($"ID {id}인 캐릭터를 찾을 수 없습니다.");
+            }
 
-                _logger.LogInformation("캐릭터를 삭제했습니다. ID: {CharacterId}", id);
-            }
-            else
-            {
-                _logger.LogWarning("ID {CharacterId}인 캐릭터를 삭제하려 했지만 캐릭터를 찾을 수 없습니다", id);
-            }
+            character.IsActive = false;
+            character.Update();
+            await _context.SaveChangesAsync();
+
         }
     }
-} 
+}
