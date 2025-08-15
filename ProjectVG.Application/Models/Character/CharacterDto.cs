@@ -39,23 +39,6 @@ namespace ProjectVG.Application.Models.Character
             VoiceId = character.VoiceId;
         }
 
-        /// <summary>
-        /// DTO를 Characters 엔티티로 변환
-        /// </summary>
-        /// <returns>Characters 엔티티</returns>
-        public ProjectVG.Domain.Entities.Characters.Character ToCharacter()
-        {
-            return new ProjectVG.Domain.Entities.Characters.Character
-            {
-                Id = Id,
-                Name = Name,
-                Description = Description,
-                Role = Role,
-                IsActive = IsActive,
-                Personality = Personality,
-                SpeechStyle = SpeechStyle,
-                VoiceId = VoiceId
-            };
-        }
+
     }
 } 
