@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Http;
 using System.Net.WebSockets;
 using ProjectVG.Application.Services.WebSocket;
 using ProjectVG.Application.Services.Session;
-using ProjectVG.Common.Models.Session;
+using ProjectVG.Infrastructure.Realtime.WebSocketConnection;
 
 namespace ProjectVG.Api.Middleware
 {
@@ -12,20 +12,16 @@ namespace ProjectVG.Api.Middleware
         private readonly ILogger<WebSocketMiddleware> _logger;
         private readonly IWebSocketManager _webSocketService;
         private readonly IConnectionRegistry _connectionRegistry;
-        private readonly IClientConnectionFactory _connectionFactory;
-
         public WebSocketMiddleware(
             RequestDelegate next,
             ILogger<WebSocketMiddleware> logger,
             IWebSocketManager webSocketService,
-            IConnectionRegistry connectionRegistry,
-            IClientConnectionFactory connectionFactory)
+            IConnectionRegistry connectionRegistry)
         {
             _next = next;
             _logger = logger;
             _webSocketService = webSocketService;
             _connectionRegistry = connectionRegistry;
-            _connectionFactory = connectionFactory;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -51,7 +47,7 @@ namespace ProjectVG.Api.Middleware
                 }
 
                 // 3. 연결 생성 및 등록
-                var connection = _connectionFactory.Create(actualSessionId, socket, userId: null);
+                var connection = new WebSocketClientConnection(actualSessionId, socket, userId: null);
                 _connectionRegistry.Register(actualSessionId, connection);
 
                 // 4. 세션 생성 (이제 연결이 등록된 상태)

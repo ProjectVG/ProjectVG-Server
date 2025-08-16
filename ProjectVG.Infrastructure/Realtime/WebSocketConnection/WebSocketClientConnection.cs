@@ -13,6 +13,14 @@ namespace ProjectVG.Infrastructure.Realtime.WebSocketConnection
 		public DateTime ConnectedAt { get; set; } = DateTime.UtcNow;
 		public System.Net.WebSockets.WebSocket WebSocket { get; set; } = null!;
 
+		public WebSocketClientConnection(string sessionId, System.Net.WebSockets.WebSocket socket, string? userId = null)
+		{
+			SessionId = sessionId;
+			WebSocket = socket;
+			UserId = userId;
+			ConnectedAt = DateTime.UtcNow;
+		}
+
 		/// <summary>
 		/// 텍스트 메시지를 전송합니다
 		/// </summary>

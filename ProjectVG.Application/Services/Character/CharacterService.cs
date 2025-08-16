@@ -25,11 +25,11 @@ namespace ProjectVG.Application.Services.Character
             return characterDtos;
         }
 
-        public async Task<CharacterDto?> GetCharacterByIdAsync(Guid id)
+        public async Task<CharacterDto> GetCharacterByIdAsync(Guid id)
         {
             var character = await _characterRepository.GetByIdAsync(id);
             if (character == null) {
-                return null;
+                throw new NotFoundException(ErrorCode.CHARACTER_NOT_FOUND, id);
             }
 
             var characterDto = new CharacterDto(character);

@@ -15,7 +15,7 @@ namespace ProjectVG.Application.Services.Character
         /// </summary>
         /// <param name="id">캐릭터 ID</param>
         /// <returns>캐릭터 정보</returns>
-        Task<CharacterDto?> GetCharacterByIdAsync(Guid id);
+        Task<CharacterDto> GetCharacterByIdAsync(Guid id);
 
         /// <summary>
         /// 새 캐릭터를 생성합니다

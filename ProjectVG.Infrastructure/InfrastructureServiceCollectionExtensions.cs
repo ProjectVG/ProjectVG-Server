@@ -9,8 +9,7 @@ using ProjectVG.Infrastructure.Persistence.Repositories.Characters;
 using ProjectVG.Infrastructure.Persistence.Repositories.Conversation;
 using ProjectVG.Infrastructure.Persistence.Repositories.Users;
 using ProjectVG.Infrastructure.Persistence.Session;
-using ProjectVG.Infrastructure.Realtime.WebSocketConnection;
-using ProjectVG.Common.Models.Session;
+
 
 using Microsoft.EntityFrameworkCore;
 
@@ -26,7 +25,6 @@ namespace ProjectVG.Infrastructure
             AddDatabaseServices(services, configuration);
             AddExternalApiClients(services, configuration);
             AddPersistenceServices(services);
-            AddRealtimeServices(services);
 
             return services;
         }
@@ -91,14 +89,6 @@ namespace ProjectVG.Infrastructure
             services.AddScoped<IConversationRepository, SqlServerConversationRepository>();
             services.AddScoped<IUserRepository, SqlServerUserRepository>();
             services.AddSingleton<ISessionStorage, InMemorySessionStorage>();
-        }
-
-        /// <summary>
-        /// 실시간 통신 서비스
-        /// </summary>
-        private static void AddRealtimeServices(IServiceCollection services)
-        {
-            services.AddSingleton<IClientConnectionFactory, WebSocketClientConnectionFactory>();
         }
     }
 }
