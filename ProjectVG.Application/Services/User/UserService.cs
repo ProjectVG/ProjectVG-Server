@@ -1,5 +1,7 @@
 using ProjectVG.Infrastructure.Persistence.Repositories.Users;
 using ProjectVG.Application.Models.User;
+using ProjectVG.Common.Exceptions;
+using ProjectVG.Common.Constants;
 
 namespace ProjectVG.Application.Services.User
 {

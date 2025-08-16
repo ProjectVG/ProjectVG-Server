@@ -89,7 +89,7 @@ Emotion must be one of: {emotionList}
 ";
         }
 
-        private ChatOutputFormatResult ParseChatResponse(string llmText, string voiceName = null)
+        private ChatOutputFormatResult ParseChatResponse(string llmText, string? voiceName = null)
         {
             if (string.IsNullOrWhiteSpace(llmText))
                 return new ChatOutputFormatResult();
@@ -102,7 +102,7 @@ Emotion must be one of: {emotionList}
             var matches = Regex.Matches(response, @"\[(.*?)\]\s*([^\[]+)");
             
             // 보이스별 감정 매핑
-            Dictionary<string, string> emotionMap = null;
+            Dictionary<string, string>? emotionMap = null;
             if (!string.IsNullOrWhiteSpace(voiceName))
             {
                 var profile = VoiceCatalog.GetProfile(voiceName);

@@ -1,6 +1,8 @@
 using ProjectVG.Infrastructure.Persistence.Repositories.Characters;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Character;
+using ProjectVG.Common.Exceptions;
+using ProjectVG.Common.Constants;
 
 namespace ProjectVG.Application.Services.Character
 {
@@ -23,11 +25,11 @@ namespace ProjectVG.Application.Services.Character
             return characterDtos;
         }
 
-        public async Task<CharacterDto> GetCharacterByIdAsync(Guid id)
+        public async Task<CharacterDto?> GetCharacterByIdAsync(Guid id)
         {
             var character = await _characterRepository.GetByIdAsync(id);
             if (character == null) {
-                throw new NotFoundException(ErrorCode.CHARACTER_NOT_FOUND, id);
+                return null;
             }
 
             var characterDto = new CharacterDto(character);

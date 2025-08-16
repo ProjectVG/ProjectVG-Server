@@ -49,7 +49,7 @@ namespace ProjectVG.Application.Services.WebSocket
 
         public async Task SendTextAsync(string sessionId, string text)
         {
-            if (_connectionRegistry.TryGet(sessionId, out var connection)) {
+            if (_connectionRegistry.TryGet(sessionId, out var connection) && connection != null) {
                 await connection.SendTextAsync(text);
                 _logger.LogDebug("WebSocket 텍스트 전송: {SessionId}", sessionId);
             }
@@ -60,7 +60,7 @@ namespace ProjectVG.Application.Services.WebSocket
 
         public async Task SendBinaryAsync(string sessionId, byte[] data)
         {
-            if (_connectionRegistry.TryGet(sessionId, out var connection)) {
+            if (_connectionRegistry.TryGet(sessionId, out var connection) && connection != null) {
                 await connection.SendBinaryAsync(data);
                 _logger.LogDebug("WebSocket 바이너리 전송: {SessionId}, {Length} bytes", sessionId, data?.Length ?? 0);
             }
@@ -69,10 +69,11 @@ namespace ProjectVG.Application.Services.WebSocket
             }
         }
 
-        public async Task DisconnectAsync(string sessionId)
+        public Task DisconnectAsync(string sessionId)
         {
             _connectionRegistry.Unregister(sessionId);
             _logger.LogInformation("WebSocket 세션 해제: {SessionId}", sessionId);
+            return Task.CompletedTask;
         }
 
         public bool IsSessionActive(string sessionId)
@@ -101,12 +102,13 @@ namespace ProjectVG.Application.Services.WebSocket
             }
         }
 
-        public async Task HandleBinaryMessageAsync(string sessionId, byte[] data)
+        public Task HandleBinaryMessageAsync(string sessionId, byte[] data)
         {
             _logger.LogDebug("WebSocket 바이너리 메시지 처리: {SessionId}, {Length} bytes", sessionId, data?.Length ?? 0);
 
             // 바이너리 메시지 처리 로직 구현
             // 예: 오디오 데이터, 파일 업로드 등
+            return Task.CompletedTask;
         }
 
         private async Task ProcessMessageAsync(string sessionId, WebSocketMessage message)
@@ -130,11 +132,12 @@ namespace ProjectVG.Application.Services.WebSocket
             await SendAsync(sessionId, pongMessage);
         }
 
-        private async Task HandleChatMessageAsync(string sessionId, WebSocketMessage message)
+        private Task HandleChatMessageAsync(string sessionId, WebSocketMessage message)
         {
             // 채팅 메시지 처리 로직
             // ChatService와 연동하여 처리
             _logger.LogInformation("채팅 메시지 수신: {SessionId}", sessionId);
+            return Task.CompletedTask;
         }
 
         private string GenerateSessionId()

@@ -11,7 +11,7 @@ namespace ProjectVG.Infrastructure.Realtime.WebSocketConnection
 		public string SessionId { get; set; } = string.Empty;
 		public string? UserId { get; set; }
 		public DateTime ConnectedAt { get; set; } = DateTime.UtcNow;
-		public System.Net.WebSockets.WebSocket WebSocket { get; set; } = default;
+		public System.Net.WebSockets.WebSocket WebSocket { get; set; } = null!;
 
 		/// <summary>
 		/// 텍스트 메시지를 전송합니다

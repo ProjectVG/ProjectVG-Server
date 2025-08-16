@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using ProjectVG.Domain.Entities.Characters;
 using ProjectVG.Infrastructure.Persistence.EfCore;
 
@@ -49,7 +48,7 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
                 .FirstOrDefaultAsync(c => c.Id == character.Id && c.IsActive);
 
             if (existingCharacter == null) {
-                throw new KeyNotFoundException($"ID {character.Id}인 캐릭터를 찾을 수 없습니다.");
+                throw new NotFoundException(ErrorCode.CHARACTER_NOT_FOUND, "Character", character.Id);
             }
 
             existingCharacter.Name = character.Name;
@@ -68,11 +67,10 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
 
         public async Task DeleteAsync(Guid id)
         {
-            var character = await _context.Characters
-                .FirstOrDefaultAsync(c => c.Id == id && c.IsActive);
+            var character = await _context.Characters.FirstOrDefaultAsync(c => c.Id == id && c.IsActive);
 
             if (character == null) {
-                throw new KeyNotFoundException($"ID {id}인 캐릭터를 찾을 수 없습니다.");
+                throw new NotFoundException(ErrorCode.CHARACTER_NOT_FOUND, "Character", id);
             }
 
             character.IsActive = false;

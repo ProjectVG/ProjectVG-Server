@@ -155,7 +155,7 @@ CONTEXT_TIME: 2025-07-24 15:00:00";
         {
             var conversationContext = response.GetValueOrDefault("CONTEXT", "일반적인 대화");
             var userIntent = response.GetValueOrDefault("INTENT", "대화");
-            var enhancedQuery = response.GetValueOrDefault("ENHANCED_QUERY", null);
+            var enhancedQuery = response.GetValueOrDefault("ENHANCED_QUERY", "");
             
             // 키워드 파싱
             var keywords = ParseKeywords(response.GetValueOrDefault("KEYWORDS", ""));

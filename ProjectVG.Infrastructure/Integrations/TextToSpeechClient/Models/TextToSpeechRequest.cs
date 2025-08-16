@@ -5,7 +5,7 @@ namespace ProjectVG.Infrastructure.Integrations.TextToSpeechClient.Models
     public class TextToSpeechRequest
     {
         [JsonIgnore]
-        public string VoiceId { get; set; }
+        public string VoiceId { get; set; } = string.Empty;
 
         /// <summary>
         /// 텍스트를 음성으로 변환할 내용 (최대 300자)

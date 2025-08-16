@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using ProjectVG.Infrastructure.Persistence.EfCore;
 using ProjectVG.Domain.Entities.Users;
 using ProjectVG.Common.Exceptions;
+using ProjectVG.Common.Constants;
 
 namespace ProjectVG.Infrastructure.Persistence.Repositories.Users
 {
@@ -61,19 +62,19 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Users
         public async Task<User> UpdateAsync(User user)
         {
             var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == user.Id && u.IsActive);
-
-            if (existingUser != null)
-            {
-                existingUser.Name = user.Name;
-                existingUser.Username = user.Username;
-                existingUser.Email = user.Email;
-                existingUser.ProviderId = user.ProviderId;
-                existingUser.Provider = user.Provider;
-                existingUser.IsActive = user.IsActive;
-                existingUser.Update();
-
-                await _context.SaveChangesAsync();
+            if (existingUser == null) {
+                throw new NotFoundException(ErrorCode.USER_NOT_FOUND, "User", user.Id);
             }
+
+            existingUser.Name = user.Name;
+            existingUser.Username = user.Username;
+            existingUser.Email = user.Email;
+            existingUser.ProviderId = user.ProviderId;
+            existingUser.Provider = user.Provider;
+            existingUser.IsActive = user.IsActive;
+            existingUser.Update();
+
+            await _context.SaveChangesAsync();
 
             return existingUser;
         }
@@ -82,12 +83,13 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Users
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
 
-            if (user != null)
-            {
-                user.IsActive = false;
-                user.Update();
-                await _context.SaveChangesAsync();
+            if (user == null) {
+                throw new NotFoundException(ErrorCode.USER_NOT_FOUND, "User", id);
             }
+
+            user.IsActive = false;
+            user.Update();
+            await _context.SaveChangesAsync();
         }
     }
 }

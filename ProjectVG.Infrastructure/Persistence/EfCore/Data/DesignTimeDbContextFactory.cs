@@ -17,7 +17,6 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 .Build();
 
             var connectionString = configuration.GetConnectionString("DefaultConnection");
-            Console.WriteLine($"[DEBUG] ConnectionString: {connectionString}");
 
             var optionsBuilder = new DbContextOptionsBuilder<ProjectVGDbContext>();
             optionsBuilder.UseSqlServer(connectionString);

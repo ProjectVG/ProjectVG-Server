@@ -40,7 +40,7 @@ namespace ProjectVG.Infrastructure.Integrations.TextToSpeechClient
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    string errorMsg = GetErrorMessageForStatusCode((int)response.StatusCode, response.ReasonPhrase);
+                    string errorMsg = GetErrorMessageForStatusCode((int)response.StatusCode, response.ReasonPhrase ?? "Unknown");
                     _logger.LogDebug("[TTS] 응답 실패: {StatusCode} - {ErrorMsg}", response.StatusCode, errorMsg);
                     voiceResponse.Success = false;
                     voiceResponse.ErrorMessage = errorMsg;
