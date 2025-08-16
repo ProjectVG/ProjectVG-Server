@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Character;
+using ProjectVG.Domain.Entities.ConversationHistorys;
+using ProjectVG.Domain.Enums;
 
 namespace ProjectVG.Application.Models.Chat
 {
@@ -12,7 +14,7 @@ namespace ProjectVG.Application.Models.Chat
         
         public string? Action { get; set; }
         public List<string> MemoryContext { get; set; } = new();
-        public List<string> ConversationHistory { get; set; } = new();
+        public IEnumerable<ConversationHistory> ConversationHistory { get; set; } = new List<ConversationHistory>();
 
         public string MemoryStore { get; set; } = string.Empty;
         public string VoiceName { get; set; } = string.Empty;
@@ -21,7 +23,7 @@ namespace ProjectVG.Application.Models.Chat
         public ChatPreprocessContext(
             ProcessChatCommand command,
             List<string> memoryContext,
-            List<string> conversationHistory)
+            IEnumerable<ConversationHistory> conversationHistory)
         {
             SessionId = command.SessionId;
             UserId = command.UserId;
@@ -30,16 +32,26 @@ namespace ProjectVG.Application.Models.Chat
             MemoryStore = command.UserId.ToString();
             Action = command.Action;
             MemoryContext = memoryContext ?? new List<string>();
-            ConversationHistory = conversationHistory ?? new List<string>();
+            ConversationHistory = conversationHistory ?? new List<ConversationHistory>();
             
             // Character는 반드시 존재한다고 가정
             Character = command.Character!;
             VoiceName = command.Character!.VoiceId;
         }
 
+        public List<string> ParseConversationHistory()
+        {
+            return ConversationHistory?.Select(c => $"{c.Role}: {c.Content}").ToList() ?? new List<string>();
+        }
+
+        public List<string> ParseConversationHistory(int takeCount)
+        {
+            return ConversationHistory?.Take(takeCount).Select(c => $"{c.Role}: {c.Content}").ToList() ?? new List<string>();
+        }
+
         public override string ToString()
         {
-            return $"ChatPreprocessContext(SessionId={SessionId}, UserId={UserId}, CharacterId={CharacterId}, UserMessage='{UserMessage}', MemoryContext.Count={MemoryContext.Count}, ConversationHistorys.Count={ConversationHistory.Count})";
+            return $"ChatPreprocessContext(SessionId={SessionId}, UserId={UserId}, CharacterId={CharacterId}, UserMessage='{UserMessage}', MemoryContext.Count={MemoryContext.Count}, ConversationHistory.Count={ConversationHistory.Count()})";
         }
 
         public string GetDetailedInfo()
@@ -61,10 +73,11 @@ namespace ProjectVG.Application.Models.Chat
                 info.AppendLine($"  [{i}]: {MemoryContext[i]}");
             }
             
-            info.AppendLine($"ConversationHistorys ({ConversationHistory.Count} items):");
-            for (int i = 0; i < ConversationHistory.Count; i++)
+            info.AppendLine($"ConversationHistory ({ConversationHistory.Count()} items):");
+            var parsedHistory = ParseConversationHistory();
+            for (int i = 0; i < parsedHistory.Count; i++)
             {
-                info.AppendLine($"  [{i}]: {ConversationHistory[i]}");
+                info.AppendLine($"  [{i}]: {parsedHistory[i]}");
             }
             info.AppendLine("=== End ChatPreprocessContext ===");
             

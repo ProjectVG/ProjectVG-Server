@@ -2,8 +2,6 @@ using ProjectVG.Domain.Entities.ConversationHistorys;
 using ProjectVG.Infrastructure.Persistence.Repositories.Conversation;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Domain.Enums;
-using ProjectVG.Application.Services.User;
-using ProjectVG.Application.Services.Character;
 
 namespace ProjectVG.Application.Services.Conversation
 {

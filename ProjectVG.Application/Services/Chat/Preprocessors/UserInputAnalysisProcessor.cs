@@ -19,30 +19,28 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
             _logger = logger;
         }
 
-        public async Task<UserInputAnalysis> ProcessAsync(string userInput, List<ConversationHistory> conversationHistory)
+        public async Task<UserInputAnalysis> ProcessAsync(string userInput, IEnumerable<ConversationHistory> conversationHistory)
         {
             try
             {
-                // LLM 포맷 생성
                 var format = LLMFormatFactory.CreateUserInputAnalysisFormat();
                 
-                // 대화 기록을 컨텍스트로 구성
-                var conversationContext = conversationHistory
+                // 최근 5개만 파싱
+                var recentContext = conversationHistory
+                    .Take(5)
                     .Select(c => $"{c.Role}: {c.Content}")
                     .ToList();
-
-                // LLM 요청
+                
                 var llmResponse = await _llmClient.CreateTextResponseAsync(
                     format.GetSystemMessage(userInput),
                     userInput,
                     format.GetInstructions(userInput),
-                    conversationContext,
+                    recentContext,
                     model: format.Model,
                     maxTokens: format.MaxTokens,
                     temperature: format.Temperature
                 );
 
-                // 결과 파싱
                 var analysis = format.Parse(llmResponse.Response, userInput);
                 
                 _logger.LogDebug("사용자 입력 분석 완료: '{Input}' -> 맥락: {Context}, 의도: {Intent}, 액션: {Action}", 

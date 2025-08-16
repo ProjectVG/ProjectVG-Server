@@ -41,10 +41,11 @@ namespace ProjectVG.Application.Services.Chat.Factories
             }
             
             // 대화 기록 추가
-            if (input.ConversationHistory?.Any() == true)
+            var conversationHistory = input.ParseConversationHistory(5);
+            if (conversationHistory.Any())
             {
                 sb.AppendLine("최근 대화 기록:");
-                foreach (var history in input.ConversationHistory.TakeLast(5))
+                foreach (var history in conversationHistory)
                 {
                     sb.AppendLine($"- {history}");
                 }

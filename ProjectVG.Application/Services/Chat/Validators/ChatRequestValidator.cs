@@ -25,35 +25,27 @@ namespace ProjectVG.Application.Services.Chat
             _logger = logger;
         }
 
-        public async Task<ChatValidationResult> ValidateAsync(ProcessChatCommand command)
+        public async Task ValidateAsync(ProcessChatCommand command)
         {
-            if (!string.IsNullOrEmpty(command.SessionId))
-            {
+            if (!string.IsNullOrEmpty(command.SessionId)) {
                 var sessionExists = await _sessionStorage.ExistsAsync(command.SessionId);
-                if (!sessionExists)
-                {
+                if (!sessionExists) {
                     _logger.LogWarning("세션 ID 검증 실패: {SessionId}", command.SessionId);
-                    return ChatValidationResult.Failure("유효하지 않은 세션 ID입니다.", "INVALID_SESSION_ID");
+                    throw new ValidationException(ErrorCode.INVALID_SESSION_ID, command.SessionId);
                 }
             }
 
             var userExists = await _userService.UserExistsAsync(command.UserId);
-            if (!userExists)
-            {
+            if (!userExists) {
                 _logger.LogWarning("사용자 ID 검증 실패: {UserId}", command.UserId);
-                return ChatValidationResult.Failure("존재하지 않는 사용자 ID입니다.", "INVALID_USER_ID");
+                throw new NotFoundException(ErrorCode.USER_NOT_FOUND, command.UserId);
             }
 
             var characterExists = await _characterService.CharacterExistsAsync(command.CharacterId);
-            if (!characterExists)
-            {
+            if (!characterExists) {
                 _logger.LogWarning("캐릭터 ID 검증 실패: {CharacterId}", command.CharacterId);
-                return ChatValidationResult.Failure("존재하지 않는 캐릭터 ID입니다.", "INVALID_CHARACTER_ID");
+                throw new NotFoundException(ErrorCode.CHARACTER_NOT_FOUND, command.CharacterId);
             }
-
-            _logger.LogDebug("채팅 요청 검증 성공: 세션 {SessionId}, 사용자 {UserId}, 캐릭터 {CharacterId}", 
-                command.SessionId, command.UserId, command.CharacterId);
-            return ChatValidationResult.Success();
         }
     }
 }

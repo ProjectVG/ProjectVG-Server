@@ -1,6 +1,5 @@
 using ProjectVG.Application.Models.Character;
 using System.Collections.Concurrent;
-using ProjectVG.Common.Constants;
 
 namespace ProjectVG.Application.Services.Character
 {

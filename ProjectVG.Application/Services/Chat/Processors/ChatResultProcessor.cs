@@ -3,10 +3,8 @@ using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Messaging;
 using ProjectVG.Infrastructure.Integrations.MemoryClient;
 using ProjectVG.Domain.Enums;
-using ProjectVG.Common.Constants;
-using Microsoft.Extensions.Logging;
 
-namespace ProjectVG.Application.Services.Chat
+namespace ProjectVG.Application.Services.Chat.Processors
 {
     public class ChatResultProcessor
     {
@@ -38,12 +36,10 @@ namespace ProjectVG.Application.Services.Chat
 
         public async Task SendResultsAsync(ChatPreprocessContext context, ChatProcessResult result)
         {
-            foreach (var segment in result.Segments.OrderBy(s => s.Order))
-            {
+            foreach (var segment in result.Segments.OrderBy(s => s.Order)) {
                 if (segment.IsEmpty) continue;
 
-                var integratedMessage = new IntegratedChatMessage
-                {
+                var integratedMessage = new IntegratedChatMessage {
                     SessionId = context.SessionId,
                     Text = segment.Text,
                     AudioFormat = segment.AudioContentType ?? "wav",
@@ -57,7 +53,7 @@ namespace ProjectVG.Application.Services.Chat
                 await _messageBroker.SendWebSocketMessageAsync(context.SessionId, wsMessage);
             }
 
-            _logger.LogDebug("채팅 결과 전송 완료: 세션 {SessionId}, 세그먼트 {SegmentCount}개", 
+            _logger.LogDebug("채팅 결과 전송 완료: 세션 {SessionId}, 세그먼트 {SegmentCount}개",
                 context.SessionId, result.Segments.Count(s => !s.IsEmpty));
         }
     }

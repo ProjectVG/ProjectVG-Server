@@ -1,6 +1,4 @@
-using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Chat;
-using ProjectVG.Common.Models.Session;
 using ProjectVG.Application.Services.Session;
 using System.Text.Json;
 

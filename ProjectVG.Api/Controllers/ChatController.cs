@@ -27,25 +27,8 @@ namespace ProjectVG.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> ProcessChat([FromBody] ChatRequest request)
         {
-            // 요청 데이터 로깅
-            _logger.LogInformation("채팅 요청 데이터: SessionId={SessionId}, UserId={UserId}, CharacterId={CharacterId}, Message={Message}", 
-                request.SessionId, request.UserId, request.CharacterId, request.Message);
-
             var command = request.ToProcessChatCommand();
-
             var requestResponse = await _chatService.EnqueueChatRequestAsync(command);
-
-            if (!requestResponse.IsAccepted)
-            {
-                _logger.LogWarning("채팅 요청 거부: {Message}", requestResponse.Message);
-                return BadRequest(new { 
-                    success = false, 
-                    status = requestResponse.Status,
-                    message = requestResponse.Message,
-                    errorCode = requestResponse.ErrorCode,
-                    requestedAt = requestResponse.RequestedAt
-                });
-            }
 
             return Ok(new { 
                 success = true, 

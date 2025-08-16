@@ -1,11 +1,8 @@
 using ProjectVG.Application.Models.Chat;
-using ProjectVG.Common.Constants;
 using ProjectVG.Application.Services.Chat.Factories;
-using Microsoft.Extensions.Logging;
-using ProjectVG.Infrastructure.Integrations.LLMClient.Models;
 using ProjectVG.Infrastructure.Integrations.LLMClient;
 
-namespace ProjectVG.Application.Services.Chat
+namespace ProjectVG.Application.Services.Chat.Processors
 {
     public class ChatLLMProcessor
     {
@@ -22,15 +19,13 @@ namespace ProjectVG.Application.Services.Chat
 
         public async Task<ChatProcessResult> ProcessAsync(ChatPreprocessContext context)
         {
-            // LLM 포맷 생성
             var format = LLMFormatFactory.CreateChatFormat();
-            
-            // LLM 요청
+
             var llmResponse = await _llmClient.CreateTextResponseAsync(
                     format.GetSystemMessage(context),
                     context.UserMessage,
                     format.GetInstructions(context),
-                    context.ConversationHistory,
+                    context.ParseConversationHistory(),
                     context.MemoryContext,
                     model: format.Model,
                     maxTokens: format.MaxTokens,
@@ -45,8 +40,7 @@ namespace ProjectVG.Application.Services.Chat
             _logger.LogDebug("LLM 처리 완료: 세션 {SessionId}, 토큰 {TokensUsed}, 비용 {Cost}",
                 context.SessionId, llmResponse.TokensUsed, cost);
 
-            return new ChatProcessResult
-            {
+            return new ChatProcessResult {
                 Response = parsed.Response,
                 Segments = segments,
                 TokensUsed = llmResponse.TokensUsed,

@@ -1,6 +1,5 @@
 using ProjectVG.Infrastructure.Persistence.Repositories.Users;
 using ProjectVG.Application.Models.User;
-using Microsoft.Extensions.Logging;
 
 namespace ProjectVG.Application.Services.User
 {

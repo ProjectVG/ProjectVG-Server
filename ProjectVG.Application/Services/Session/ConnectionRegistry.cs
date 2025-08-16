@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
 using ProjectVG.Common.Models.Session;
 
 namespace ProjectVG.Application.Services.Session

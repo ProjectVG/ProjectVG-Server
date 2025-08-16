@@ -26,6 +26,9 @@ namespace ProjectVG.Common.Constants
         CONVERSATION_NOT_FOUND,
         MESSAGE_TOO_LONG,
         MESSAGE_EMPTY,
+        INVALID_INPUT,
+        INAPPROPRIATE_REQUEST,
+        UNKNOWN_ACTION,
         
         // 외부 서비스 오류
         EXTERNAL_SERVICE_ERROR,
@@ -42,7 +45,8 @@ namespace ProjectVG.Common.Constants
         AUTHENTICATION_FAILED,
         AUTHORIZATION_FAILED,
         TOKEN_EXPIRED,
-        TOKEN_INVALID
+        TOKEN_INVALID,
+        INVALID_SESSION_ID
     }
 
     public static class ErrorCodeExtensions
@@ -73,6 +77,9 @@ namespace ProjectVG.Common.Constants
             { ErrorCode.CONVERSATION_NOT_FOUND, "대화를 찾을 수 없습니다" },
             { ErrorCode.MESSAGE_TOO_LONG, "메시지가 너무 깁니다" },
             { ErrorCode.MESSAGE_EMPTY, "메시지 내용이 비어있습니다" },
+            { ErrorCode.INVALID_INPUT, "잘못된 입력입니다" },
+            { ErrorCode.INAPPROPRIATE_REQUEST, "부적절한 요청입니다" },
+            { ErrorCode.UNKNOWN_ACTION, "알 수 없는 액션입니다" },
             
             // 외부 서비스 오류
             { ErrorCode.EXTERNAL_SERVICE_ERROR, "외부 서비스에서 오류가 발생했습니다" },
@@ -89,7 +96,8 @@ namespace ProjectVG.Common.Constants
             { ErrorCode.AUTHENTICATION_FAILED, "인증에 실패했습니다" },
             { ErrorCode.AUTHORIZATION_FAILED, "권한이 부족합니다" },
             { ErrorCode.TOKEN_EXPIRED, "토큰이 만료되었습니다" },
-            { ErrorCode.TOKEN_INVALID, "유효하지 않은 토큰입니다" }
+            { ErrorCode.TOKEN_INVALID, "유효하지 않은 토큰입니다" },
+            { ErrorCode.INVALID_SESSION_ID, "유효하지 않은 세션 ID입니다" }
         };
 
         public static string GetMessage(this ErrorCode errorCode)
