@@ -21,6 +21,10 @@ namespace ProjectVG.Application.Models.Chat
 
         public CharacterDto? Character { get; private set; }
 
+        /// <summary>
+        /// ProcessChatCommand 인스턴스에 CharacterDto를 할당하여 내부 Character 속성을 설정합니다.
+        /// </summary>
+        /// <param name="character">할당할 CharacterDto 인스턴스 (null을 허용하지 않음).</param>
         internal void SetCharacter(CharacterDto character)
         {
             Character = character;

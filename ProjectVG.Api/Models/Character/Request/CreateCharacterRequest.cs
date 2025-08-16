@@ -17,6 +17,10 @@ namespace ProjectVG.Api.Models.Character.Request
         [JsonPropertyName("is_active")]
         public bool IsActive { get; set; } = true;
 
+        /// <summary>
+        /// 요청 모델의 값을 사용해 CreateCharacterCommand 인스턴스를 생성하여 반환합니다.
+        /// </summary>
+        /// <returns>이 요청의 Name, Description, Role, IsActive 값을 복사한 CreateCharacterCommand 객체.</returns>
         public CreateCharacterCommand ToCreateCharacterCommand()
         {
             return new CreateCharacterCommand

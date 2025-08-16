@@ -31,6 +31,10 @@ namespace ProjectVG.Application.Models.Chat
         [JsonPropertyName("metadata")]
         public Dictionary<string, object>? Metadata { get; set; }
         
+        /// <summary>
+        /// 오디오 바이트 배열을 Base64 문자열로 변환하여 AudioData에 설정합니다.
+        /// </summary>
+        /// <param name="audioBytes">Base64로 인코딩할 오디오 바이트 배열. null 또는 길이가 0이면 AudioData는 null로 설정됩니다.</param>
         public void SetAudioData(byte[]? audioBytes)
         {
             if (audioBytes != null && audioBytes.Length > 0)

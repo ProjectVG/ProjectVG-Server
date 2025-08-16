@@ -10,7 +10,18 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
     /// <inheritdoc />
     public partial class InitialCreate : Migration
     {
-        /// <inheritdoc />
+        /// <summary>
+        /// 데이터베이스 스키마를 생성하고 초기 시드 데이터를 삽입하는 마이그레이션 작업을 수행합니다.
+        /// </summary>
+        /// <remarks>
+        /// 생성 작업:
+        /// - Characters, Users, ConversationHistories 테이블 생성(기본 키 및 제약 포함).
+        /// - ConversationHistories에 Characters(Id)와 Users(Id)를 참조하는 외래 키(캐스케이드 삭제) 추가.
+        /// - Users.Email에 대한 유니크 인덱스 및 여러 조회용 인덱스(ConversationHistories의 CharacterId, UserId, Timestamp 및 복합 인덱스 등) 생성.
+        /// 시드 데이터:
+        /// - Characters 테이블에 4개의 초기 캐릭터 레코드 삽입.
+        /// - Users 테이블에 2개의 초기 사용자 레코드 삽입.
+        /// </remarks>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(

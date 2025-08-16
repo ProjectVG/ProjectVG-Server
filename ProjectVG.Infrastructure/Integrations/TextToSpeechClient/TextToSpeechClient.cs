@@ -16,6 +16,16 @@ namespace ProjectVG.Infrastructure.Integrations.TextToSpeechClient
             _logger = logger;
         }
 
+        /// <summary>
+        /// 지정한 음성(VoiceId)으로 텍스트를 음성 오디오로 변환하여 결과를 반환합니다.
+        /// </summary>
+        /// <param name="request">변환할 텍스트 및 음성 설정을 포함한 요청 객체. request.VoiceId는 필수입니다.</param>
+        /// <returns>
+        /// TextToSpeechResponse 객체를 포함한 비동기 작업.
+        /// 성공 시 AudioData(바이트 배열), ContentType, AudioLength, StatusCode 등이 채워집니다.
+        /// 실패 또는 예외 발생 시 Success는 false이고 ErrorMessage에 원인이 설정됩니다.
+        /// </returns>
+        /// <exception cref="ArgumentException">request.VoiceId가 null, 빈 문자열 또는 공백인 경우 던져집니다.</exception>
         public async Task<TextToSpeechResponse> TextToSpeechAsync(TextToSpeechRequest request)
         {
             try

@@ -14,7 +14,11 @@ namespace ProjectVG.Application.Services.Character
         /// ID로 캐릭터를 조회합니다
         /// </summary>
         /// <param name="id">캐릭터 ID</param>
-        /// <returns>캐릭터 정보</returns>
+        /// <summary>
+/// 지정된 식별자에 해당하는 캐릭터를 비동기적으로 조회합니다.
+/// </summary>
+/// <param name="id">조회할 캐릭터의 식별자(Guid).</param>
+/// <returns>요청된 캐릭터를 나타내는 CharacterDto 객체.</returns>
         Task<CharacterDto> GetCharacterByIdAsync(Guid id);
 
         /// <summary>

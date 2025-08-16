@@ -13,6 +13,12 @@ namespace ProjectVG.Application.Services.Chat.Validators
         private readonly ICharacterService _characterService;
         private readonly ILogger<ChatRequestValidator> _logger;
 
+        /// <summary>
+        /// ChatRequestValidator의 새 인스턴스를 초기화합니다.
+        /// </summary>
+        /// <remarks>
+        /// 필요한 의존성(ISessionStorage, IUserService, ICharacterService, ILogger&lt;ChatRequestValidator&gt;)을 주입받아 내부에서 사용합니다.
+        /// </remarks>
         public ChatRequestValidator(
             ISessionStorage sessionStorage,
             IUserService userService,
@@ -25,6 +31,12 @@ namespace ProjectVG.Application.Services.Chat.Validators
             _logger = logger;
         }
 
+        /// <summary>
+        /// 주어진 채팅 처리 명령(ProcessChatCommand)의 참조 무결성을 검사합니다.
+        /// </summary>
+        /// <param name="command">검증할 채팅 처리 명령. 선택적 SessionId와 필수 UserId, CharacterId를 사용합니다.</param>
+        /// <exception cref="ValidationException">command.SessionId가 비어있지 않으나 존재하지 않는 세션일 경우(ErrorCode.INVALID_SESSION_ID).</exception>
+        /// <exception cref="NotFoundException">사용자 또는 캐릭터가 존재하지 않을 경우 각각 ErrorCode.USER_NOT_FOUND 또는 ErrorCode.CHARACTER_NOT_FOUND로 던져집니다.</exception>
         public async Task ValidateAsync(ProcessChatCommand command)
         {
             if (!string.IsNullOrEmpty(command.SessionId)) {

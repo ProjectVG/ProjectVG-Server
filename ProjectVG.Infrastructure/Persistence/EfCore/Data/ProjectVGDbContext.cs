@@ -16,6 +16,10 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
         public DbSet<Character> Characters { get; set; }
         public DbSet<ConversationHistory> ConversationHistories { get; set; }
 
+        /// <summary>
+        /// EF Core 모델을 구성합니다: Users, Characters, ConversationHistories 엔티티의 키·속성·인덱스·관계 및 값 변환을 설정하고 초기 데이터를 시드합니다.
+        /// </summary>
+        /// <param name="modelBuilder">엔티티 매핑과 제약, 인덱스, 값 변환 및 관계 구성을 적용할 ModelBuilder 인스턴스.</param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

@@ -21,6 +21,11 @@ namespace ProjectVG.Api.Models.Character.Response
         public bool IsActive { get; set; } = true;
 
 
+        /// <summary>
+        /// CharacterDto를 CharacterResponse로 변환하여 반환합니다.
+        /// </summary>
+        /// <param name="characterDto">변환할 소스 DTO. null이 아니어야 합니다.</param>
+        /// <returns>소스 DTO의 필드(Id, Name, Description, Role, IsActive)를 복사한 새 CharacterResponse 인스턴스.</returns>
         public static CharacterResponse ToResponseDto(CharacterDto characterDto)
         {
             return new CharacterResponse {

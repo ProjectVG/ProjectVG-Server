@@ -12,6 +12,13 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
     [DbContext(typeof(ProjectVGDbContext))]
     partial class ProjectVGDbContextModelSnapshot : ModelSnapshot
     {
+        /// <summary>
+        /// EF Core 마이그레이션용 모델 스냅샷을 구성합니다.
+        /// </summary>
+        /// <remarks>
+        /// 지정된 ModelBuilder를 사용해 데이터베이스 모델의 엔티티 스키마(열 타입, 제약, 인덱스, 관계), 전역 어노테이션 및 SQL Server 식별자 컬럼 전략을 설정합니다.
+        /// 또한 Characters 및 Users 엔티티에 대한 시드 데이터와 ConversationHistories 엔티티의 외래키 관계 및 인덱스를 구성합니다. 이 메서드는 마이그레이션 생성/적용 시 현재 모델 상태를 캡처하는 데 사용됩니다.
+        /// </remarks>
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618

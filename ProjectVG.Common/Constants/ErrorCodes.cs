@@ -100,11 +100,21 @@ namespace ProjectVG.Common.Constants
             { ErrorCode.INVALID_SESSION_ID, "유효하지 않은 세션 ID입니다" }
         };
 
+        /// <summary>
+        /// 지정된 ErrorCode에 대응하는 한국어 설명 문자열을 반환합니다.
+        /// 실패할 경우 INTERNAL_SERVER_ERROR에 대한 설명으로 대체 반환합니다.
+        /// </summary>
+        /// <param name="errorCode">메시지를 조회할 ErrorCode 값.</param>
+        /// <returns>해당 ErrorCode의 한국어 메시지 문자열. 매핑이 없으면 INTERNAL_SERVER_ERROR 메시지.</returns>
         public static string GetMessage(this ErrorCode errorCode)
         {
             return _errorMessages.TryGetValue(errorCode, out var message) ? message : ErrorCode.INTERNAL_SERVER_ERROR.GetMessage();
         }
 
+        /// <summary>
+        /// 지정된 ErrorCode 열거값의 문자열 표현(코드 이름)을 반환합니다.
+        /// </summary>
+        /// <returns>해당 ErrorCode의 이름(예: "INTERNAL_SERVER_ERROR")을 나타내는 문자열.</returns>
         public static string GetCode(this ErrorCode errorCode)
         {
             return errorCode.ToString();

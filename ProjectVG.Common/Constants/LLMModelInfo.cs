@@ -222,6 +222,11 @@ namespace ProjectVG.Common.Constants
             public const float DefaultTemperature = 0.7f;
         }
 
+        /// <summary>
+        /// 지정된 모델 이름에 대한 입력 토큰 비용을 반환합니다.
+        /// </summary>
+        /// <param name="model">LLM 모델의 이름 문자열(예: <c>GPT4oMini.Name</c> 등). 알려지지 않았거나 <c>null</c>인 경우 기본값으로 <c>GPT4oMini.Price.Input</c>이 사용됩니다.</param>
+        /// <returns>해당 모델의 입력 토큰당 비용(단위: 달러 등 통화 단위, 파일 내 정의된 상수 값).</returns>
         public static double GetInputCost(string model)
         {
             return model switch
@@ -250,6 +255,11 @@ namespace ProjectVG.Common.Constants
             };
         }
 
+        /// <summary>
+        /// 지정한 모델의 출력 토큰당 비용을 반환합니다.
+        /// </summary>
+        /// <param name="model">모델 식별자(예: <c>gpt-5</c>, <c>gpt-4o-mini</c>) — 등록되지 않았거나 <c>null</c>이면 기본값(<c>GPT4oMini</c>)의 출력 비용을 반환합니다.</param>
+        /// <returns>해당 모델의 출력(출력 토큰당) 비용 값(double).</returns>
         public static double GetOutputCost(string model)
         {
             return model switch
@@ -278,6 +288,14 @@ namespace ProjectVG.Common.Constants
             };
         }
 
+        /// <summary>
+        /// 지정한 모델의 캐시된 입력 토큰 비용을 반환합니다.
+        /// </summary>
+        /// <param name="model">모델 식별자 문자열(예: <c>gpt-4o-mini</c>)</param>
+        /// <returns>
+        /// 모델에 대해 정의된 CachedInput 비용을 반환합니다. 해당 비용이 정의되어 있지 않거나 모델이 목록에 없으면
+        /// 해당 모델의 입력 비용(GetInputCost)의 10%를 기본값으로 반환합니다.
+        /// </returns>
         public static double GetCachedInputCost(string model)
         {
             return model switch
