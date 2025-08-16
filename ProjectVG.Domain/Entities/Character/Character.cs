@@ -1,7 +1,6 @@
-using System.Collections.Generic;
 using ProjectVG.Domain.Common;
 
-namespace ProjectVG.Domain.Entities.Character
+namespace ProjectVG.Domain.Entities.Characters
 {
 
     /// <summary>

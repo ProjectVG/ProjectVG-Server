@@ -17,7 +17,7 @@ namespace ProjectVG.Application.Models.Chat
         public string? Text { get; set; }
         
         [JsonPropertyName("audio_data")]
-        public string? AudioData { get; set; } // Base64 인코딩된 오디오 데이터
+        public string? AudioData { get; set; }
         
         [JsonPropertyName("audio_format")]
         public string? AudioFormat { get; set; } = "wav";
@@ -31,7 +31,6 @@ namespace ProjectVG.Application.Models.Chat
         [JsonPropertyName("metadata")]
         public Dictionary<string, object>? Metadata { get; set; }
         
-        // 오디오 데이터를 Base64로 변환하는 메서드
         public void SetAudioData(byte[]? audioBytes)
         {
             if (audioBytes != null && audioBytes.Length > 0)
@@ -44,4 +43,4 @@ namespace ProjectVG.Application.Models.Chat
             }
         }
     }
-} 
+}

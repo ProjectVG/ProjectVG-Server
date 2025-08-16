@@ -1,8 +1,7 @@
+using ProjectVG.Application.Models.Character;
+
 namespace ProjectVG.Application.Models.Chat
 {
-    /// <summary>
-    /// 채팅 처리 명령 (내부 비즈니스 로직용)
-    /// </summary>
     public class ProcessChatCommand
     {
         private string _requestId = Guid.NewGuid().ToString();
@@ -19,5 +18,14 @@ namespace ProjectVG.Application.Models.Chat
         public DateTime RequestedAt { get; set; }
         public string? Action { get; set; }
         public string? Instruction { get; set; }
+
+        public CharacterDto? Character { get; private set; }
+
+        internal void SetCharacter(CharacterDto character)
+        {
+            Character = character;
+        }
+
+        public bool IsCharacterLoaded => Character != null;
     }
-} 
+}

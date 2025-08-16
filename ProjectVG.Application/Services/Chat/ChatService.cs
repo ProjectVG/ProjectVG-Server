@@ -1,10 +1,10 @@
-using ProjectVG.Application.Models.Chat;
-using ProjectVG.Application.Services.Chat.Core;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection;
-using ProjectVG.Application.Services.Session;
-using ProjectVG.Application.Services.User;
+using ProjectVG.Application.Services.Chat.Preprocessors;
+using ProjectVG.Application.Services.Chat.Processors;
+using ProjectVG.Application.Services.Chat.Validators;
+using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Character;
+using Microsoft.Extensions.DependencyInjection;
+using ProjectVG.Application.Models.Chat;
 
 namespace ProjectVG.Application.Services.Chat
 {
@@ -13,77 +13,102 @@ namespace ProjectVG.Application.Services.Chat
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<ChatService> _logger;
 
-        public ChatService(IServiceScopeFactory scopeFactory, ILogger<ChatService> logger)
-        {
+        private readonly IConversationService _conversationService;
+        private readonly ICharacterService _characterService;
+
+        private readonly ChatRequestValidator _validator;
+        private readonly MemoryContextPreprocessor _memoryPreprocessor;
+        private readonly UserInputAnalysisProcessor _inputProcessor;
+        private readonly UserInputActionProcessor _actionProcessor;
+
+        private readonly ChatLLMProcessor _llmProcessor;
+        private readonly ChatTTSProcessor _ttsProcessor;
+        private readonly ChatResultProcessor _resultProcessor;
+
+        public ChatService(
+            IServiceScopeFactory scopeFactory,
+            ILogger<ChatService> logger,
+            IConversationService conversationService,
+            ICharacterService characterService,
+            ChatRequestValidator validator,
+            MemoryContextPreprocessor memoryPreprocessor,
+            UserInputAnalysisProcessor inputProcessor,
+            UserInputActionProcessor actionProcessor,
+            ChatLLMProcessor llmProcessor,
+            ChatTTSProcessor ttsProcessor,
+            ChatResultProcessor resultProcessor
+        ) {
             _scopeFactory = scopeFactory;
             _logger = logger;
+            _conversationService = conversationService;
+            _characterService = characterService;
+            _validator = validator;
+            _memoryPreprocessor = memoryPreprocessor;
+            _inputProcessor = inputProcessor;
+            _actionProcessor = actionProcessor;
+
+            _llmProcessor = llmProcessor;
+            _ttsProcessor = ttsProcessor;
+            _resultProcessor = resultProcessor;
         }
 
-        public async Task<ChatValidationResult> EnqueueChatRequestAsync(ProcessChatCommand command)
+        public async Task<ChatRequestResponse> EnqueueChatRequestAsync(ProcessChatCommand command)
         {
-            // 검증 수행
-            var validationResult = await ValidateChatRequestAsync(command);
-            if (!validationResult.IsValid)
-            {
-                return validationResult;
-            }
+            await _validator.ValidateAsync(command);
 
-            // 검증 통과 시 처리 진행
-            await Task.Run(async () =>
-            {
-                using var scope = _scopeFactory.CreateScope();
-                var orchestrator = scope.ServiceProvider.GetRequiredService<ChatOrchestrator>();
-                await orchestrator.ProcessChatRequestAsync(command);
+            var preprocessContext = await PrepareChatRequestAsync(command);
+
+            _ = Task.Run(async () => {
+                using var processScope = _scopeFactory.CreateScope();
+                await ProcessChatRequestInternalAsync(preprocessContext);
             });
 
-            return ChatValidationResult.Success();
+            return ChatRequestResponse.Accepted(command.SessionId, command.UserId, command.CharacterId);
         }
 
-        private async Task<ChatValidationResult> ValidateChatRequestAsync(ProcessChatCommand command)
+
+        /// <summary>
+        /// 채팅 요청 준비
+        /// </summary>
+        private async Task<ChatPreprocessContext> PrepareChatRequestAsync(ProcessChatCommand command)
         {
-            using var scope = _scopeFactory.CreateScope();
+            var characterDto = await _characterService.GetCharacterByIdAsync(command.CharacterId);
+            command.SetCharacter(characterDto!);
             
-            _logger.LogInformation("검증 시작: SessionId={SessionId}, UserId={UserId}, CharacterId={CharacterId}", 
-                command.SessionId, command.UserId, command.CharacterId);
+            var conversationHistory = await _conversationService.GetConversationHistoryAsync(command.UserId, command.CharacterId, 10);
+
+            var inputAnalysis = await _inputProcessor.ProcessAsync(command.Message, conversationHistory);
+            await _actionProcessor.ProcessAsync(command, inputAnalysis);
             
-            // 1. 세션 ID 검증
-            if (!string.IsNullOrEmpty(command.SessionId))
-            {
-                _logger.LogDebug("세션 ID 검증 중: {SessionId}", command.SessionId);
-                var sessionService = scope.ServiceProvider.GetRequiredService<ISessionService>();
-                var sessionExists = await sessionService.SessionExistsAsync(command.SessionId);
-                if (!sessionExists)
-                {
-                    _logger.LogWarning("세션 ID 검증 실패: {SessionId}", command.SessionId);
-                    return ChatValidationResult.Failure("유효하지 않은 세션 ID입니다.", "INVALID_SESSION_ID");
-                }
-                _logger.LogDebug("세션 ID 검증 성공: {SessionId}", command.SessionId);
-            }
+            var memoryContext = await _memoryPreprocessor.CollectMemoryContextAsync(command.UserId.ToString(), command.Message, inputAnalysis);
 
-            // 2. 사용자 ID 검증
-            _logger.LogDebug("사용자 ID 검증 중: {UserId}", command.UserId);
-            var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
-            var userExists = await userService.UserExistsAsync(command.UserId);
-            if (!userExists)
-            {
-                _logger.LogWarning("사용자 ID 검증 실패: {UserId}", command.UserId);
-                return ChatValidationResult.Failure("존재하지 않는 사용자 ID입니다.", "INVALID_USER_ID");
-            }
-            _logger.LogDebug("사용자 ID 검증 성공: {UserId}", command.UserId);
+            return new ChatPreprocessContext(
+                command,
+                memoryContext,
+                conversationHistory
+            );
+        }
 
-            // 3. 캐릭터 ID 검증
-            _logger.LogDebug("캐릭터 ID 검증 중: {CharacterId}", command.CharacterId);
-            var characterService = scope.ServiceProvider.GetRequiredService<ICharacterService>();
-            var characterExists = await characterService.CharacterExistsAsync(command.CharacterId);
-            if (!characterExists)
-            {
-                _logger.LogWarning("캐릭터 ID 검증 실패: {CharacterId}", command.CharacterId);
-                return ChatValidationResult.Failure("존재하지 않는 캐릭터 ID입니다.", "INVALID_CHARACTER_ID");
-            }
-            _logger.LogDebug("캐릭터 ID 검증 성공: {CharacterId}", command.CharacterId);
+        /// <summary>
+        /// 채팅 요청 처리
+        /// </summary>
+        private async Task ProcessChatRequestInternalAsync(ChatPreprocessContext context)
+        {
+            try {
+                _logger.LogInformation("채팅 요청 처리 시작: {SessionId}", context.SessionId);
 
-            _logger.LogInformation("모든 검증 완료");
-            return ChatValidationResult.Success();
+                // 작업 처리 단계: LLM -> TTS -> 결과 전송 + 저장
+                var llmResult = await _llmProcessor.ProcessAsync(context);
+                await _ttsProcessor.ProcessAsync(context, llmResult);
+                await _resultProcessor.SendResultsAsync(context, llmResult);
+                await _resultProcessor.PersistResultsAsync(context, llmResult);
+
+                _logger.LogInformation("채팅 요청 처리 완료: {SessionId}, 토큰: {TokensUsed}",
+                    context.SessionId, llmResult.TokensUsed);
+            }
+            catch (Exception ex) {
+                _logger.LogError(ex, "채팅 요청 처리 중 오류 발생: {SessionId}", context.SessionId);
+            }
         }
     }
-} 
+}

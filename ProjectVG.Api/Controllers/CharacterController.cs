@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using ProjectVG.Application.Services.Character;
-using ProjectVG.Api.Models.Character;
 using ProjectVG.Application.Models.Character;
+using ProjectVG.Api.Models.Character.Request;
+using ProjectVG.Api.Models.Character.Response;
 
 namespace ProjectVG.Api.Controllers
 {
@@ -19,117 +20,44 @@ namespace ProjectVG.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CharacterResponseDto>>> GetAllCharacters()
+        public async Task<ActionResult<IEnumerable<CharacterResponse>>> GetAllCharacters()
         {
-            try
-            {
-                var characterDtos = await _characterService.GetAllCharactersAsync();
-                var responses = characterDtos.Select(CharacterMapper.ToResponseDto);
-                return Ok(responses);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "모든 캐릭터 조회 중 오류가 발생했습니다");
-                return StatusCode(500, "캐릭터 목록을 가져오는 중 내부 서버 오류가 발생했습니다.");
-            }
+            var characterDtos = await _characterService.GetAllCharactersAsync();
+            var responses = characterDtos.Select(CharacterResponse.ToResponseDto);
+            return Ok(responses);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<CharacterResponseDto>> GetCharacterById(Guid id)
+        public async Task<ActionResult<CharacterResponse>> GetCharacterById(Guid id)
         {
-            try
-            {
-                var characterDto = await _characterService.GetCharacterByIdAsync(id);
-                if (characterDto == null)
-                {
-                    return NotFound($"ID {id}인 캐릭터를 찾을 수 없습니다.");
-                }
-
-                var response = CharacterMapper.ToResponseDto(characterDto);
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ID {CharacterId}인 캐릭터 조회 중 오류가 발생했습니다", id);
-                return StatusCode(500, "캐릭터 정보를 가져오는 중 내부 서버 오류가 발생했습니다.");
-            }
+            var characterDto = await _characterService.GetCharacterByIdAsync(id);
+            var response = CharacterResponse.ToResponseDto(characterDto);
+            return Ok(response);
         }
 
         [HttpPost]
-        public async Task<ActionResult<CharacterResponseDto>> CreateCharacter([FromBody] CreateCharacterRequestDto request)
+        public async Task<ActionResult<CharacterResponse>> CreateCharacter([FromBody] CreateCharacterRequest request)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                var command = new CreateCharacterCommand
-                {
-                    Name = request.Name,
-                    Description = request.Description,
-                    Role = request.Role,
-                    IsActive = request.IsActive
-                };
-
-                var characterDto = await _characterService.CreateCharacterAsync(command);
-                var response = CharacterMapper.ToResponseDto(characterDto);
-                return CreatedAtAction(nameof(GetCharacterById), new { id = response.Id }, response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "캐릭터 생성 중 오류가 발생했습니다");
-                return StatusCode(500, "캐릭터 생성 중 내부 서버 오류가 발생했습니다.");
-            }
+            var command = request.ToCreateCharacterCommand();
+            var characterDto = await _characterService.CreateCharacterAsync(command);
+            var response = CharacterResponse.ToResponseDto(characterDto);
+            return CreatedAtAction(nameof(GetCharacterById), new { id = response.Id }, response);
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<CharacterResponseDto>> UpdateCharacter(Guid id, [FromBody] UpdateCharacterRequestDto request)
+        public async Task<ActionResult<CharacterResponse>> UpdateCharacter(Guid id, [FromBody] UpdateCharacterRequest request)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                var command = new UpdateCharacterCommand
-                {
-                    Name = request.Name,
-                    Description = request.Description,
-                    Role = request.Role,
-                    IsActive = request.IsActive
-                };
-
-                var characterDto = await _characterService.UpdateCharacterAsync(id, command);
-                var response = CharacterMapper.ToResponseDto(characterDto);
-                return Ok(response);
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound($"ID {id}인 캐릭터를 찾을 수 없습니다.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ID {CharacterId}인 캐릭터 수정 중 오류가 발생했습니다", id);
-                return StatusCode(500, "캐릭터 정보 수정 중 내부 서버 오류가 발생했습니다.");
-            }
+            var command = request.ToUpdateCharacterCommand();
+            var characterDto = await _characterService.UpdateCharacterAsync(id, command);
+            var response = CharacterResponse.ToResponseDto(characterDto);
+            return Ok(response);
         }
 
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteCharacter(Guid id)
         {
-            try
-            {
-                await _characterService.DeleteCharacterAsync(id);
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ID {CharacterId}인 캐릭터 삭제 중 오류가 발생했습니다", id);
-                return StatusCode(500, "캐릭터 삭제 중 내부 서버 오류가 발생했습니다.");
-            }
+            await _characterService.DeleteCharacterAsync(id);
+            return NoContent();
         }
     }
 } 

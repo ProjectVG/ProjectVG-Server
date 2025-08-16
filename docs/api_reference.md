@@ -34,8 +34,23 @@
     ```json
     {
       "success": true,
-      "message": "채팅 요청이 처리되었습니다",
-      "sessionId": "string (요청에 포함된 sessionId)"
+      "status": "ACCEPTED",
+      "message": "채팅 요청이 성공적으로 수락되었습니다. 처리 중입니다.",
+      "sessionId": "string",
+      "userId": "string (GUID)",
+      "characterId": "string (GUID)",
+      "requestedAt": "2024-01-01T00:00:00Z"
+    }
+    ```
+
+- **실패 (400 Bad Request)**
+    ```json
+    {
+      "success": false,
+      "status": "REJECTED",
+      "message": "오류 메시지",
+      "errorCode": "ERROR_CODE",
+      "requestedAt": "2024-01-01T00:00:00Z"
     }
     ```
 

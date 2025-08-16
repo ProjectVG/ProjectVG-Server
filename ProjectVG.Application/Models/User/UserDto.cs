@@ -1,4 +1,4 @@
-using ProjectVG.Domain.Entities.User;
+using ProjectVG.Domain.Entities.Users;
 
 namespace ProjectVG.Application.Models.User
 {
@@ -8,8 +8,8 @@ namespace ProjectVG.Application.Models.User
         public string Username { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
-        public string? ProviderId { get; set; }
-        public string? Provider { get; set; }
+        public string ProviderId { get; set; } = string.Empty;
+        public string Provider { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
@@ -18,7 +18,7 @@ namespace ProjectVG.Application.Models.User
         {
         }
 
-        public UserDto(ProjectVG.Domain.Entities.User.User user)
+        public UserDto(Domain.Entities.Users.User user)
         {
             Id = user.Id;
             Username = user.Username;
@@ -29,9 +29,9 @@ namespace ProjectVG.Application.Models.User
             IsActive = user.IsActive;
         }
 
-        public ProjectVG.Domain.Entities.User.User ToEntity()
+        public Domain.Entities.Users.User ToEntity()
         {
-            return new ProjectVG.Domain.Entities.User.User {
+            return new Domain.Entities.Users.User {
                 Id = Id,
                 Username = Username,
                 Name = Name,
@@ -42,4 +42,4 @@ namespace ProjectVG.Application.Models.User
             };
         }
     }
-} 
+}

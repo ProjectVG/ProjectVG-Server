@@ -1,0 +1,31 @@
+using System.Text.Json.Serialization;
+using ProjectVG.Application.Models.Character;
+
+namespace ProjectVG.Api.Models.Character.Request
+{
+    public class CreateCharacterRequest
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [JsonPropertyName("description")]
+        public string Description { get; set; } = string.Empty;
+
+        [JsonPropertyName("role")]
+        public string Role { get; set; } = string.Empty;
+
+        [JsonPropertyName("is_active")]
+        public bool IsActive { get; set; } = true;
+
+        public CreateCharacterCommand ToCreateCharacterCommand()
+        {
+            return new CreateCharacterCommand
+            {
+                Name = Name,
+                Description = Description,
+                Role = Role,
+                IsActive = IsActive
+            };
+        }
+    }
+} 

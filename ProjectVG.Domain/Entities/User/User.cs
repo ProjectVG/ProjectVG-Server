@@ -1,6 +1,6 @@
 using ProjectVG.Domain.Common;
 
-namespace ProjectVG.Domain.Entities.User
+namespace ProjectVG.Domain.Entities.Users
 {
     public class User : BaseEntity
     {

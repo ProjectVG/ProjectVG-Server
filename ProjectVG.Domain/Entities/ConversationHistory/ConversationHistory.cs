@@ -1,7 +1,7 @@
 using ProjectVG.Domain.Common;
 using ProjectVG.Domain.Enums;
 
-namespace ProjectVG.Domain.Entities.ConversationHistory
+namespace ProjectVG.Domain.Entities.ConversationHistorys
 {
     public class ConversationHistory : BaseEntity
     {
@@ -11,7 +11,7 @@ namespace ProjectVG.Domain.Entities.ConversationHistory
         public Guid CharacterId { get; set; }
         // 사용자 ID
         public Guid UserId { get; set; }
-        // 채팅 역할 (User, Assistant, System)
+        // 채팅 역할 (Users, Assistant, System)
         public ChatRole Role { get; set; }                          
         // 대화 내용
         public string Content { get; set; } = string.Empty;          
