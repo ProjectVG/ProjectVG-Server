@@ -59,7 +59,6 @@ namespace ProjectVG.Application.Services.Chat
             var preprocessContext = await PrepareChatRequestAsync(command);
 
             _ = Task.Run(async () => {
-                using var processScope = _scopeFactory.CreateScope();
                 await ProcessChatRequestInternalAsync(preprocessContext);
             });
 
@@ -100,8 +99,11 @@ namespace ProjectVG.Application.Services.Chat
                 // 작업 처리 단계: LLM -> TTS -> 결과 전송 + 저장
                 var llmResult = await _llmProcessor.ProcessAsync(context);
                 await _ttsProcessor.ProcessAsync(context, llmResult);
-                await _resultProcessor.SendResultsAsync(context, llmResult);
-                await _resultProcessor.PersistResultsAsync(context, llmResult);
+                
+                using var scope = _scopeFactory.CreateScope();
+                var resultProcessor = scope.ServiceProvider.GetRequiredService<ChatResultProcessor>();
+                await resultProcessor.SendResultsAsync(context, llmResult);
+                await resultProcessor.PersistResultsAsync(context, llmResult);
 
                 _logger.LogInformation("채팅 요청 처리 완료: {SessionId}, 토큰: {TokensUsed}",
                     context.SessionId, llmResult.TokensUsed);
