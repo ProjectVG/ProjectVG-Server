@@ -1,10 +1,10 @@
-using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Services.Chat.Preprocessors;
 using ProjectVG.Application.Services.Chat.Processors;
 using ProjectVG.Application.Services.Chat.Validators;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Character;
 using Microsoft.Extensions.DependencyInjection;
+using ProjectVG.Application.Models.Chat;
 
 namespace ProjectVG.Application.Services.Chat
 {

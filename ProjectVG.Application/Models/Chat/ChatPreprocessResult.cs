@@ -1,5 +1,3 @@
-using ProjectVG.Application.Models.Chat;
-
 namespace ProjectVG.Application.Models.Chat
 {
     public class ChatPreprocessResult

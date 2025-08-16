@@ -1,6 +1,6 @@
 using ProjectVG.Infrastructure.Persistence.Repositories.Characters;
-using ProjectVG.Application.Models.Character;
 using Microsoft.Extensions.Logging;
+using ProjectVG.Application.Models.Character;
 
 namespace ProjectVG.Application.Services.Character
 {

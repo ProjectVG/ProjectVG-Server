@@ -1,8 +1,5 @@
 namespace ProjectVG.Application.Models.Character
 {
-    /// <summary>
-    /// 캐릭터 명령 기본 구조 (내부 비즈니스 로직용)
-    /// </summary>
     public class CharacterCommand
     {
         public string Name { get; set; } = string.Empty;

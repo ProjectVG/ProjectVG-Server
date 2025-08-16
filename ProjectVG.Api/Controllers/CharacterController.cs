@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using ProjectVG.Application.Services.Character;
-using ProjectVG.Api.Models.Character;
 using ProjectVG.Application.Models.Character;
+using ProjectVG.Api.Models.Character.Request;
+using ProjectVG.Api.Models.Character.Response;
 
 namespace ProjectVG.Api.Controllers
 {
@@ -19,12 +20,12 @@ namespace ProjectVG.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CharacterResponseDto>>> GetAllCharacters()
+        public async Task<ActionResult<IEnumerable<CharacterResponse>>> GetAllCharacters()
         {
             try
             {
                 var characterDtos = await _characterService.GetAllCharactersAsync();
-                var responses = characterDtos.Select(CharacterMapper.ToResponseDto);
+                var responses = characterDtos.Select(CharacterResponse.ToResponseDto);
                 return Ok(responses);
             }
             catch (Exception ex)
@@ -35,7 +36,7 @@ namespace ProjectVG.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<CharacterResponseDto>> GetCharacterById(Guid id)
+        public async Task<ActionResult<CharacterResponse>> GetCharacterById(Guid id)
         {
             try
             {
@@ -45,7 +46,7 @@ namespace ProjectVG.Api.Controllers
                     return NotFound($"ID {id}인 캐릭터를 찾을 수 없습니다.");
                 }
 
-                var response = CharacterMapper.ToResponseDto(characterDto);
+                var response = CharacterResponse.ToResponseDto(characterDto);
                 return Ok(response);
             }
             catch (Exception ex)
@@ -56,7 +57,7 @@ namespace ProjectVG.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<CharacterResponseDto>> CreateCharacter([FromBody] CreateCharacterRequestDto request)
+        public async Task<ActionResult<CharacterResponse>> CreateCharacter([FromBody] CreateCharacterRequest request)
         {
             try
             {
@@ -74,7 +75,7 @@ namespace ProjectVG.Api.Controllers
                 };
 
                 var characterDto = await _characterService.CreateCharacterAsync(command);
-                var response = CharacterMapper.ToResponseDto(characterDto);
+                var response = CharacterResponse.ToResponseDto(characterDto);
                 return CreatedAtAction(nameof(GetCharacterById), new { id = response.Id }, response);
             }
             catch (Exception ex)
@@ -85,7 +86,7 @@ namespace ProjectVG.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<CharacterResponseDto>> UpdateCharacter(Guid id, [FromBody] UpdateCharacterRequestDto request)
+        public async Task<ActionResult<CharacterResponse>> UpdateCharacter(Guid id, [FromBody] UpdateCharacterRequest request)
         {
             try
             {
@@ -103,7 +104,7 @@ namespace ProjectVG.Api.Controllers
                 };
 
                 var characterDto = await _characterService.UpdateCharacterAsync(id, command);
-                var response = CharacterMapper.ToResponseDto(characterDto);
+                var response = CharacterResponse.ToResponseDto(characterDto);
                 return Ok(response);
             }
             catch (KeyNotFoundException)

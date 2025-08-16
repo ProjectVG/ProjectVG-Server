@@ -1,10 +1,7 @@
 using System.Text.Json.Serialization;
 
-namespace ProjectVG.Application.Models.Chat
+namespace ProjectVG.Application.Models.WebSocket
 {
-    /// <summary>
-    /// WebSocket 메시지 기본 구조
-    /// </summary>
     public class WebSocketMessage
     {
         [JsonPropertyName("type")]
@@ -21,4 +18,4 @@ namespace ProjectVG.Application.Models.Chat
             Data = data;
         }
     }
-} 
+}

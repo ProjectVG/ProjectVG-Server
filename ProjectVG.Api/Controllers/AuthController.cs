@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using ProjectVG.Application.Services.User;
 using ProjectVG.Application.Models.User;
-using Microsoft.Extensions.Logging;
 
 namespace ProjectVG.Api.Controllers
 {

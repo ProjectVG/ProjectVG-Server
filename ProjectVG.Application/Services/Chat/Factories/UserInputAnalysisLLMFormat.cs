@@ -1,6 +1,6 @@
-using ProjectVG.Application.Models.Chat;
 using ProjectVG.Common.Constants;
 using Microsoft.Extensions.Logging;
+using ProjectVG.Application.Models.Chat;
 
 namespace ProjectVG.Application.Services.Chat.Factories
 {

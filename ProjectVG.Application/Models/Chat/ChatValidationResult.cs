@@ -21,4 +21,4 @@ namespace ProjectVG.Application.Models.Chat
             };
         }
     }
-} 
+}

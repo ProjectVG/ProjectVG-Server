@@ -34,7 +34,6 @@ namespace ProjectVG.Application.Models.Chat
             MemoryContext = memoryContext ?? new List<string>();
             ConversationHistory = conversationHistory ?? new List<ConversationHistory>();
             
-            // Character는 반드시 존재한다고 가정
             Character = command.Character!;
             VoiceName = command.Character!.VoiceId;
         }
@@ -84,4 +83,4 @@ namespace ProjectVG.Application.Models.Chat
             return info.ToString();
         }
     }
-} 
+}

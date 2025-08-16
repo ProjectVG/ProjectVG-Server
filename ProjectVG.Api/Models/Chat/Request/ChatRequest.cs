@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using ProjectVG.Application.Models.Chat;
 
-namespace ProjectVG.Api.Models.Chat
+namespace ProjectVG.Application.Models.API.Request
 {
     public class ChatRequest
     {
@@ -40,4 +40,4 @@ namespace ProjectVG.Api.Models.Chat
             };
         }
     }
-} 
+}

@@ -1,10 +1,10 @@
-using ProjectVG.Application.Models.Chat;
 using ProjectVG.Infrastructure.Persistence.Session;
 using ProjectVG.Application.Services.User;
 using ProjectVG.Application.Services.Character;
 using Microsoft.Extensions.Logging;
+using ProjectVG.Application.Models.Chat;
 
-namespace ProjectVG.Application.Services.Chat
+namespace ProjectVG.Application.Services.Chat.Validators
 {
     public class ChatRequestValidator
     {

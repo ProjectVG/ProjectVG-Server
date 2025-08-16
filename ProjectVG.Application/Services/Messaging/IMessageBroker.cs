@@ -1,4 +1,4 @@
-using ProjectVG.Application.Models.Chat;
+using ProjectVG.Application.Models.WebSocket;
 
 namespace ProjectVG.Application.Services.Messaging
 {

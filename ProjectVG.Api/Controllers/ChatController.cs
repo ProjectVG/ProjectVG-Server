@@ -1,10 +1,7 @@
-using ProjectVG.Api.Models.Chat;
+using ProjectVG.Application.Models.API.Request;
 using ProjectVG.Application.Services.Chat;
-using ProjectVG.Application.Models.Chat;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace ProjectVG.Api.Controllers
 {

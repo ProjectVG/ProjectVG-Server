@@ -1,4 +1,4 @@
-using ProjectVG.Application.Models.Chat;
+using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Application.Services.Session;
 using System.Text.Json;
 

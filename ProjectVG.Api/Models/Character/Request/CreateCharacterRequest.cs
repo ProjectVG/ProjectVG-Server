@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace ProjectVG.Api.Models.Character
+namespace ProjectVG.Api.Models.Character.Request
 {
-    public class UpdateCharacterRequestDto
+    public class CreateCharacterRequest
     {
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;

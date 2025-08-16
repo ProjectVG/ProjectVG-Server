@@ -2,9 +2,6 @@ using ProjectVG.Domain.Entities.Characters;
 
 namespace ProjectVG.Application.Models.Character
 {
-    /// <summary>
-    /// 캐릭터 데이터 전송 객체 (내부 비즈니스 로직용)
-    /// </summary>
     public class CharacterDto
     {
         public Guid Id { get; set; }
@@ -16,18 +13,11 @@ namespace ProjectVG.Application.Models.Character
         public string SpeechStyle { get; set; } = string.Empty;
         public string VoiceId { get; set; } = string.Empty;
 
-        /// <summary>
-        /// 기본 생성자
-        /// </summary>
         public CharacterDto()
         {
         }
 
-        /// <summary>
-        /// Characters 엔티티로부터 DTO를 생성하는 생성자
-        /// </summary>
-        /// <param name="character">Characters 엔티티</param>
-        public CharacterDto(ProjectVG.Domain.Entities.Characters.Character character)
+        public CharacterDto(Domain.Entities.Characters.Character character)
         {
             Id = character.Id;
             Name = character.Name;
@@ -38,7 +28,5 @@ namespace ProjectVG.Application.Models.Character
             SpeechStyle = character.SpeechStyle;
             VoiceId = character.VoiceId;
         }
-
-
     }
-} 
+}

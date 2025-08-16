@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using ProjectVG.Application.Services.Session;
 using ProjectVG.Common.Models.Session;
-using ProjectVG.Application.Models.Chat;
+using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Infrastructure.Persistence.Session;
 
 namespace ProjectVG.Application.Middlewares
