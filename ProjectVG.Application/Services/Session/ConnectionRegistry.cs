@@ -57,6 +57,14 @@ namespace ProjectVG.Application.Services.Session
 		}
 
 		/// <summary>
+		/// 연결 상태를 확인합니다
+		/// </summary>
+		public bool IsConnected(string sessionId)
+		{
+			return _connections.ContainsKey(sessionId);
+		}
+
+		/// <summary>
 		/// 사용자 ID로 세션 ID 목록을 조회합니다
 		/// </summary>
 		public IEnumerable<string> GetSessionIdsByUserId(string userId)
@@ -69,25 +77,11 @@ namespace ProjectVG.Application.Services.Session
 		}
 
 		/// <summary>
-		/// 텍스트 메시지를 전송합니다
+		/// 활성 연결 수를 반환합니다
 		/// </summary>
-		public async Task SendTextAsync(string sessionId, string message)
+		public int GetActiveConnectionCount()
 		{
-			if (TryGetConnection(sessionId, out var connection))
-			{
-				await connection.SendTextAsync(message);
-			}
-		}
-
-		/// <summary>
-		/// 바이너리 데이터를 전송합니다
-		/// </summary>
-		public async Task SendBinaryAsync(string sessionId, byte[] data)
-		{
-			if (TryGetConnection(sessionId, out var connection))
-			{
-				await connection.SendBinaryAsync(data);
-			}
+			return _connections.Count;
 		}
 
 		private void RemoveFromUserMapping(string? userId, string sessionId)

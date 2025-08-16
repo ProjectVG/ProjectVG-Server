@@ -5,6 +5,7 @@ using ProjectVG.Application.Services.Chat;
 using ProjectVG.Application.Services.Chat.Preprocessors;
 using ProjectVG.Application.Services.Chat.Processors;
 using ProjectVG.Application.Services.Chat.Validators;
+using ProjectVG.Application.Services.WebSocket;
 
 namespace ProjectVG.Application.Services
 {
@@ -27,6 +28,8 @@ namespace ProjectVG.Application.Services
             services.AddScoped<UserInputAnalysisProcessor>();
             services.AddScoped<UserInputActionProcessor>();
             services.AddScoped<MemoryContextPreprocessor>();
+            
+            services.AddScoped<IWebSocketManager, WebSocketManager>();
             
             return services;
         }

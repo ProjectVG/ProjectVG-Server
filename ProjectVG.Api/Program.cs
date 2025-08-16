@@ -1,13 +1,10 @@
-using ProjectVG.Application.Middlewares;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using ProjectVG.Infrastructure.Integrations.LLMClient;
 using ProjectVG.Infrastructure.Integrations.MemoryClient;
 using ProjectVG.Application.Services.Chat;
 using ProjectVG.Application.Services;
-using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Session;
-using ProjectVG.Application.Services.User;
 using ProjectVG.Infrastructure.Persistence.Session;
 using ProjectVG.Infrastructure.Integrations.TextToSpeechClient;
 
@@ -16,7 +13,7 @@ using ProjectVG.Api.Services;
 using ProjectVG.Api.Middleware;
 using ProjectVG.Api.Filters;
 using ProjectVG.Infrastructure.Realtime.WebSocketConnection;
-using ProjectVG.Application.Services.Messaging;
+
 using ProjectVG.Common.Models.Session;
 using ProjectVG.Infrastructure.Persistence.EfCore;
 using Microsoft.EntityFrameworkCore;
@@ -96,7 +93,6 @@ builder.Services.AddScoped<IConversationService, ConversationService>();
 
 builder.Services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
 builder.Services.AddSingleton<IClientConnectionFactory, WebSocketClientConnectionFactory>();
-builder.Services.AddSingleton<IMessageBroker, MessageBroker>();
 
 // Infrastructure Repositories 
 builder.Services.AddScoped<ICharacterRepository, SqlServerCharacterRepository>();
@@ -138,7 +134,7 @@ app.UseGlobalExceptionHandler();
 
 app.UseWebSockets();
 
-// WebSocket 미들웨어를 특정 경로에만 적용
+// WebSocket 미들웨어 등록
 app.UseMiddleware<WebSocketMiddleware>();
 
 app.Use(async (ctx, next) => {

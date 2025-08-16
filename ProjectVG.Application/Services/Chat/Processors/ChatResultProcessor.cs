@@ -1,7 +1,7 @@
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Application.Services.Conversation;
-using ProjectVG.Application.Services.Messaging;
+using ProjectVG.Application.Services.WebSocket;
 using ProjectVG.Infrastructure.Integrations.MemoryClient;
 using ProjectVG.Domain.Enums;
 
@@ -12,18 +12,18 @@ namespace ProjectVG.Application.Services.Chat.Processors
         private readonly ILogger<ChatResultProcessor> _logger;
         private readonly IConversationService _conversationService;
         private readonly IMemoryClient _memoryClient;
-        private readonly IMessageBroker _messageBroker;
+        private readonly IWebSocketManager _webSocketService;
 
         public ChatResultProcessor(
             ILogger<ChatResultProcessor> logger,
             IConversationService conversationService,
             IMemoryClient memoryClient,
-            IMessageBroker messageBroker)
+            IWebSocketManager webSocketService)
         {
             _logger = logger;
             _conversationService = conversationService;
             _memoryClient = memoryClient;
-            _messageBroker = messageBroker;
+            _webSocketService = webSocketService;
         }
 
         public async Task PersistResultsAsync(ChatPreprocessContext context, ChatProcessResult result)
@@ -51,7 +51,7 @@ namespace ProjectVG.Application.Services.Chat.Processors
                 integratedMessage.SetAudioData(segment.AudioData);
 
                 var wsMessage = new WebSocketMessage("chat", integratedMessage);
-                await _messageBroker.SendWebSocketMessageAsync(context.SessionId, wsMessage);
+                await _webSocketService.SendAsync(context.SessionId, wsMessage);
             }
 
             _logger.LogDebug("채팅 결과 전송 완료: 세션 {SessionId}, 세그먼트 {SegmentCount}개",

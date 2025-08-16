@@ -21,19 +21,19 @@ namespace ProjectVG.Application.Services.Session
 		bool TryGet(string sessionId, out IClientConnection? connection);
 
 		/// <summary>
+		/// 연결 상태를 확인합니다
+		/// </summary>
+		bool IsConnected(string sessionId);
+
+		/// <summary>
 		/// 사용자 ID로 세션 ID 목록을 조회합니다
 		/// </summary>
 		IEnumerable<string> GetSessionIdsByUserId(string userId);
 
 		/// <summary>
-		/// 텍스트 메시지를 전송합니다
+		/// 활성 연결 수를 반환합니다
 		/// </summary>
-		Task SendTextAsync(string sessionId, string message);
-
-		/// <summary>
-		/// 바이너리 데이터를 전송합니다
-		/// </summary>
-		Task SendBinaryAsync(string sessionId, byte[] data);
+		int GetActiveConnectionCount();
 	}
 }
 

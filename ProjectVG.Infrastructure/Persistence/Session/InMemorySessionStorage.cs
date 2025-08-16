@@ -37,7 +37,8 @@ namespace ProjectVG.Infrastructure.Persistence.Session
 			{
 				if (_sessions.ContainsKey(session.SessionId))
 				{
-					throw new InvalidOperationException($"세션 ID '{session.SessionId}'가 이미 존재합니다.");
+					_sessions[session.SessionId] = session;
+					return Task.FromResult(session);
 				}
 
 				_sessions[session.SessionId] = session;
