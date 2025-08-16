@@ -1,4 +1,5 @@
 using ProjectVG.Application.Models.Chat;
+using ProjectVG.Domain.Entities.ConversationHistorys;
 
 namespace ProjectVG.Application.Services.Chat.CostTracking
 {
@@ -7,5 +8,6 @@ namespace ProjectVG.Application.Services.Chat.CostTracking
         T Service { get; }
         Task<ChatProcessResult> ProcessAsync(ChatPreprocessContext context);
         Task ProcessAsync(ChatPreprocessContext context, ChatProcessResult result);
+        Task<UserInputAnalysis> ProcessAsync(string userInput, IEnumerable<ConversationHistory> conversationHistory);
     }
 }

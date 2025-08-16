@@ -19,7 +19,7 @@ namespace ProjectVG.Application.Services.Chat
 
         private readonly ChatRequestValidator _validator;
         private readonly MemoryContextPreprocessor _memoryPreprocessor;
-        private readonly UserInputAnalysisProcessor _inputProcessor;
+        private readonly ICostTrackingDecorator<UserInputAnalysisProcessor> _inputProcessor;
         private readonly UserInputActionProcessor _actionProcessor;
 
         private readonly ICostTrackingDecorator<ChatLLMProcessor> _llmProcessor;
@@ -34,7 +34,7 @@ namespace ProjectVG.Application.Services.Chat
             ICharacterService characterService,
             ChatRequestValidator validator,
             MemoryContextPreprocessor memoryPreprocessor,
-            UserInputAnalysisProcessor inputProcessor,
+            ICostTrackingDecorator<UserInputAnalysisProcessor> inputProcessor,
             UserInputActionProcessor actionProcessor,
             ICostTrackingDecorator<ChatLLMProcessor> llmProcessor,
             ICostTrackingDecorator<ChatTTSProcessor> ttsProcessor,

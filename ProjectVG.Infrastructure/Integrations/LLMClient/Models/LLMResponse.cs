@@ -29,16 +29,16 @@ namespace ProjectVG.Infrastructure.Integrations.LLMClient.Models
         public int TokensUsed { get; set; }
 
         /// <summary>
-        /// 입력 토큰 수 (prompt_tokens)
+        /// 입력 토큰 수 (input_tokens)
         /// </summary>
-        [JsonPropertyName("prompt_tokens")]
-        public int PromptTokens { get; set; }
+        [JsonPropertyName("input_tokens")]
+        public int InputTokens { get; set; }
 
         /// <summary>
-        /// 출력 토큰 수 (completion_tokens)
+        /// 출력 토큰 수 (output_tokens)
         /// </summary>
-        [JsonPropertyName("completion_tokens")]
-        public int CompletionTokens { get; set; }
+        [JsonPropertyName("output_tokens")]
+        public int OutputTokens { get; set; }
 
         /// <summary>
         /// 처리 시간 (ms)

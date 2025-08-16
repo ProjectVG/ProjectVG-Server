@@ -77,15 +77,17 @@ namespace ProjectVG.Application.Services.Chat.CostTracking
 
             Console.WriteLine($"[METRICS] 채팅 메트릭 로그 시작: {metrics.SessionId}");
 
+            var totalCostInDollars = (double)metrics.TotalCost / 100_000.0;
             _logger.LogInformation(
-                "채팅 메트릭 - SessionId: {SessionId}, 총 비용: {TotalCost:C}, 총 시간: {TotalDuration}",
-                metrics.SessionId, metrics.TotalCost, metrics.TotalDuration);
+                "채팅 메트릭 - SessionId: {SessionId}, 총 비용: ${TotalCost:F6}, 총 시간: {TotalDuration}",
+                metrics.SessionId, totalCostInDollars, metrics.TotalDuration);
 
             foreach (var process in metrics.ProcessMetrics)
             {
+                var processCostInDollars = (double)process.Cost / 100_000.0;
                 _logger.LogInformation(
-                    "  - {ProcessName}: {Duration}ms, 비용: {Cost:C}",
-                    process.ProcessName, process.Duration.TotalMilliseconds, process.Cost);
+                    "  - {ProcessName}: {Duration}ms, 비용: ${Cost:F6}",
+                    process.ProcessName, process.Duration.TotalMilliseconds, processCostInDollars);
             }
         }
     }
