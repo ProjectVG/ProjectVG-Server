@@ -1,6 +1,7 @@
 using ProjectVG.Application.Services.Chat.Preprocessors;
 using ProjectVG.Application.Services.Chat.Processors;
 using ProjectVG.Application.Services.Chat.Validators;
+using ProjectVG.Application.Services.Chat.CostTracking;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Character;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,9 +22,10 @@ namespace ProjectVG.Application.Services.Chat
         private readonly UserInputAnalysisProcessor _inputProcessor;
         private readonly UserInputActionProcessor _actionProcessor;
 
-        private readonly ChatLLMProcessor _llmProcessor;
-        private readonly ChatTTSProcessor _ttsProcessor;
+        private readonly ICostTrackingDecorator<ChatLLMProcessor> _llmProcessor;
+        private readonly ICostTrackingDecorator<ChatTTSProcessor> _ttsProcessor;
         private readonly ChatResultProcessor _resultProcessor;
+        private readonly IChatMetricsService _metricsService;
 
         public ChatService(
             IServiceScopeFactory scopeFactory,
@@ -34,9 +36,10 @@ namespace ProjectVG.Application.Services.Chat
             MemoryContextPreprocessor memoryPreprocessor,
             UserInputAnalysisProcessor inputProcessor,
             UserInputActionProcessor actionProcessor,
-            ChatLLMProcessor llmProcessor,
-            ChatTTSProcessor ttsProcessor,
-            ChatResultProcessor resultProcessor
+            ICostTrackingDecorator<ChatLLMProcessor> llmProcessor,
+            ICostTrackingDecorator<ChatTTSProcessor> ttsProcessor,
+            ChatResultProcessor resultProcessor,
+            IChatMetricsService metricsService
         ) {
             _scopeFactory = scopeFactory;
             _logger = logger;
@@ -50,10 +53,13 @@ namespace ProjectVG.Application.Services.Chat
             _llmProcessor = llmProcessor;
             _ttsProcessor = ttsProcessor;
             _resultProcessor = resultProcessor;
+            _metricsService = metricsService;
         }
 
         public async Task<ChatRequestResponse> EnqueueChatRequestAsync(ProcessChatCommand command)
         {
+            _metricsService.StartChatMetrics(command.SessionId, command.UserId.ToString(), command.CharacterId.ToString());
+            
             await _validator.ValidateAsync(command);
 
             var preprocessContext = await PrepareChatRequestAsync(command);
@@ -104,6 +110,9 @@ namespace ProjectVG.Application.Services.Chat
                 var resultProcessor = scope.ServiceProvider.GetRequiredService<ChatResultProcessor>();
                 await resultProcessor.SendResultsAsync(context, llmResult);
                 await resultProcessor.PersistResultsAsync(context, llmResult);
+
+                _metricsService.EndChatMetrics();
+                _metricsService.LogChatMetrics();
 
                 _logger.LogInformation("채팅 요청 처리 완료: {SessionId}, 토큰: {TokensUsed}",
                     context.SessionId, llmResult.TokensUsed);

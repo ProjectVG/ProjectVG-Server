@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.User;
 using ProjectVG.Application.Services.Chat;
+using ProjectVG.Application.Services.Chat.CostTracking;
 using ProjectVG.Application.Services.Chat.Preprocessors;
 using ProjectVG.Application.Services.Chat.Processors;
 using ProjectVG.Application.Services.Chat.Validators;
@@ -32,6 +33,12 @@ namespace ProjectVG.Application
             services.AddScoped<IChatService, ChatService>();
             services.AddScoped<IConversationService, ConversationService>();
             services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
+            
+            services.AddScoped<IChatMetricsService, ChatMetricsService>();
+
+            // 비용 추적 데코레이터 등록
+            services.AddCostTrackingDecorator<ChatLLMProcessor>("LLM_Processing");
+            services.AddCostTrackingDecorator<ChatTTSProcessor>("TTS_Processing");
 
             return services;
         }
