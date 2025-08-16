@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using ProjectVG.Common.Exceptions;
 
 namespace ProjectVG.Api.Middleware
 {
@@ -9,11 +10,13 @@ namespace ProjectVG.Api.Middleware
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<GlobalExceptionHandler> _logger;
+        private readonly IWebHostEnvironment _environment;
 
-        public GlobalExceptionHandler(RequestDelegate next, ILogger<GlobalExceptionHandler> logger)
+        public GlobalExceptionHandler(RequestDelegate next, ILogger<GlobalExceptionHandler> logger, IWebHostEnvironment environment)
         {
             _next = next;
             _logger = logger;
+            _environment = environment;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -37,7 +40,8 @@ namespace ProjectVG.Api.Middleware
 
             var jsonResponse = JsonSerializer.Serialize(errorResponse, new JsonSerializerOptions
             {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = _environment.IsDevelopment()
             });
 
             await context.Response.WriteAsync(jsonResponse);
@@ -45,7 +49,7 @@ namespace ProjectVG.Api.Middleware
 
         private ErrorResponse CreateErrorResponse(Exception exception, HttpContext context)
         {
-            if (exception is ValidationException validationEx)
+            if (exception is ProjectVG.Common.Exceptions.ValidationException validationEx)
             {
                 return HandleValidationException(validationEx, context);
             }
@@ -73,6 +77,31 @@ namespace ProjectVG.Api.Middleware
             if (exception is KeyNotFoundException keyNotFoundEx)
             {
                 return HandleKeyNotFoundException(keyNotFoundEx, context);
+            }
+            
+            if (exception is ArgumentException argumentEx)
+            {
+                return HandleArgumentException(argumentEx, context);
+            }
+            
+            if (exception is InvalidOperationException invalidOpEx)
+            {
+                return HandleInvalidOperationException(invalidOpEx, context);
+            }
+            
+            if (exception is UnauthorizedAccessException unauthorizedEx)
+            {
+                return HandleUnauthorizedAccessException(unauthorizedEx, context);
+            }
+            
+            if (exception is TimeoutException timeoutEx)
+            {
+                return HandleTimeoutException(timeoutEx, context);
+            }
+            
+            if (exception is HttpRequestException httpEx)
+            {
+                return HandleHttpRequestException(httpEx, context);
             }
             
             return HandleGenericException(exception, context);
@@ -140,14 +169,29 @@ namespace ProjectVG.Api.Middleware
 
         private ErrorResponse HandleDbUpdateException(DbUpdateException exception, HttpContext context)
         {
-            if (exception.InnerException?.Message.Contains("duplicate") == true)
+            var innerMessage = exception.InnerException?.Message?.ToLowerInvariant() ?? string.Empty;
+            
+            if (innerMessage.Contains("duplicate") || innerMessage.Contains("unique"))
             {
                 _logger.LogWarning(exception, "데이터베이스 중복 키 오류 발생");
                 return new ErrorResponse
                 {
-                    ErrorCode = "리소스_중복",
+                    ErrorCode = "RESOURCE_CONFLICT",
                     Message = "이미 존재하는 데이터입니다",
                     StatusCode = 409,
+                    Timestamp = DateTime.UtcNow,
+                    TraceId = context.TraceIdentifier
+                };
+            }
+            
+            if (innerMessage.Contains("foreign key") || innerMessage.Contains("constraint"))
+            {
+                _logger.LogWarning(exception, "데이터베이스 제약 조건 위반");
+                return new ErrorResponse
+                {
+                    ErrorCode = "CONSTRAINT_VIOLATION",
+                    Message = "관련 데이터가 존재하여 삭제할 수 없습니다",
+                    StatusCode = 400,
                     Timestamp = DateTime.UtcNow,
                     TraceId = context.TraceIdentifier
                 };
@@ -156,7 +200,7 @@ namespace ProjectVG.Api.Middleware
             _logger.LogError(exception, "데이터베이스 업데이트 오류 발생");
             return new ErrorResponse
             {
-                ErrorCode = "데이터베이스_오류",
+                ErrorCode = "DATABASE_ERROR",
                 Message = "데이터베이스 처리 중 오류가 발생했습니다",
                 StatusCode = (int)HttpStatusCode.InternalServerError,
                 Timestamp = DateTime.UtcNow,
@@ -170,7 +214,7 @@ namespace ProjectVG.Api.Middleware
             
             return new ErrorResponse
             {
-                ErrorCode = "리소스_찾을_수_없음",
+                ErrorCode = "RESOURCE_NOT_FOUND",
                 Message = exception.Message,
                 StatusCode = (int)HttpStatusCode.NotFound,
                 Timestamp = DateTime.UtcNow,
@@ -178,18 +222,97 @@ namespace ProjectVG.Api.Middleware
             };
         }
 
-        private ErrorResponse HandleGenericException(Exception exception, HttpContext context)
+        private ErrorResponse HandleArgumentException(ArgumentException exception, HttpContext context)
         {
-            _logger.LogError(exception, "예상치 못한 예외 발생: {ExceptionType} - {Message}", 
-                exception.GetType().Name, exception.Message);
+            _logger.LogWarning(exception, "잘못된 인수: {Message}", exception.Message);
             
             return new ErrorResponse
             {
-                ErrorCode = "내부_서버_오류",
-                Message = "서버에서 예상치 못한 오류가 발생했습니다",
-                StatusCode = (int)HttpStatusCode.InternalServerError,
+                ErrorCode = "INVALID_ARGUMENT",
+                Message = "잘못된 요청 파라미터입니다",
+                StatusCode = (int)HttpStatusCode.BadRequest,
+                Timestamp = DateTime.UtcNow,
+                TraceId = context.TraceIdentifier,
+                Details = _environment.IsDevelopment() ? new List<string> { exception.Message } : null
+            };
+        }
+
+        private ErrorResponse HandleInvalidOperationException(InvalidOperationException exception, HttpContext context)
+        {
+            _logger.LogWarning(exception, "잘못된 작업: {Message}", exception.Message);
+            
+            return new ErrorResponse
+            {
+                ErrorCode = "INVALID_OPERATION",
+                Message = "요청한 작업을 수행할 수 없습니다",
+                StatusCode = (int)HttpStatusCode.BadRequest,
+                Timestamp = DateTime.UtcNow,
+                TraceId = context.TraceIdentifier,
+                Details = _environment.IsDevelopment() ? new List<string> { exception.Message } : null
+            };
+        }
+
+        private ErrorResponse HandleUnauthorizedAccessException(UnauthorizedAccessException exception, HttpContext context)
+        {
+            _logger.LogWarning(exception, "권한 없음: {Message}", exception.Message);
+            
+            return new ErrorResponse
+            {
+                ErrorCode = "UNAUTHORIZED",
+                Message = "접근 권한이 없습니다",
+                StatusCode = (int)HttpStatusCode.Unauthorized,
                 Timestamp = DateTime.UtcNow,
                 TraceId = context.TraceIdentifier
+            };
+        }
+
+        private ErrorResponse HandleTimeoutException(TimeoutException exception, HttpContext context)
+        {
+            _logger.LogWarning(exception, "타임아웃 발생: {Message}", exception.Message);
+            
+            return new ErrorResponse
+            {
+                ErrorCode = "TIMEOUT",
+                Message = "요청 처리 시간이 초과되었습니다",
+                StatusCode = (int)HttpStatusCode.RequestTimeout,
+                Timestamp = DateTime.UtcNow,
+                TraceId = context.TraceIdentifier
+            };
+        }
+
+        private ErrorResponse HandleHttpRequestException(HttpRequestException exception, HttpContext context)
+        {
+            _logger.LogError(exception, "HTTP 요청 오류: {Message}", exception.Message);
+            
+            return new ErrorResponse
+            {
+                ErrorCode = "HTTP_REQUEST_ERROR",
+                Message = "외부 서비스와의 통신 중 오류가 발생했습니다",
+                StatusCode = (int)HttpStatusCode.BadGateway,
+                Timestamp = DateTime.UtcNow,
+                TraceId = context.TraceIdentifier
+            };
+        }
+
+        private ErrorResponse HandleGenericException(Exception exception, HttpContext context)
+        {
+            var exceptionType = exception.GetType().Name;
+            var isDevelopment = _environment.IsDevelopment();
+            
+            _logger.LogError(exception, "예상치 못한 예외 발생: {ExceptionType} - {Message}", exceptionType, exception.Message);
+            
+            return new ErrorResponse
+            {
+                ErrorCode = "INTERNAL_SERVER_ERROR",
+                Message = isDevelopment ? exception.Message : "서버에서 예상치 못한 오류가 발생했습니다",
+                StatusCode = (int)HttpStatusCode.InternalServerError,
+                Timestamp = DateTime.UtcNow,
+                TraceId = context.TraceIdentifier,
+                Details = isDevelopment ? new List<string> 
+                { 
+                    $"Exception Type: {exceptionType}",
+                    $"Stack Trace: {exception.StackTrace}"
+                } : null
             };
         }
     }

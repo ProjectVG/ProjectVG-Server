@@ -14,6 +14,7 @@ using ProjectVG.Infrastructure.Integrations.TextToSpeechClient;
 using ProjectVG.Api.Configuration;
 using ProjectVG.Api.Services;
 using ProjectVG.Api.Middleware;
+using ProjectVG.Api.Filters;
 using ProjectVG.Infrastructure.Realtime.WebSocketConnection;
 using ProjectVG.Application.Services.Messaging;
 using ProjectVG.Common.Models.Session;
@@ -30,7 +31,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariableSubstitution(builder.Configuration);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ModelStateValidationFilter>();
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c => {
     c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo {
