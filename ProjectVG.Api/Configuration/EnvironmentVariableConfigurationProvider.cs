@@ -14,7 +14,7 @@ namespace ProjectVG.Api.Configuration
 
         public override void Load()
         {
-            var data = new Dictionary<string, string>();
+            var data = new Dictionary<string, string?>();
             
             // 모든 설정을 순회하면서 환경 변수 참조를 찾아서 치환
             ReplaceEnvironmentVariables(_configuration, data, "");
@@ -22,7 +22,7 @@ namespace ProjectVG.Api.Configuration
             Data = data;
         }
 
-        private void ReplaceEnvironmentVariables(IConfiguration configuration, Dictionary<string, string> data, string prefix)
+        private void ReplaceEnvironmentVariables(IConfiguration configuration, Dictionary<string, string?> data, string prefix)
         {
             foreach (var child in configuration.GetChildren())
             {
