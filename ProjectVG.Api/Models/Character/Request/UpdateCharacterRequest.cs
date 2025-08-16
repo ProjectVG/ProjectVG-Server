@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using ProjectVG.Application.Models.Character;
 
 namespace ProjectVG.Api.Models.Character.Request
 {
@@ -15,5 +16,16 @@ namespace ProjectVG.Api.Models.Character.Request
 
         [JsonPropertyName("is_active")]
         public bool IsActive { get; set; } = true;
+
+        public UpdateCharacterCommand ToUpdateCharacterCommand()
+        {
+            return new UpdateCharacterCommand
+            {
+                Name = Name,
+                Description = Description,
+                Role = Role,
+                IsActive = IsActive
+            };
+        }
     }
 } 

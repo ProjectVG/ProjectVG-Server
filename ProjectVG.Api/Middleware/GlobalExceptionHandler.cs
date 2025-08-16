@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ProjectVG.Api.Middleware
 {
@@ -49,11 +50,19 @@ namespace ProjectVG.Api.Middleware
                 return HandleValidationException(validationEx, context);
             }
             
-            
+            if (exception is NotFoundException notFoundEx)
+            {
+                return HandleNotFoundException(notFoundEx, context);
+            }
             
             if (exception is ProjectVGException projectVGEx)
             {
                 return HandleProjectVGException(projectVGEx, context);
+            }
+            
+            if (exception is ExternalServiceException externalEx)
+            {
+                return HandleExternalServiceException(externalEx, context);
             }
             
             if (exception is DbUpdateException dbUpdateEx)
@@ -67,20 +76,6 @@ namespace ProjectVG.Api.Middleware
             }
             
             return HandleGenericException(exception, context);
-        }
-
-        private ErrorResponse HandleProjectVGException(ProjectVGException exception, HttpContext context)
-        {
-            _logger.LogWarning(exception, "ProjectVG 예외 발생: {ErrorCode} - {Message}", exception.ErrorCode.ToString(), exception.Message);
-            
-            return new ErrorResponse
-            {
-                ErrorCode = exception.ErrorCode.ToString(),
-                Message = exception.Message,
-                StatusCode = exception.StatusCode,
-                Timestamp = DateTime.UtcNow,
-                TraceId = context.TraceIdentifier
-            };
         }
 
         private ErrorResponse HandleValidationException(ValidationException exception, HttpContext context)
@@ -100,7 +95,48 @@ namespace ProjectVG.Api.Middleware
             };
         }
 
-        
+        private ErrorResponse HandleNotFoundException(NotFoundException exception, HttpContext context)
+        {
+            _logger.LogWarning(exception, "리소스를 찾을 수 없음: {ErrorCode} - {Message}", exception.ErrorCode.ToString(), exception.Message);
+            
+            return new ErrorResponse
+            {
+                ErrorCode = exception.ErrorCode.ToString(),
+                Message = exception.Message,
+                StatusCode = exception.StatusCode,
+                Timestamp = DateTime.UtcNow,
+                TraceId = context.TraceIdentifier
+            };
+        }
+
+        private ErrorResponse HandleProjectVGException(ProjectVGException exception, HttpContext context)
+        {
+            _logger.LogWarning(exception, "ProjectVG 예외 발생: {ErrorCode} - {Message}", exception.ErrorCode.ToString(), exception.Message);
+            
+            return new ErrorResponse
+            {
+                ErrorCode = exception.ErrorCode.ToString(),
+                Message = exception.Message,
+                StatusCode = exception.StatusCode,
+                Timestamp = DateTime.UtcNow,
+                TraceId = context.TraceIdentifier
+            };
+        }
+
+        private ErrorResponse HandleExternalServiceException(ExternalServiceException exception, HttpContext context)
+        {
+            _logger.LogError(exception, "외부 서비스 오류 발생: {ServiceName} - {Endpoint} - {Message}", 
+                exception.ServiceName, exception.Endpoint, exception.Message);
+            
+            return new ErrorResponse
+            {
+                ErrorCode = exception.ErrorCode.ToString(),
+                Message = exception.Message,
+                StatusCode = exception.StatusCode,
+                Timestamp = DateTime.UtcNow,
+                TraceId = context.TraceIdentifier
+            };
+        }
 
         private ErrorResponse HandleDbUpdateException(DbUpdateException exception, HttpContext context)
         {
@@ -144,7 +180,8 @@ namespace ProjectVG.Api.Middleware
 
         private ErrorResponse HandleGenericException(Exception exception, HttpContext context)
         {
-            _logger.LogError(exception, "예상치 못한 예외 발생: {Message}", exception.Message);
+            _logger.LogError(exception, "예상치 못한 예외 발생: {ExceptionType} - {Message}", 
+                exception.GetType().Name, exception.Message);
             
             return new ErrorResponse
             {
