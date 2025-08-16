@@ -6,16 +6,15 @@ using ProjectVG.Application.Services.Chat.Preprocessors;
 using ProjectVG.Application.Services.Chat.Processors;
 using ProjectVG.Application.Services.Chat.Validators;
 using ProjectVG.Application.Services.WebSocket;
+using ProjectVG.Application.Services.Conversation;
+using ProjectVG.Application.Services.Session;
 
-namespace ProjectVG.Application.Services
+namespace ProjectVG.Application
 {
-    /// <summary>
-    /// 애플리케이션 서비스 DI 등록 확장 메서드
-    /// </summary>
     public static class ApplicationServiceCollectionExtensions
     {
         /// <summary>
-        /// 외부 API 경계에 노출되는 핵심 애플리케이션 서비스를 등록합니다
+        /// 애플리케이션 서비스 등록
         /// </summary>
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
@@ -28,12 +27,13 @@ namespace ProjectVG.Application.Services
             services.AddScoped<UserInputAnalysisProcessor>();
             services.AddScoped<UserInputActionProcessor>();
             services.AddScoped<MemoryContextPreprocessor>();
-            
+
             services.AddScoped<IWebSocketManager, WebSocketManager>();
-            
+            services.AddScoped<IChatService, ChatService>();
+            services.AddScoped<IConversationService, ConversationService>();
+            services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
+
             return services;
         }
     }
 }
-
-
