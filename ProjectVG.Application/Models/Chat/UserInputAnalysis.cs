@@ -9,6 +9,7 @@ namespace ProjectVG.Application.Models.Chat
         public List<string> Keywords { get; set; } = new List<string>();
         public string? EnhancedQuery { get; set; }
         public DateTime? ContextTime { get; set; }
+        public double Cost { get; set; }
 
         private UserInputAnalysis()
         {
@@ -20,7 +21,8 @@ namespace ProjectVG.Application.Models.Chat
             UserInputAction action,
             List<string> keywords,
             string? enhancedQuery = null,
-            DateTime? contextTime = null)
+            DateTime? contextTime = null,
+            double cost = 0)
         {
             return new UserInputAnalysis
             {
@@ -29,7 +31,8 @@ namespace ProjectVG.Application.Models.Chat
                 Action = action,
                 Keywords = keywords,
                 EnhancedQuery = enhancedQuery,
-                ContextTime = contextTime
+                ContextTime = contextTime,
+                Cost = cost
             };
         }
 

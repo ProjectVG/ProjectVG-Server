@@ -39,6 +39,7 @@ namespace ProjectVG.Application
             // 비용 추적 데코레이터 등록
             services.AddCostTrackingDecorator<ChatLLMProcessor>("LLM_Processing");
             services.AddCostTrackingDecorator<ChatTTSProcessor>("TTS_Processing");
+            services.AddCostTrackingDecorator<UserInputAnalysisProcessor>("User_Input_Analysis");
 
             return services;
         }
