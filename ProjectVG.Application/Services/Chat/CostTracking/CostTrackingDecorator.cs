@@ -51,11 +51,20 @@ namespace ProjectVG.Application.Services.Chat.CostTracking
                 if (method == null)
                     throw new InvalidOperationException($"ProcessAsync 메서드를 찾을 수 없습니다: {typeof(T).Name}");
 
-                var result = await (Task<ChatProcessResult>)method.Invoke(_service, new object[] { context })!;
+                var invokeResult = method.Invoke(_service, new object[] { context });
+                if (invokeResult == null)
+                    throw new InvalidOperationException($"ProcessAsync 메서드 호출 결과가 null입니다: {typeof(T).Name}");
+                
+                if (invokeResult is not Task<ChatProcessResult> taskResult)
+                    throw new InvalidOperationException($"ProcessAsync 메서드 반환 타입이 올바르지 않습니다: {typeof(T).Name}");
+                
+                var result = await taskResult!;
                 
                 // Cost 값만 직접 추출
                 var cost = ExtractCost(result);
-                Console.WriteLine($"[COST_TRACKING] {_processName} - 추출된 비용: {cost:C}");
+                var costInDollars = (double)cost / 100_000.0;
+                Console.WriteLine($"[COST_TRACKING] {_processName} - 추출된 비용: ${costInDollars:F6}");
+                Console.WriteLine($"[COST_TRACKING] {_processName} - 원본 결과 타입: {result?.GetType().Name}, Cost 속성 값: {result?.GetType().GetProperty("Cost")?.GetValue(result)}");
                 _metricsService.EndProcessMetrics(_processName, cost);
                 return result;
             }
@@ -79,11 +88,20 @@ namespace ProjectVG.Application.Services.Chat.CostTracking
                 if (method == null)
                     throw new InvalidOperationException($"ProcessAsync 메서드를 찾을 수 없습니다: {typeof(T).Name}");
 
-                await (Task)method.Invoke(_service, new object[] { context, result })!;
+                var invokeResult = method.Invoke(_service, new object[] { context, result });
+                if (invokeResult == null)
+                    throw new InvalidOperationException($"ProcessAsync 메서드 호출 결과가 null입니다: {typeof(T).Name}");
+                
+                if (invokeResult is not Task taskResult)
+                    throw new InvalidOperationException($"ProcessAsync 메서드 반환 타입이 올바르지 않습니다: {typeof(T).Name}");
+                
+                await taskResult;
                 
                 // Cost 값만 직접 추출
                 var cost = ExtractCost(result);
-                Console.WriteLine($"[COST_TRACKING] {_processName} - 추출된 비용: {cost:C}");
+                var costInDollars = (double)cost / 100_000.0;
+                Console.WriteLine($"[COST_TRACKING] {_processName} - 추출된 비용: ${costInDollars:F6}");
+                Console.WriteLine($"[COST_TRACKING] {_processName} - 원본 결과 타입: {result?.GetType().Name}, Cost 속성 값: {result?.GetType().GetProperty("Cost")?.GetValue(result)}");
                 _metricsService.EndProcessMetrics(_processName, cost);
             }
             catch (Exception ex)

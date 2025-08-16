@@ -115,7 +115,9 @@ namespace ProjectVG.Application.Services.Chat.Processors
         private void UpdateCost(ChatProcessResult result, TextToSpeechResponse ttsResult)
         {
             if (ttsResult.AudioLength.HasValue) {
-                result.Cost += Math.Ceiling(ttsResult.AudioLength.Value / 0.1);
+                var ttsCost = TTSCostInfo.CalculateTTSCost(ttsResult.AudioLength.Value);
+                result.Cost += ttsCost;
+                Console.WriteLine($"[TTS_DEBUG] 오디오 길이: {ttsResult.AudioLength.Value:F2}초, TTS 비용: {ttsCost:F0} Cost");
             }
         }
 

@@ -204,13 +204,10 @@ CONTEXT_TIME: 2025-07-24 15:00:00";
             return UserInputAnalysis.CreateValid("일반적인 대화", "대화", UserInputAction.Chat, new List<string>());
         }
 
-        public double CalculateCost(int tokensUsed)
+        public double CalculateCost(int promptTokens, int completionTokens)
         {
-            var inputCost = LLMModelInfo.GetInputCost(Model);
-            var outputCost = LLMModelInfo.GetOutputCost(Model);
-            
-            // 토큰 수를 백만 단위로 변환하여 비용 계산
-            return (tokensUsed / 1_000_000.0) * (inputCost + outputCost);
+            return LLMModelInfo.CalculateCost(Model, promptTokens, completionTokens);
         }
+
     }
 }

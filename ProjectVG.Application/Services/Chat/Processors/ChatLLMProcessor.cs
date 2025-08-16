@@ -34,11 +34,12 @@ namespace ProjectVG.Application.Services.Chat.Processors
 
             // 결과 파싱
             var parsed = format.Parse(llmResponse.Response, context);
-            var cost = format.CalculateCost(llmResponse.TokensUsed);
+            var cost = format.CalculateCost(llmResponse.PromptTokens, llmResponse.CompletionTokens);
             var segments = CreateSegments(parsed);
 
-            _logger.LogDebug("LLM 처리 완료: 세션 {SessionId}, 토큰 {TokensUsed}, 비용 {Cost}",
-                context.SessionId, llmResponse.TokensUsed, cost);
+            Console.WriteLine($"[LLM_DEBUG] ID: {llmResponse.Id}, 입력 토큰: {llmResponse.PromptTokens}, 출력 토큰: {llmResponse.CompletionTokens}, 총 토큰: {llmResponse.TokensUsed}, 계산된 비용: {cost:F0} Cost");
+            _logger.LogDebug("LLM 처리 완료: 세션 {SessionId}, ID {Id}, 입력 토큰 {PromptTokens}, 출력 토큰 {CompletionTokens}, 총 토큰 {TotalTokens}, 비용 {Cost}",
+                context.SessionId, llmResponse.Id, llmResponse.PromptTokens, llmResponse.CompletionTokens, llmResponse.TokensUsed, cost);
 
             return new ChatProcessResult {
                 Response = parsed.Response,

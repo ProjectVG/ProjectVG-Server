@@ -67,13 +67,9 @@ namespace ProjectVG.Application.Services.Chat.Factories
             return ParseChatResponse(llmResponse, input.VoiceName);
         }
 
-        public double CalculateCost(int tokensUsed)
+        public double CalculateCost(int promptTokens, int completionTokens)
         {
-            var inputCost = LLMModelInfo.GetInputCost(Model);
-            var outputCost = LLMModelInfo.GetOutputCost(Model);
-            
-            // 토큰 수를 백만 단위로 변환하여 비용 계산
-            return (tokensUsed / 1_000_000.0) * (inputCost + outputCost);
+            return LLMModelInfo.CalculateCost(Model, promptTokens, completionTokens);
         }
 
         private string GetFormatInstructions()
