@@ -32,33 +32,19 @@ namespace ProjectVG.Application.Services.Chat.Processors
                     temperature: format.Temperature
                 );
 
-            // 결과 파싱
-            var parsed = format.Parse(llmResponse.Response, context);
+            var segments = format.Parse(llmResponse.Response, context);
+            
             var cost = format.CalculateCost(llmResponse.InputTokens, llmResponse.OutputTokens);
-            var segments = CreateSegments(parsed);
 
-            Console.WriteLine($"[LLM_DEBUG] ID: {llmResponse.Id}, 입력 토큰: {llmResponse.InputTokens}, 출력 토큰: {llmResponse.OutputTokens}, 총 토큰: {llmResponse.TokensUsed}, 계산된 비용: {cost:F0} Cost");
-            _logger.LogDebug("LLM 처리 완료: 세션 {SessionId}, ID {Id}, 입력 토큰 {InputTokens}, 출력 토큰 {OutputTokens}, 총 토큰 {TotalTokens}, 비용 {Cost}",
-                context.SessionId, llmResponse.Id, llmResponse.InputTokens, llmResponse.OutputTokens, llmResponse.TokensUsed, cost);
+            Console.WriteLine($"[LLM_DEBUG] ID: {llmResponse.Id}, 입력 토큰: {llmResponse.InputTokens}, 출력 토큰: {llmResponse.OutputTokens}, 계산된 비용: {cost:F0} Cost");
+            _logger.LogDebug("LLM 처리 완료: 세션 {SessionId}, ID {Id}, 입력 토큰 {InputTokens}, 출력 토큰 {OutputTokens}, 비용 {Cost}",
+                context.SessionId, llmResponse.Id, llmResponse.InputTokens, llmResponse.OutputTokens, cost);
 
             return new ChatProcessResult {
-                Response = parsed.Response,
+                Response = llmResponse.Response,
                 Segments = segments,
-                TokensUsed = llmResponse.TokensUsed,
                 Cost = cost
             };
-        }
-
-        private List<ChatMessageSegment> CreateSegments(ChatOutputFormatResult parsed)
-        {
-            var segments = new List<ChatMessageSegment>();
-            for (int i = 0; i < parsed.Text.Count; i++) {
-                var emotion = parsed.Emotion.Count > i ? parsed.Emotion[i] : "neutral";
-                var segment = ChatMessageSegment.CreateTextOnly(parsed.Text[i], i);
-                segment.Emotion = emotion;
-                segments.Add(segment);
-            }
-            return segments;
         }
     }
 }

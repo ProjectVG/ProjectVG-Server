@@ -3,7 +3,6 @@ namespace ProjectVG.Application.Models.Chat
     public class ChatProcessResult
     {
         public string Response { get; set; } = string.Empty;
-        public int TokensUsed { get; set; }
         public double Cost { get; set; }
         
         public List<ChatMessageSegment> Segments { get; set; } = new List<ChatMessageSegment>();
