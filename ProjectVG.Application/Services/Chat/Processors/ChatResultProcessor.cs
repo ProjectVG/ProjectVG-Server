@@ -26,18 +26,18 @@ namespace ProjectVG.Application.Services.Chat.Processors
             _webSocketService = webSocketService;
         }
 
-        public async Task PersistResultsAsync(ChatPreprocessContext context, ChatProcessResult result)
+        public async Task PersistResultsAsync(ChatProcessContext context)
         {
             await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.User, context.UserMessage);
-            await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.Assistant, result.Response);
-            await _memoryClient.AddMemoryAsync(context.MemoryStore, result.Response);
+            await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.Assistant, context.Response);
+            await _memoryClient.AddMemoryAsync(context.MemoryStore, context.Response);
 
             _logger.LogDebug("채팅 결과 저장 완료: 세션 {SessionId}, 사용자 {UserId}", context.SessionId, context.UserId);
         }
 
-        public async Task SendResultsAsync(ChatPreprocessContext context, ChatProcessResult result)
+        public async Task SendResultsAsync(ChatProcessContext context)
         {
-            foreach (var segment in result.Segments.OrderBy(s => s.Order)) {
+            foreach (var segment in context.Segments.OrderBy(s => s.Order)) {
                 if (segment.IsEmpty) continue;
 
                 var integratedMessage = new IntegratedChatMessage {
@@ -55,7 +55,7 @@ namespace ProjectVG.Application.Services.Chat.Processors
             }
 
             _logger.LogDebug("채팅 결과 전송 완료: 세션 {SessionId}, 세그먼트 {SegmentCount}개",
-                context.SessionId, result.Segments.Count(s => !s.IsEmpty));
+                context.SessionId, context.Segments.Count(s => !s.IsEmpty));
         }
     }
 }

@@ -5,13 +5,13 @@ using System.Text.RegularExpressions;
 
 namespace ProjectVG.Application.Services.Chat.Factories
 {
-    public class ChatLLMFormat : ILLMFormat<ChatPreprocessContext, List<ChatMessageSegment>>
+    public class ChatLLMFormat : ILLMFormat<ChatProcessContext, List<ChatMessageSegment>>
     {
         public ChatLLMFormat()
         {
         }
 
-        public string GetSystemMessage(ChatPreprocessContext input)
+        public string GetSystemMessage(ChatProcessContext input)
         {
             var character = input.Character ?? throw new InvalidOperationException("캐릭터 정보가 로드되지 않았습니다.");
             
@@ -25,7 +25,7 @@ namespace ProjectVG.Application.Services.Chat.Factories
             return sb.ToString();
         }
 
-        public string GetInstructions(ChatPreprocessContext input)
+        public string GetInstructions(ChatProcessContext input)
         {
             var sb = new StringBuilder();
             
@@ -59,9 +59,9 @@ namespace ProjectVG.Application.Services.Chat.Factories
         public float Temperature => 0.7f;
         public int MaxTokens => 1000;
 
-        public List<ChatMessageSegment> Parse(string llmResponse, ChatPreprocessContext input)
+        public List<ChatMessageSegment> Parse(string llmResponse, ChatProcessContext input)
         {
-            return ParseChatResponseToSegments(llmResponse, input.VoiceName);
+            return ParseChatResponseToSegments(llmResponse, input.Character?.VoiceId);
         }
 
         public double CalculateCost(int promptTokens, int completionTokens)
@@ -82,7 +82,7 @@ Emotion must be one of: {emotionList}
 ";
         }
 
-        private List<ChatMessageSegment> ParseChatResponseToSegments(string llmText, string? voiceName = null)
+        private List<ChatMessageSegment> ParseChatResponseToSegments(string llmText, string? voiceId = null)
         {
             if (string.IsNullOrWhiteSpace(llmText))
                 return new List<ChatMessageSegment>();
@@ -92,7 +92,7 @@ Emotion must be one of: {emotionList}
             var seenTexts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var matches = Regex.Matches(response, @"\[(.*?)\]\s*([^\[]+)");
-            var emotionMap = GetEmotionMap(voiceName);
+            var emotionMap = GetEmotionMap(voiceId);
 
             if (matches.Count > 0)
             {
@@ -108,12 +108,12 @@ Emotion must be one of: {emotionList}
             return segments;
         }
 
-        private Dictionary<string, string>? GetEmotionMap(string? voiceName)
+        private Dictionary<string, string>? GetEmotionMap(string? voiceId)
         {
-            if (string.IsNullOrWhiteSpace(voiceName))
+            if (string.IsNullOrWhiteSpace(voiceId))
                 return null;
 
-            var profile = VoiceCatalog.GetProfile(voiceName);
+            var profile = VoiceCatalog.GetProfileById(voiceId);
             return profile?.EmotionMap;
         }
 

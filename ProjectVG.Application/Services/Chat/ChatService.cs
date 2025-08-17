@@ -79,11 +79,9 @@ namespace ProjectVG.Application.Services.Chat
         /// <summary>
         /// 채팅 요청 준비
         /// </summary>
-        private async Task<ChatPreprocessContext> PrepareChatRequestAsync(ProcessChatCommand command)
+        private async Task<ChatProcessContext> PrepareChatRequestAsync(ProcessChatCommand command)
         {
             var characterDto = await _characterService.GetCharacterByIdAsync(command.CharacterId);
-            command.SetCharacter(characterDto!);
-            
             var conversationHistory = await _conversationService.GetConversationHistoryAsync(command.UserId, command.CharacterId, 10);
 
             var inputAnalysis = await _inputProcessor.ProcessAsync(command.Message, conversationHistory);
@@ -91,27 +89,23 @@ namespace ProjectVG.Application.Services.Chat
             
             var memoryContext = await _memoryPreprocessor.CollectMemoryContextAsync(command.UserId.ToString(), command.Message, inputAnalysis);
 
-            return new ChatPreprocessContext(
-                command,
-                memoryContext,
-                conversationHistory
-            );
+            return new ChatProcessContext(command, characterDto!, conversationHistory, memoryContext);
         }
 
         /// <summary>
         /// 채팅 요청 처리
         /// </summary>
-        private async Task ProcessChatRequestInternalAsync(ChatPreprocessContext context)
+        private async Task ProcessChatRequestInternalAsync(ChatProcessContext context)
         {
             try {
                 // 작업 처리 단계: LLM -> TTS -> 결과 전송 + 저장
-                var llmResult = await _llmProcessor.ProcessAsync(context);
-                await _ttsProcessor.ProcessAsync(context, llmResult);
+                await _llmProcessor.ProcessAsync(context);
+                await _ttsProcessor.ProcessAsync(context);
                 
                 using var scope = _scopeFactory.CreateScope();
                 var resultProcessor = scope.ServiceProvider.GetRequiredService<ChatResultProcessor>();
-                await resultProcessor.SendResultsAsync(context, llmResult);
-                await resultProcessor.PersistResultsAsync(context, llmResult);
+                await resultProcessor.SendResultsAsync(context);
+                await resultProcessor.PersistResultsAsync(context);
             }
             catch (Exception ex) {
                 await _failureHandler.HandleFailureAsync(context, ex);

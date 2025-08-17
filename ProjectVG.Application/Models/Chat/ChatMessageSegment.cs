@@ -22,6 +22,13 @@ namespace ProjectVG.Application.Models.Chat
                 Order = order
             };
         }
+
+        public void SetAudioData(byte[]? audioData, string? audioContentType, float? audioLength)
+        {
+            AudioData = audioData;
+            AudioContentType = audioContentType;
+            AudioLength = audioLength;
+        }
         
 
     }

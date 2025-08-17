@@ -19,6 +19,7 @@ namespace ProjectVG.Application.Models.Chat
         public string? Action { get; set; }
         public string? Instruction { get; set; }
 
+
         public CharacterDto? Character { get; private set; }
 
         internal void SetCharacter(CharacterDto character)

@@ -26,13 +26,13 @@ namespace ProjectVG.Application.Services.Chat.Handlers
             _memoryClient = memoryClient;
         }
 
-        public Task HandleFailureAsync(ChatPreprocessContext context, Exception exception)
+        public Task HandleFailureAsync(ChatProcessContext context, Exception exception)
         {
             _logger.LogError(exception, "채팅 처리 실패: 세션 {SessionId}", context.SessionId);
             return SendErrorMessageAsync(context, "요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
         }
 
-        private async Task SendErrorMessageAsync(ChatPreprocessContext context, string errorMessage)
+        private async Task SendErrorMessageAsync(ChatProcessContext context, string errorMessage)
         {
             try
             {
