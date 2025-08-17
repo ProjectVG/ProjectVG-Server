@@ -6,6 +6,7 @@ using ProjectVG.Application.Services.Chat.CostTracking;
 using ProjectVG.Application.Services.Chat.Preprocessors;
 using ProjectVG.Application.Services.Chat.Processors;
 using ProjectVG.Application.Services.Chat.Validators;
+using ProjectVG.Application.Services.Chat.Handlers;
 using ProjectVG.Application.Services.WebSocket;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Session;
@@ -28,6 +29,7 @@ namespace ProjectVG.Application
             services.AddScoped<UserInputAnalysisProcessor>();
             services.AddScoped<UserInputActionProcessor>();
             services.AddScoped<MemoryContextPreprocessor>();
+            services.AddScoped<ChatFailureHandler>();
 
             services.AddScoped<IWebSocketManager, WebSocketManager>();
             services.AddScoped<IChatService, ChatService>();

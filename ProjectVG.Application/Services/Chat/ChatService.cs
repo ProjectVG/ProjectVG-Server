@@ -2,6 +2,7 @@ using ProjectVG.Application.Services.Chat.Preprocessors;
 using ProjectVG.Application.Services.Chat.Processors;
 using ProjectVG.Application.Services.Chat.Validators;
 using ProjectVG.Application.Services.Chat.CostTracking;
+using ProjectVG.Application.Services.Chat.Handlers;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Character;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,7 @@ namespace ProjectVG.Application.Services.Chat
         private readonly ICostTrackingDecorator<ChatTTSProcessor> _ttsProcessor;
         private readonly ChatResultProcessor _resultProcessor;
         private readonly IChatMetricsService _metricsService;
+        private readonly ChatFailureHandler _failureHandler;
 
         public ChatService(
             IServiceScopeFactory scopeFactory,
@@ -39,7 +41,8 @@ namespace ProjectVG.Application.Services.Chat
             ICostTrackingDecorator<ChatLLMProcessor> llmProcessor,
             ICostTrackingDecorator<ChatTTSProcessor> ttsProcessor,
             ChatResultProcessor resultProcessor,
-            IChatMetricsService metricsService
+            IChatMetricsService metricsService,
+            ChatFailureHandler failureHandler
         ) {
             _scopeFactory = scopeFactory;
             _logger = logger;
@@ -54,6 +57,7 @@ namespace ProjectVG.Application.Services.Chat
             _ttsProcessor = ttsProcessor;
             _resultProcessor = resultProcessor;
             _metricsService = metricsService;
+            _failureHandler = failureHandler;
         }
 
         public async Task<ChatRequestResponse> EnqueueChatRequestAsync(ProcessChatCommand command)
@@ -100,8 +104,6 @@ namespace ProjectVG.Application.Services.Chat
         private async Task ProcessChatRequestInternalAsync(ChatPreprocessContext context)
         {
             try {
-                _logger.LogInformation("채팅 요청 처리 시작: {SessionId}", context.SessionId);
-
                 // 작업 처리 단계: LLM -> TTS -> 결과 전송 + 저장
                 var llmResult = await _llmProcessor.ProcessAsync(context);
                 await _ttsProcessor.ProcessAsync(context, llmResult);
@@ -110,15 +112,13 @@ namespace ProjectVG.Application.Services.Chat
                 var resultProcessor = scope.ServiceProvider.GetRequiredService<ChatResultProcessor>();
                 await resultProcessor.SendResultsAsync(context, llmResult);
                 await resultProcessor.PersistResultsAsync(context, llmResult);
-
-                _metricsService.EndChatMetrics();
-                _metricsService.LogChatMetrics();
-
-                _logger.LogInformation("채팅 요청 처리 완료: {SessionId}, 토큰: {TokensUsed}",
-                    context.SessionId, llmResult.TokensUsed);
             }
             catch (Exception ex) {
-                _logger.LogError(ex, "채팅 요청 처리 중 오류 발생: {SessionId}", context.SessionId);
+                await _failureHandler.HandleFailureAsync(context, ex);
+            }
+            finally {
+                _metricsService.EndChatMetrics();
+                _metricsService.LogChatMetrics();
             }
         }
     }
