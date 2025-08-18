@@ -10,6 +10,7 @@ namespace ProjectVG.Application.Models.Chat
         public Guid CharacterId { get; private set; }
         public string UserMessage { get; private set; } = string.Empty;
         public string MemoryStore { get; private set; } = string.Empty;
+        public bool UseTTS { get; private set; } = true;
         
         public CharacterDto? Character { get; private set; }
         public IEnumerable<string>? MemoryContext { get; private set; }
@@ -31,6 +32,7 @@ namespace ProjectVG.Application.Models.Chat
             CharacterId = command.CharacterId;
             UserMessage = command.Message;
             MemoryStore = command.UserId.ToString();
+            UseTTS = command.UseTTS;
         }
 
         public ChatProcessContext(
@@ -44,6 +46,7 @@ namespace ProjectVG.Application.Models.Chat
             CharacterId = command.CharacterId;
             UserMessage = command.Message;
             MemoryStore = command.UserId.ToString();
+            UseTTS = command.UseTTS;
             
             Character = character;
             ConversationHistory = conversationHistory;

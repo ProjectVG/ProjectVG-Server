@@ -19,9 +19,9 @@ namespace ProjectVG.Application.Services.Chat.Processors
 
         public async Task ProcessAsync(ChatProcessContext context)
         {
-            if (string.IsNullOrWhiteSpace(context.Character?.VoiceId) || context.Segments?.Count == 0) {
-                _logger.LogDebug("TTS 처리 건너뜀: 세션 {SessionId}, 음성ID {VoiceId}, 세그먼트 수 {SegmentCount}",
-                    context.SessionId, context.Character?.VoiceId, context.Segments?.Count ?? 0);
+            if (!context.UseTTS || string.IsNullOrWhiteSpace(context.Character?.VoiceId) || context.Segments?.Count == 0) {
+                _logger.LogDebug("TTS 처리 건너뜀: 세션 {SessionId}, TTS사용여부 {UseTTS}, 음성ID {VoiceId}, 세그먼트 수 {SegmentCount}",
+                    context.SessionId, context.UseTTS, context.Character?.VoiceId, context.Segments?.Count ?? 0);
                 return;
             }
 

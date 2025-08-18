@@ -18,7 +18,7 @@ namespace ProjectVG.Application.Models.Chat
         public DateTime RequestedAt { get; set; }
         public string? Action { get; set; }
         public string? Instruction { get; set; }
-
+        public bool UseTTS { get; set; } = true;
 
         public CharacterDto? Character { get; private set; }
 
