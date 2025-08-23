@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.User;
@@ -11,6 +12,7 @@ using ProjectVG.Application.Services.WebSocket;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Session;
 using ProjectVG.Application.Services.Auth;
+using ProjectVG.Application.Models.Auth;
 
 namespace ProjectVG.Application
 {
@@ -19,7 +21,7 @@ namespace ProjectVG.Application
         /// <summary>
         /// 애플리케이션 서비스 등록
         /// </summary>
-        public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+        public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddScoped<ICharacterService, CharacterService>();
             services.AddScoped<IUserService, UserService>();
@@ -39,6 +41,11 @@ namespace ProjectVG.Application
             
             // Auth 서비스 등록
             services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+            services.AddScoped<IOAuth2Service, OAuth2Service>();
+            services.AddScoped<ITokenService, TokenService>();
+            
+            // OAuth2 설정
+            services.Configure<OAuth2Settings>(configuration.GetSection(OAuth2Settings.SectionName));
             
             services.AddScoped<IChatMetricsService, ChatMetricsService>();
 

@@ -20,7 +20,7 @@ builder.WebHost.ConfigureKestrel(options => {
 builder.Services.AddApiServices();
 builder.Services.AddApiAuthentication(builder.Configuration);
 builder.Services.AddInfrastructureServices(builder.Configuration);
-builder.Services.AddApplicationServices();
+builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddDevelopmentCors();
 
 var app = builder.Build();
@@ -38,3 +38,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+// Program 클래스를 public으로 만들기 위한 부분 클래스 선언
+public partial class Program { }
