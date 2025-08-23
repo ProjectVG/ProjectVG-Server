@@ -18,7 +18,7 @@ builder.WebHost.ConfigureKestrel(options => {
 
 // 모듈별 서비스 등록
 builder.Services.AddApiServices();
-builder.Services.AddApiAuthentication();
+builder.Services.AddApiAuthentication(builder.Configuration);
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices();
 builder.Services.AddDevelopmentCors();

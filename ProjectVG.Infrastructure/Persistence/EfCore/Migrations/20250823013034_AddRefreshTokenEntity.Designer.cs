@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProjectVG.Infrastructure.Persistence.EfCore;
 
@@ -11,9 +12,11 @@ using ProjectVG.Infrastructure.Persistence.EfCore;
 namespace ProjectVG.Infrastructure.Persistence.EfCore
 {
     [DbContext(typeof(ProjectVGDbContext))]
-    partial class ProjectVGDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250823013034_AddRefreshTokenEntity")]
+    partial class AddRefreshTokenEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

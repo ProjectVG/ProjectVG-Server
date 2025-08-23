@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ProjectVG.Domain.Entities.Characters;
 using ProjectVG.Domain.Entities.ConversationHistorys;
 using ProjectVG.Domain.Entities.Users;
+using ProjectVG.Domain.Entities.Auth;
 using ProjectVG.Common.Constants;
 
 namespace ProjectVG.Infrastructure.Persistence.EfCore
@@ -15,6 +16,7 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
         public DbSet<User> Users { get; set; }
         public DbSet<Character> Characters { get; set; }
         public DbSet<ConversationHistory> ConversationHistories { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -81,6 +83,46 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.CharacterId);
                 entity.HasIndex(e => e.Timestamp);
+            });
+
+            // RefreshTokens 엔터티 설정
+            modelBuilder.Entity<RefreshToken>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+                entity.Property(e => e.UserId).IsRequired();
+                entity.Property(e => e.ClientId).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.DeviceId).HasMaxLength(255);
+                entity.Property(e => e.TokenHash).IsRequired().HasMaxLength(128);
+                entity.Property(e => e.ExpiresAt).IsRequired();
+                entity.Property(e => e.RevokedAt);
+                entity.Property(e => e.ReplacedByTokenId);
+                entity.Property(e => e.LastUsedAt).IsRequired();
+                entity.Property(e => e.IpAddress).HasMaxLength(45); // IPv6 지원
+                entity.Property(e => e.UserAgent).HasMaxLength(500);
+                entity.Property(e => e.CreatedAt).IsRequired();
+                entity.Property(e => e.UpdatedAt).IsRequired();
+
+                // 외래키 관계 설정
+                entity.HasOne<User>()
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
+
+                // 자기 참조 관계 (토큰 교체 추적)
+                entity.HasOne(e => e.ReplacedByToken)
+                    .WithMany(e => e.ReplacedTokens)
+                    .HasForeignKey(e => e.ReplacedByTokenId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                // 인덱스 설정
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.TokenHash).IsUnique();
+                entity.HasIndex(e => e.ExpiresAt);
+                entity.HasIndex(e => new { e.UserId, e.ClientId });
+                entity.HasIndex(e => new { e.UserId, e.DeviceId });
+                entity.HasIndex(e => e.RevokedAt);
             });
 
             // 기본 데이터 삽입

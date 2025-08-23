@@ -1,0 +1,24 @@
+# ASP.NET Core + OAuth2 + JWT Refresh/Access + WebSocket 인증 서버 TODO
+
+- [ ] 설계: RS256 키 관리 및 키 롤테이션 전략 수립
+- [ ] 구현: JWT Bearer 인증 구성 및 권한 정책 설정
+- [ ] 도메인: RefreshToken 엔터티 추가 및 인덱스 설계
+- [ ] 데이터: EF 마이그레이션 생성 및 적용
+- [ ] 서비스: 토큰 발급/검증/폐기 인터페이스 정의
+- [ ] 서비스: Refresh 로테이션 및 재사용 감지 구현
+- [ ] 저장소: RefreshToken 리포지토리 구현(EF)
+- [ ] 캐시: Redis 연동 및 블록리스트 키 스키마 적용
+- [ ] OAuth2: Authorization Code + PKCE 엔드포인트 구현
+- [ ] 엔드포인트: /auth/refresh 및 /auth/revoke 구현
+- [ ] 엔드포인트: /auth/userinfo 구현
+- [ ] 보안: CORS 및 쿠키 정책(WebGL) 구성
+- [ ] WebSocket: 연결 시 Access 토큰 인증 처리
+- [ ] WebSocket: auth.reauth 메시지 처리 및 세션 갱신
+- [ ] 세션: ConnectionRegistry와 SessionInfo 확장 및 매핑
+- [ ] 비동기: correlationId 기반 결과 전송 로직 구현
+- [ ] 운영: 레이트 리밋 및 감사 로깅 추가
+- [ ] 설정: appsettings 및 환경변수 키 구성
+- [ ] 보안: 디바이스 바인딩 정책 및 이벤트 로깅
+- [ ] 테스트: 단위/통합 테스트 작성 및 시나리오 검증
+- [ ] 운영: 키 롤테이션 절차 자동화
+- [ ] 문서: 클라이언트 전환 가이드 및 SDK 헬퍼 초안
