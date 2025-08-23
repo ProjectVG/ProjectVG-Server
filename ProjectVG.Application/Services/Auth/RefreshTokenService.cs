@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using ProjectVG.Domain.Entities.Auth;
 using ProjectVG.Infrastructure.Auth.Models;
 using ProjectVG.Infrastructure.Persistence.Repositories.Auth;
+using ProjectVG.Infrastructure.Cache;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -11,15 +12,18 @@ namespace ProjectVG.Application.Services.Auth;
 public class RefreshTokenService : IRefreshTokenService
 {
     private readonly IRefreshTokenRepository _repository;
+    private readonly ITokenBlocklistService _blocklistService;
     private readonly ILogger<RefreshTokenService> _logger;
     private readonly JwtSettings _jwtSettings;
 
     public RefreshTokenService(
         IRefreshTokenRepository repository,
+        ITokenBlocklistService blocklistService,
         ILogger<RefreshTokenService> logger,
         IOptions<JwtSettings> jwtSettings)
     {
         _repository = repository;
+        _blocklistService = blocklistService;
         _logger = logger;
         _jwtSettings = jwtSettings.Value;
     }
@@ -69,6 +73,14 @@ public class RefreshTokenService : IRefreshTokenService
     public async Task<RefreshToken?> GetActiveTokenAsync(string tokenHash)
     {
         var hashedToken = HashToken(tokenHash);
+        
+        // Redis 블록리스트 확인
+        if (await _blocklistService.IsRefreshTokenBlockedAsync(hashedToken))
+        {
+            _logger.LogWarning("Attempted to use blocked refresh token");
+            return null;
+        }
+
         var token = await _repository.GetByTokenHashAsync(hashedToken);
 
         if (token == null || !token.IsActive)
@@ -105,6 +117,14 @@ public class RefreshTokenService : IRefreshTokenService
         currentToken.ReplacedByTokenId = newToken.Id;
         await _repository.UpdateAsync(currentToken);
 
+        // Redis 블록리스트에 이전 토큰 추가
+        var oldTokenHash = HashToken(currentToken.TokenHash);
+        var remainingExpiry = currentToken.ExpiresAt - DateTime.UtcNow;
+        if (remainingExpiry > TimeSpan.Zero)
+        {
+            await _blocklistService.BlockRefreshTokenAsync(oldTokenHash, remainingExpiry);
+        }
+
         _logger.LogInformation("Rotated refresh token {OldTokenId} to {NewTokenId} for user {UserId}", 
             currentToken.Id, newToken.Id, currentToken.UserId);
 
@@ -122,6 +142,14 @@ public class RefreshTokenService : IRefreshTokenService
         token.RevokedAt = DateTime.UtcNow;
         await _repository.UpdateAsync(token);
 
+        // Redis 블록리스트에 추가
+        var tokenHash = HashToken(token.TokenHash);
+        var remainingExpiry = token.ExpiresAt - DateTime.UtcNow;
+        if (remainingExpiry > TimeSpan.Zero)
+        {
+            await _blocklistService.BlockRefreshTokenAsync(tokenHash, remainingExpiry);
+        }
+
         _logger.LogInformation("Revoked refresh token {TokenId} for user {UserId}", tokenId, token.UserId);
         return true;
     }
@@ -137,6 +165,14 @@ public class RefreshTokenService : IRefreshTokenService
         {
             token.RevokedAt = DateTime.UtcNow;
             await _repository.UpdateAsync(token);
+
+            // Redis 블록리스트에 추가
+            var tokenHash = HashToken(token.TokenHash);
+            var remainingExpiry = token.ExpiresAt - DateTime.UtcNow;
+            if (remainingExpiry > TimeSpan.Zero)
+            {
+                await _blocklistService.BlockRefreshTokenAsync(tokenHash, remainingExpiry);
+            }
         }
 
         _logger.LogInformation("Revoked {Count} refresh tokens for user {UserId}", tokensToRevoke.Count, userId);
@@ -200,6 +236,14 @@ public class RefreshTokenService : IRefreshTokenService
             {
                 token.RevokedAt = DateTime.UtcNow;
                 await _repository.UpdateAsync(token);
+
+                // Redis 블록리스트에 추가
+                var tokenHash = HashToken(token.TokenHash);
+                var remainingExpiry = token.ExpiresAt - DateTime.UtcNow;
+                if (remainingExpiry > TimeSpan.Zero)
+                {
+                    await _blocklistService.BlockRefreshTokenAsync(tokenHash, remainingExpiry);
+                }
             }
         }
 

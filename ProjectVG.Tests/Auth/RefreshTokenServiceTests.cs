@@ -6,12 +6,14 @@ using ProjectVG.Application.Services.Auth;
 using ProjectVG.Domain.Entities.Auth;
 using ProjectVG.Infrastructure.Auth.Models;
 using ProjectVG.Infrastructure.Persistence.Repositories.Auth;
+using ProjectVG.Infrastructure.Cache;
 
 namespace ProjectVG.Tests.Auth;
 
 public class RefreshTokenServiceTests
 {
     private readonly Mock<IRefreshTokenRepository> _mockRepository;
+    private readonly Mock<ITokenBlocklistService> _mockBlocklistService;
     private readonly Mock<ILogger<RefreshTokenService>> _mockLogger;
     private readonly IOptions<JwtSettings> _jwtSettings;
     private readonly RefreshTokenService _service;
@@ -19,13 +21,14 @@ public class RefreshTokenServiceTests
     public RefreshTokenServiceTests()
     {
         _mockRepository = new Mock<IRefreshTokenRepository>();
+        _mockBlocklistService = new Mock<ITokenBlocklistService>();
         _mockLogger = new Mock<ILogger<RefreshTokenService>>();
         _jwtSettings = Options.Create(new JwtSettings
         {
             RefreshTokenLifetimeDays = 30
         });
         
-        _service = new RefreshTokenService(_mockRepository.Object, _mockLogger.Object, _jwtSettings);
+        _service = new RefreshTokenService(_mockRepository.Object, _mockBlocklistService.Object, _mockLogger.Object, _jwtSettings);
     }
 
     [Fact]
@@ -118,6 +121,8 @@ public class RefreshTokenServiceTests
             .ReturnsAsync(activeToken);
         _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<RefreshToken>()))
             .Returns(Task.CompletedTask);
+        _mockBlocklistService.Setup(b => b.IsRefreshTokenBlockedAsync(It.IsAny<string>()))
+            .ReturnsAsync(false);
 
         // Act
         var result = await _service.GetActiveTokenAsync(tokenHash);

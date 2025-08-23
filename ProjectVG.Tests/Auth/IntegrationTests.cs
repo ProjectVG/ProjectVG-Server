@@ -2,10 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Moq;
 using Xunit;
 using ProjectVG.Application.Services.Auth;
 using ProjectVG.Domain.Entities.Auth;
 using ProjectVG.Infrastructure.Auth.Models;
+using ProjectVG.Infrastructure.Cache;
 using ProjectVG.Infrastructure.Persistence.EfCore;
 using ProjectVG.Infrastructure.Persistence.Repositories.Auth;
 
@@ -26,6 +28,15 @@ public class IntegrationTests : IDisposable
         
         // 필요한 서비스 등록
         services.AddScoped<IRefreshTokenRepository, SqlServerRefreshTokenRepository>();
+        
+        // Mock ITokenBlocklistService for testing
+        var mockBlocklistService = new Mock<ITokenBlocklistService>();
+        mockBlocklistService.Setup(b => b.IsRefreshTokenBlockedAsync(It.IsAny<string>()))
+            .ReturnsAsync(false);
+        mockBlocklistService.Setup(b => b.BlockRefreshTokenAsync(It.IsAny<string>(), It.IsAny<TimeSpan>()))
+            .Returns(Task.CompletedTask);
+        services.AddSingleton(mockBlocklistService.Object);
+        
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddLogging();
         services.Configure<JwtSettings>(opts =>

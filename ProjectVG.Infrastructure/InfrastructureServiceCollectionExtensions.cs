@@ -10,6 +10,9 @@ using ProjectVG.Infrastructure.Persistence.Repositories.Conversation;
 using ProjectVG.Infrastructure.Persistence.Repositories.Users;
 using ProjectVG.Infrastructure.Persistence.Repositories.Auth;
 using ProjectVG.Infrastructure.Persistence.Session;
+using ProjectVG.Infrastructure.Cache;
+using StackExchange.Redis;
+using Microsoft.Extensions.Options;
 
 
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +29,7 @@ namespace ProjectVG.Infrastructure
             AddDatabaseServices(services, configuration);
             AddExternalApiClients(services, configuration);
             AddPersistenceServices(services);
+            AddCacheServices(services, configuration);
 
             return services;
         }
@@ -91,6 +95,32 @@ namespace ProjectVG.Infrastructure
             services.AddScoped<IUserRepository, SqlServerUserRepository>();
             services.AddScoped<IRefreshTokenRepository, SqlServerRefreshTokenRepository>();
             services.AddSingleton<ISessionStorage, InMemorySessionStorage>();
+        }
+
+        /// <summary>
+        /// 캐시 서비스
+        /// </summary>
+        private static void AddCacheServices(IServiceCollection services, IConfiguration configuration)
+        {
+            var redisSettings = configuration.GetSection(RedisCacheSettings.SectionName).Get<RedisCacheSettings>() ?? new RedisCacheSettings();
+            services.Configure<RedisCacheSettings>(configuration.GetSection(RedisCacheSettings.SectionName));
+
+            // Redis 연결 설정
+            services.AddSingleton<IConnectionMultiplexer>(provider =>
+            {
+                var settings = provider.GetRequiredService<IOptions<RedisCacheSettings>>().Value;
+                var configurationOptions = ConfigurationOptions.Parse(settings.ConnectionString);
+                configurationOptions.ConnectRetry = settings.ConnectRetry;
+                configurationOptions.ConnectTimeout = settings.ConnectTimeout;
+                configurationOptions.SyncTimeout = settings.SyncTimeout;
+                configurationOptions.AbortOnConnectFail = false;
+
+                return ConnectionMultiplexer.Connect(configurationOptions);
+            });
+
+            // Redis 서비스 등록
+            services.AddScoped<IRedisCacheService, RedisCacheService>();
+            services.AddScoped<ITokenBlocklistService, TokenBlocklistService>();
         }
     }
 }
