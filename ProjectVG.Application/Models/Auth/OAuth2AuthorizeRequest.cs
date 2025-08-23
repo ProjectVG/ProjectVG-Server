@@ -14,8 +14,7 @@ public class OAuth2AuthorizeRequest
 
     public string? Scope { get; set; } = "openid profile";
 
-    [Required]
-    public string State { get; set; } = string.Empty;
+    public string? State { get; set; }
 
     [Required]
     public string CodeChallenge { get; set; } = string.Empty;

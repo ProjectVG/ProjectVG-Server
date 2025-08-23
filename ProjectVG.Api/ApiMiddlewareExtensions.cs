@@ -23,11 +23,14 @@ namespace ProjectVG.Api
             // 전역 예외 처리
             app.UseGlobalExceptionHandler();
 
-            // WebSocket 지원
-            app.UseWebSockets();
-
-            // WebSocket 미들웨어 등록
-            app.UseMiddleware<WebSocketMiddleware>();
+            // WebSocket 지원 (Test 환경 제외)
+            if (!environment.IsEnvironment("Test"))
+            {
+                app.UseWebSockets();
+                
+                // WebSocket 미들웨어 등록
+                app.UseMiddleware<WebSocketMiddleware>();
+            }
 
             // 요청 로깅 미들웨어
             app.Use(async (ctx, next) => {

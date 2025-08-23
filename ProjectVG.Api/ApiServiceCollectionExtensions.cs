@@ -63,14 +63,6 @@ namespace ProjectVG.Api
                     ClockSkew = TimeSpan.FromMinutes(5)
                 };
 
-                // 토큰 검증 시 동적으로 키 로드
-                options.Events.OnTokenValidated = async context =>
-                {
-                    var keyStore = context.HttpContext.RequestServices.GetRequiredService<IKeyStore>();
-                    var validationKeys = await keyStore.GetValidationKeysAsync();
-                    context.Options.TokenValidationParameters.IssuerSigningKeys = validationKeys;
-                };
-
                 options.Events = new JwtBearerEvents
                 {
                     OnMessageReceived = context =>
@@ -84,6 +76,12 @@ namespace ProjectVG.Api
                         }
                         
                         return Task.CompletedTask;
+                    },
+                    OnTokenValidated = async context =>
+                    {
+                        var keyStore = context.HttpContext.RequestServices.GetRequiredService<IKeyStore>();
+                        var validationKeys = await keyStore.GetValidationKeysAsync();
+                        context.Options.TokenValidationParameters.IssuerSigningKeys = validationKeys;
                     }
                 };
             });

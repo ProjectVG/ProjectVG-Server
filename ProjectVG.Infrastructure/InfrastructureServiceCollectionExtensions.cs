@@ -41,7 +41,17 @@ namespace ProjectVG.Infrastructure
         {
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ProjectVGDbContext>();
-            context.Database.Migrate();
+            
+            // In-Memory 데이터베이스인 경우 EnsureCreated 사용, 그 외에는 Migrate 사용
+            if (context.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+            {
+                context.Database.EnsureCreated();
+            }
+            else
+            {
+                context.Database.Migrate();
+            }
+            
             return serviceProvider;
         }
 
