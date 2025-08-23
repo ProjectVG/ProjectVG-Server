@@ -1,80 +1,125 @@
 using Microsoft.AspNetCore.Mvc;
-using ProjectVG.Application.Services.User;
+using ProjectVG.Application.Services.Auth;
 using ProjectVG.Application.Models.User;
-using ProjectVG.Api.Models.Auth.Request;
-using ProjectVG.Api.Models.Auth.Response;
 
 namespace ProjectVG.Api.Controllers
 {
     [ApiController]
-    [Route("api/v1/[controller]")]
+    [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly IUserService _userService;
-        private readonly ILogger<AuthController> _logger;
+        private readonly IAuthService _authService;
 
-        public AuthController(IUserService userService, ILogger<AuthController> logger)
+        public AuthController(IAuthService authService)
         {
-            _userService = userService;
-            _logger = logger;
+            _authService = authService;
         }
 
-        [HttpPost("register")]
-        public async Task<ActionResult<AuthResponse>> Register([FromBody] RegisterRequest request)
+        [HttpPost("test-login")]
+        public async Task<IActionResult> TestLogin([FromBody] TestLoginRequest request)
         {
-            var userDto = request.ToUserDto();
-            var createdUser = await _userService.CreateUserAsync(userDto);
-            
-            var response = new AuthResponse
+            try
             {
-                Success = true,
-                Message = "회원가입이 완료되었습니다.",
-                UserId = createdUser.Id,
-                Username = createdUser.Username,
-                Email = createdUser.Email
-            };
+                var result = await _authService.LoginWithOAuthAsync("test", request.UserId.ToString());
+                
+                if (result.IsSuccess)
+                {
+                    return Ok(new
+                    {
+                        success = true,
+                        tokens = result.Tokens,
+                        user = result.User
+                    });
+                }
 
-            _logger.LogInformation("새 사용자 회원가입 완료: {Username}", createdUser.Username);
-            return Ok(response);
-        }
-
-        [HttpPost("login")]
-        public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
-        {
-            var user = await _userService.GetUserByUsernameAsync(request.Username);
-            var response = new AuthResponse
+                return BadRequest(new
+                {
+                    success = false,
+                    message = result.ErrorMessage
+                });
+            }
+            catch (Exception ex)
             {
-                Success = true,
-                Message = "로그인이 완료되었습니다.",
-                UserId = user.Id,
-                Username = user.Username,
-                Email = user.Email
-            };
-
-            _logger.LogInformation("사용자 로그인 완료: {Username}", user.Username);
-            return Ok(response);
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Internal server error",
+                    error = ex.Message
+                });
+            }
         }
 
-        [HttpGet("check-username/{username}")]
-        public async Task<ActionResult<CheckResponse>> CheckUsername(string username)
+        [HttpPost("refresh")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
-            var exists = await _userService.UsernameExistsAsync(username);
-            return Ok(new CheckResponse
+            try
             {
-                Exists = exists,
-                Message = exists ? "이미 사용 중인 사용자명입니다." : "사용 가능한 사용자명입니다."
-            });
+                var result = await _authService.RefreshTokenAsync(request.RefreshToken);
+                
+                if (result.IsSuccess)
+                {
+                    return Ok(new
+                    {
+                        success = true,
+                        tokens = result.Tokens,
+                        user = result.User
+                    });
+                }
+
+                return BadRequest(new
+                {
+                    success = false,
+                    message = result.ErrorMessage
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Internal server error",
+                    error = ex.Message
+                });
+            }
         }
 
-        [HttpGet("check-email/{email}")]
-        public async Task<ActionResult<CheckResponse>> CheckEmail(string email)
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
         {
-            var exists = await _userService.EmailExistsAsync(email);
-            return Ok(new CheckResponse
+            try
             {
-                Exists = exists,
-                Message = exists ? "이미 사용 중인 이메일입니다." : "사용 가능한 이메일입니다."
-            });
+                var success = await _authService.LogoutAsync(request.RefreshToken);
+                
+                return Ok(new
+                {
+                    success = success,
+                    message = success ? "Logout successful" : "Logout failed"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Internal server error",
+                    error = ex.Message
+                });
+            }
         }
+    }
+
+    public class TestLoginRequest
+    {
+        public Guid UserId { get; set; }
+    }
+
+    public class RefreshTokenRequest
+    {
+        public string RefreshToken { get; set; } = string.Empty;
+    }
+
+    public class LogoutRequest
+    {
+        public string RefreshToken { get; set; } = string.Empty;
     }
 } 
