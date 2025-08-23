@@ -1,7 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using ProjectVG.Api.Services;
 using ProjectVG.Api.Filters;
-using Microsoft.AspNetCore.Authentication.Negotiate;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 
 namespace ProjectVG.Api
 {
@@ -35,8 +37,23 @@ namespace ProjectVG.Api
         /// </summary>
         public static IServiceCollection AddApiAuthentication(this IServiceCollection services)
         {
-            services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
-                .AddNegotiate();
+            services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+            })
+            .AddCookie()
+            .AddOpenIdConnect("oidc", options =>
+            {
+                options.Authority = "https://auth.example.com";
+                options.ClientId = "YOUR_CLIENT_ID";
+                options.ClientSecret = "YOUR_CLIENT_SECRET";
+                options.ResponseType = "code";
+                options.SaveTokens = true;
+                options.Scope.Add("openid");
+                options.Scope.Add("profile");
+                options.GetClaimsFromUserInfoEndpoint = true;
+            });
 
             services.AddAuthorization(options => {
                 options.FallbackPolicy = null;
