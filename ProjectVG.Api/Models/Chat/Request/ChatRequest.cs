@@ -26,6 +26,9 @@ namespace ProjectVG.Application.Models.API.Request
         [JsonPropertyName("instruction")]
         public string? Instruction { get; set; }
 
+        [JsonPropertyName("use_tts")]
+        public bool UseTTS { get; set; } = true;
+
         public ProcessChatCommand ToProcessChatCommand()
         {
             return new ProcessChatCommand
@@ -36,7 +39,8 @@ namespace ProjectVG.Application.Models.API.Request
                 RequestedAt = this.RequestedAt,
                 Action = this.Action,
                 Instruction = this.Instruction,
-                UserId = this.UserId
+                UserId = this.UserId,
+                UseTTS = this.UseTTS
             };
         }
     }

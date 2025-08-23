@@ -41,10 +41,13 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
                     temperature: format.Temperature
                 );
 
+                var cost = format.CalculateCost(llmResponse.InputTokens, llmResponse.OutputTokens);
                 var analysis = format.Parse(llmResponse.Response, userInput);
+                analysis.Cost = cost;
                 
-                _logger.LogDebug("사용자 입력 분석 완료: '{Input}' -> 맥락: {Context}, 의도: {Intent}, 액션: {Action}", 
-                    userInput, analysis.ConversationContext, analysis.UserIntent, analysis.Action);
+                Console.WriteLine($"[USER_INPUT_ANALYSIS_DEBUG] ID: {llmResponse.Id}, 입력 토큰: {llmResponse.InputTokens}, 출력 토큰: {llmResponse.OutputTokens}, 총 토큰: {llmResponse.TokensUsed}, 계산된 비용: {cost:F0} Cost");
+                _logger.LogDebug("사용자 입력 분석 완료: '{Input}' -> 맥락: {Context}, 의도: {Intent}, 액션: {Action}, 비용: {Cost}", 
+                    userInput, analysis.ConversationContext, analysis.UserIntent, analysis.Action, cost);
 
                 return analysis;
             }

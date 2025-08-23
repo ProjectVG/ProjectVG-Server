@@ -1,6 +1,8 @@
 using ProjectVG.Application.Services.Chat.Preprocessors;
 using ProjectVG.Application.Services.Chat.Processors;
 using ProjectVG.Application.Services.Chat.Validators;
+using ProjectVG.Application.Services.Chat.CostTracking;
+using ProjectVG.Application.Services.Chat.Handlers;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Character;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,12 +20,14 @@ namespace ProjectVG.Application.Services.Chat
 
         private readonly ChatRequestValidator _validator;
         private readonly MemoryContextPreprocessor _memoryPreprocessor;
-        private readonly UserInputAnalysisProcessor _inputProcessor;
+        private readonly ICostTrackingDecorator<UserInputAnalysisProcessor> _inputProcessor;
         private readonly UserInputActionProcessor _actionProcessor;
 
-        private readonly ChatLLMProcessor _llmProcessor;
-        private readonly ChatTTSProcessor _ttsProcessor;
+        private readonly ICostTrackingDecorator<ChatLLMProcessor> _llmProcessor;
+        private readonly ICostTrackingDecorator<ChatTTSProcessor> _ttsProcessor;
         private readonly ChatResultProcessor _resultProcessor;
+        private readonly IChatMetricsService _metricsService;
+        private readonly ChatFailureHandler _failureHandler;
 
         public ChatService(
             IServiceScopeFactory scopeFactory,
@@ -32,11 +36,13 @@ namespace ProjectVG.Application.Services.Chat
             ICharacterService characterService,
             ChatRequestValidator validator,
             MemoryContextPreprocessor memoryPreprocessor,
-            UserInputAnalysisProcessor inputProcessor,
+            ICostTrackingDecorator<UserInputAnalysisProcessor> inputProcessor,
             UserInputActionProcessor actionProcessor,
-            ChatLLMProcessor llmProcessor,
-            ChatTTSProcessor ttsProcessor,
-            ChatResultProcessor resultProcessor
+            ICostTrackingDecorator<ChatLLMProcessor> llmProcessor,
+            ICostTrackingDecorator<ChatTTSProcessor> ttsProcessor,
+            ChatResultProcessor resultProcessor,
+            IChatMetricsService metricsService,
+            ChatFailureHandler failureHandler
         ) {
             _scopeFactory = scopeFactory;
             _logger = logger;
@@ -50,16 +56,19 @@ namespace ProjectVG.Application.Services.Chat
             _llmProcessor = llmProcessor;
             _ttsProcessor = ttsProcessor;
             _resultProcessor = resultProcessor;
+            _metricsService = metricsService;
+            _failureHandler = failureHandler;
         }
 
         public async Task<ChatRequestResponse> EnqueueChatRequestAsync(ProcessChatCommand command)
         {
+            _metricsService.StartChatMetrics(command.SessionId, command.UserId.ToString(), command.CharacterId.ToString());
+            
             await _validator.ValidateAsync(command);
 
             var preprocessContext = await PrepareChatRequestAsync(command);
 
             _ = Task.Run(async () => {
-                using var processScope = _scopeFactory.CreateScope();
                 await ProcessChatRequestInternalAsync(preprocessContext);
             });
 
@@ -70,11 +79,9 @@ namespace ProjectVG.Application.Services.Chat
         /// <summary>
         /// 채팅 요청 준비
         /// </summary>
-        private async Task<ChatPreprocessContext> PrepareChatRequestAsync(ProcessChatCommand command)
+        private async Task<ChatProcessContext> PrepareChatRequestAsync(ProcessChatCommand command)
         {
             var characterDto = await _characterService.GetCharacterByIdAsync(command.CharacterId);
-            command.SetCharacter(characterDto!);
-            
             var conversationHistory = await _conversationService.GetConversationHistoryAsync(command.UserId, command.CharacterId, 10);
 
             var inputAnalysis = await _inputProcessor.ProcessAsync(command.Message, conversationHistory);
@@ -82,32 +89,30 @@ namespace ProjectVG.Application.Services.Chat
             
             var memoryContext = await _memoryPreprocessor.CollectMemoryContextAsync(command.UserId.ToString(), command.Message, inputAnalysis);
 
-            return new ChatPreprocessContext(
-                command,
-                memoryContext,
-                conversationHistory
-            );
+            return new ChatProcessContext(command, characterDto!, conversationHistory, memoryContext);
         }
 
         /// <summary>
         /// 채팅 요청 처리
         /// </summary>
-        private async Task ProcessChatRequestInternalAsync(ChatPreprocessContext context)
+        private async Task ProcessChatRequestInternalAsync(ChatProcessContext context)
         {
             try {
-                _logger.LogInformation("채팅 요청 처리 시작: {SessionId}", context.SessionId);
-
                 // 작업 처리 단계: LLM -> TTS -> 결과 전송 + 저장
-                var llmResult = await _llmProcessor.ProcessAsync(context);
-                await _ttsProcessor.ProcessAsync(context, llmResult);
-                await _resultProcessor.SendResultsAsync(context, llmResult);
-                await _resultProcessor.PersistResultsAsync(context, llmResult);
-
-                _logger.LogInformation("채팅 요청 처리 완료: {SessionId}, 토큰: {TokensUsed}",
-                    context.SessionId, llmResult.TokensUsed);
+                await _llmProcessor.ProcessAsync(context);
+                await _ttsProcessor.ProcessAsync(context);
+                
+                using var scope = _scopeFactory.CreateScope();
+                var resultProcessor = scope.ServiceProvider.GetRequiredService<ChatResultProcessor>();
+                await resultProcessor.SendResultsAsync(context);
+                await resultProcessor.PersistResultsAsync(context);
             }
             catch (Exception ex) {
-                _logger.LogError(ex, "채팅 요청 처리 중 오류 발생: {SessionId}", context.SessionId);
+                await _failureHandler.HandleFailureAsync(context, ex);
+            }
+            finally {
+                _metricsService.EndChatMetrics();
+                _metricsService.LogChatMetrics();
             }
         }
     }
