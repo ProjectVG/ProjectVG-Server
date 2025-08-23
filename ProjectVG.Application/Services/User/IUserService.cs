@@ -59,5 +59,12 @@ namespace ProjectVG.Application.Services.User
         /// <param name="userId">사용자 ID</param>
         /// <returns>삭제 여부</returns>
         Task<bool> DeleteUserAsync(Guid userId);
+
+        /// <summary>
+        /// 사용자 ID로 사용자 조회
+        /// </summary>
+        /// <param name="userId">사용자 ID</param>
+        /// <returns>사용자 정보</returns>
+        Task<UserDto?> GetUserByIdAsync(Guid userId);
     }
 } 

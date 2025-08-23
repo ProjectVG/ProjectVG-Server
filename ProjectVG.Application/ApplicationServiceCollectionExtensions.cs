@@ -10,6 +10,7 @@ using ProjectVG.Application.Services.Chat.Handlers;
 using ProjectVG.Application.Services.WebSocket;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Session;
+using ProjectVG.Application.Services.Auth;
 
 namespace ProjectVG.Application
 {
@@ -22,6 +23,7 @@ namespace ProjectVG.Application
         {
             services.AddScoped<ICharacterService, CharacterService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ChatRequestValidator>();
             services.AddScoped<ChatLLMProcessor>();
             services.AddScoped<ChatTTSProcessor>();

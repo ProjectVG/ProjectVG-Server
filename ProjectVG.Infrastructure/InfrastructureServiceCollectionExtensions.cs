@@ -11,6 +11,7 @@ using ProjectVG.Infrastructure.Persistence.Repositories.Users;
 using ProjectVG.Infrastructure.Persistence.Session;
 using ProjectVG.Infrastructure.Auth;
 using ProjectVG.Common.Configuration;
+using StackExchange.Redis;
 
 
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +29,7 @@ namespace ProjectVG.Infrastructure
             AddExternalApiClients(services, configuration);
             AddPersistenceServices(services);
             AddAuthServices(services, configuration);
+            AddRedisServices(services, configuration);
 
             return services;
         }
@@ -111,6 +113,21 @@ namespace ProjectVG.Infrastructure
             services.AddSingleton(jwtSettings);
             services.AddScoped<IJwtProvider, JwtProvider>(sp => 
                 new JwtProvider(jwtSettings.Key, jwtSettings.Issuer, jwtSettings.Audience, jwtSettings.AccessTokenExpirationMinutes, jwtSettings.RefreshTokenExpirationMinutes));
+            
+            services.AddScoped<ITokenService, TokenService>();
+        }
+
+        /// <summary>
+        /// Redis 서비스
+        /// </summary>
+        private static void AddRedisServices(IServiceCollection services, IConfiguration configuration)
+        {
+            var redisConnectionString = configuration.GetConnectionString("Redis") ?? Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING") ?? "localhost:6379";
+            
+            services.AddSingleton<IConnectionMultiplexer>(sp => 
+                ConnectionMultiplexer.Connect(redisConnectionString));
+            
+            services.AddScoped<IRefreshTokenStorage, RedisRefreshTokenStorage>();
         }
     }
 }

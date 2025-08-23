@@ -94,6 +94,14 @@ namespace ProjectVG.Application.Services.User
             return true;
         }
 
+        public async Task<UserDto?> GetUserByIdAsync(Guid userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            return user != null ? new UserDto(user) : null;
+        }
+
+
+
         private async Task ValidateUserUniqueness(UserDto userDto)
         {
             if (await EmailExistsAsync(userDto.Email)) {
