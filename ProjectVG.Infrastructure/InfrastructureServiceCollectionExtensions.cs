@@ -9,6 +9,8 @@ using ProjectVG.Infrastructure.Persistence.Repositories.Characters;
 using ProjectVG.Infrastructure.Persistence.Repositories.Conversation;
 using ProjectVG.Infrastructure.Persistence.Repositories.Users;
 using ProjectVG.Infrastructure.Persistence.Session;
+using ProjectVG.Infrastructure.Auth;
+using ProjectVG.Common.Configuration;
 
 
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +27,7 @@ namespace ProjectVG.Infrastructure
             AddDatabaseServices(services, configuration);
             AddExternalApiClients(services, configuration);
             AddPersistenceServices(services);
+            AddAuthServices(services, configuration);
 
             return services;
         }
@@ -89,6 +92,25 @@ namespace ProjectVG.Infrastructure
             services.AddScoped<IConversationRepository, SqlServerConversationRepository>();
             services.AddScoped<IUserRepository, SqlServerUserRepository>();
             services.AddSingleton<ISessionStorage, InMemorySessionStorage>();
+        }
+
+        /// <summary>
+        /// 인증 서비스
+        /// </summary>
+        private static void AddAuthServices(IServiceCollection services, IConfiguration configuration)
+        {
+            var jwtSettings = configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings
+            {
+                Key = Environment.GetEnvironmentVariable("JWT_KEY") ?? "your-super-secret-key-with-at-least-32-characters",
+                Issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "ProjectVG",
+                Audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "ProjectVG",
+                AccessTokenExpirationMinutes = configuration.GetValue<int>("Jwt:AccessTokenExpirationMinutes", 15),
+                RefreshTokenExpirationMinutes = configuration.GetValue<int>("Jwt:RefreshTokenExpirationMinutes", 1440)
+            };
+
+            services.AddSingleton(jwtSettings);
+            services.AddScoped<IJwtProvider, JwtProvider>(sp => 
+                new JwtProvider(jwtSettings.Key, jwtSettings.Issuer, jwtSettings.Audience, jwtSettings.AccessTokenExpirationMinutes, jwtSettings.RefreshTokenExpirationMinutes));
         }
     }
 }
