@@ -43,6 +43,7 @@ namespace ProjectVG.Application
             services.AddScoped<IRefreshTokenService, RefreshTokenService>();
             services.AddScoped<IOAuth2Service, OAuth2Service>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IAuthTokenService, AuthTokenService>(); // Added
             
             // OAuth2 설정
             services.Configure<OAuth2Settings>(configuration.GetSection(OAuth2Settings.SectionName));
