@@ -2,8 +2,6 @@ using ProjectVG.Application;
 using ProjectVG.Api.Configuration;
 using ProjectVG.Api;
 using ProjectVG.Infrastructure;
-using ProjectVG.Infrastructure.Persistence.EfCore;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 

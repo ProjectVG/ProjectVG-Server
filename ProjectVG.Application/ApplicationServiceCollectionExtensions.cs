@@ -33,7 +33,7 @@ namespace ProjectVG.Application
             services.AddScoped<MemoryContextPreprocessor>();
             services.AddScoped<ChatFailureHandler>();
 
-            services.AddScoped<IWebSocketManager, WebSocketManager>();
+            services.AddSingleton<IWebSocketManager, WebSocketManager>();
             services.AddScoped<IChatService, ChatService>();
             services.AddScoped<IConversationService, ConversationService>();
             services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
