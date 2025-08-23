@@ -103,7 +103,7 @@ namespace ProjectVG.Infrastructure
         {
             var jwtSettings = configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings
             {
-                Key = Environment.GetEnvironmentVariable("JWT_KEY") ?? "your-super-secret-key-with-at-least-32-characters",
+                Key = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? Environment.GetEnvironmentVariable("JWT_KEY") ?? "your-super-secret-key-with-at-least-32-characters",
                 Issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "ProjectVG",
                 Audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "ProjectVG",
                 AccessTokenExpirationMinutes = configuration.GetValue<int>("Jwt:AccessTokenExpirationMinutes", 15),

@@ -128,14 +128,19 @@ namespace ProjectVG.Application.Services.Auth
         {
             try
             {
+                _logger.LogInformation("=== ValidateAccessTokenAsync 디버그 ===");
+                
                 var userId = await _tokenService.GetUserIdFromTokenAsync(accessToken);
+                _logger.LogInformation("추출된 UserId: {UserId}", userId);
+                
                 if (!userId.HasValue)
                 {
+                    _logger.LogWarning("UserId가 null이므로 검증 실패");
                     return false;
                 }
 
-                var user = await _userService.GetUserByIdAsync(userId.Value);
-                return user?.IsActive == true;
+                _logger.LogInformation("JWT 토큰 검증 성공 - UserId: {UserId}", userId.Value);
+                return true;
             }
             catch (Exception ex)
             {
