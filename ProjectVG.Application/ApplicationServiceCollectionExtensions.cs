@@ -10,6 +10,7 @@ using ProjectVG.Application.Services.Chat.Handlers;
 using ProjectVG.Application.Services.WebSocket;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Session;
+using ProjectVG.Application.Services.Auth;
 
 namespace ProjectVG.Application
 {
@@ -35,6 +36,9 @@ namespace ProjectVG.Application
             services.AddScoped<IChatService, ChatService>();
             services.AddScoped<IConversationService, ConversationService>();
             services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
+            
+            // Auth 서비스 등록
+            services.AddScoped<IRefreshTokenService, RefreshTokenService>();
             
             services.AddScoped<IChatMetricsService, ChatMetricsService>();
 

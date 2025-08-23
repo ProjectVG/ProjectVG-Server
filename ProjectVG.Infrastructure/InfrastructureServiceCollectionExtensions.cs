@@ -8,6 +8,7 @@ using ProjectVG.Infrastructure.Persistence.EfCore;
 using ProjectVG.Infrastructure.Persistence.Repositories.Characters;
 using ProjectVG.Infrastructure.Persistence.Repositories.Conversation;
 using ProjectVG.Infrastructure.Persistence.Repositories.Users;
+using ProjectVG.Infrastructure.Persistence.Repositories.Auth;
 using ProjectVG.Infrastructure.Persistence.Session;
 
 
@@ -88,6 +89,7 @@ namespace ProjectVG.Infrastructure
             services.AddScoped<ICharacterRepository, SqlServerCharacterRepository>();
             services.AddScoped<IConversationRepository, SqlServerConversationRepository>();
             services.AddScoped<IUserRepository, SqlServerUserRepository>();
+            services.AddScoped<IRefreshTokenRepository, SqlServerRefreshTokenRepository>();
             services.AddSingleton<ISessionStorage, InMemorySessionStorage>();
         }
     }
