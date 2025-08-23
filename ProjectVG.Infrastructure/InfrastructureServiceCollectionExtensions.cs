@@ -118,16 +118,33 @@ namespace ProjectVG.Infrastructure
         }
 
         /// <summary>
-        /// Redis 서비스
+        /// Redis 서비스 (개발 환경에서는 In-Memory 사용)
         /// </summary>
         private static void AddRedisServices(IServiceCollection services, IConfiguration configuration)
         {
-            var redisConnectionString = configuration.GetConnectionString("Redis") ?? Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING") ?? "localhost:6379";
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
             
-            services.AddSingleton<IConnectionMultiplexer>(sp => 
-                ConnectionMultiplexer.Connect(redisConnectionString));
-            
-            services.AddScoped<IRefreshTokenStorage, RedisRefreshTokenStorage>();
+            if (environment.Equals("Production", StringComparison.OrdinalIgnoreCase))
+            {
+                // 프로덕션에서는 Redis 사용
+                var redisConnectionString = configuration.GetConnectionString("Redis") ?? Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING") ?? "localhost:6379";
+                
+                services.AddSingleton<IConnectionMultiplexer>(sp => 
+                {
+                    var options = ConfigurationOptions.Parse(redisConnectionString);
+                    options.AbortOnConnectFail = false;
+                    options.ConnectRetry = 5;
+                    options.ReconnectRetryPolicy = new ExponentialRetry(5000);
+                    return ConnectionMultiplexer.Connect(options);
+                });
+                
+                services.AddScoped<IRefreshTokenStorage, RedisRefreshTokenStorage>();
+            }
+            else
+            {
+                // 개발 환경에서는 In-Memory 사용
+                services.AddScoped<IRefreshTokenStorage, InMemoryRefreshTokenStorage>();
+            }
         }
     }
 }
