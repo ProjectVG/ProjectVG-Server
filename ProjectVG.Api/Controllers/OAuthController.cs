@@ -158,14 +158,22 @@ namespace ProjectVG.Api.Controllers
                     return BadRequest(new { success = false, message = authResult.ErrorMessage });
                 }
 
-                // 성공 시 클라이언트가 요청한 URL로 리다이렉트 (JWT 포함)
-                var expiresIn = (int)(authResult.Tokens!.AccessTokenExpiresAt - DateTime.UtcNow).TotalSeconds;
+                // JWT 토큰을 임시 저장 (state를 키로 사용)
+                var tokenData = new OAuth2TokenData
+                {
+                    AccessToken = authResult.Tokens!.AccessToken,
+                    RefreshToken = authResult.Tokens.RefreshToken,
+                    ExpiresIn = (int)(authResult.Tokens.AccessTokenExpiresAt - DateTime.UtcNow).TotalSeconds,
+                    UserId = authResult.User!.Id.ToString(),
+                    CreatedAt = DateTime.UtcNow
+                };
+                
+                await _oauth2Service.StoreTokenDataAsync(state, tokenData);
+
+                // 성공 시 클라이언트가 요청한 URL로 리다이렉트 (state만 포함)
                 var clientRedirectUrl = $"{authRequest.ClientRedirectUri}?" +
                                        $"success=true&" +
-                                       $"access_token={Uri.EscapeDataString(authResult.Tokens.AccessToken)}&" +
-                                       $"refresh_token={Uri.EscapeDataString(authResult.Tokens.RefreshToken)}&" +
-                                       $"expires_in={expiresIn}&" +
-                                       $"user_id={Uri.EscapeDataString(authResult.User!.Id.ToString())}";
+                                       $"state={Uri.EscapeDataString(state)}";
 
                 return Redirect(clientRedirectUrl);
             }
@@ -176,6 +184,40 @@ namespace ProjectVG.Api.Controllers
                                      $"success=false&" +
                                      $"error={Uri.EscapeDataString(ex.Message)}";
                 return Redirect(errorRedirectUrl);
+            }
+        }
+
+        [HttpGet("oauth2/token")]
+        public async Task<IActionResult> GetOAuth2Token([FromQuery] string state)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(state))
+                {
+                    return BadRequest(new { success = false, message = "State parameter is required" });
+                }
+
+                // 저장된 토큰 데이터 가져오기
+                var tokenData = await _oauth2Service.GetTokenDataAsync(state) as OAuth2TokenData;
+                if (tokenData == null)
+                {
+                    return BadRequest(new { success = false, message = "Invalid or expired token request" });
+                }
+
+                // 토큰 데이터 삭제 (1회 사용)
+                await _oauth2Service.DeleteTokenDataAsync(state);
+
+                // HTTP 헤더로 토큰 전달
+                Response.Headers.Append("X-Access-Token", tokenData.AccessToken);
+                Response.Headers.Append("X-Refresh-Token", tokenData.RefreshToken);
+                Response.Headers.Append("X-Expires-In", tokenData.ExpiresIn.ToString());
+                Response.Headers.Append("X-User-Id", tokenData.UserId);
+
+                return Ok(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
             }
         }
 

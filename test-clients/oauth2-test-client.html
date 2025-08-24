@@ -114,7 +114,7 @@
 
         <div class="form-group">
             <label for="redirectUri">Redirect URI:</label>
-            <input type="url" id="redirectUri" value="http://localhost:7910/auth/oauth2/callback" placeholder="http://localhost:7910/auth/oauth2/callback">
+            <input type="url" id="redirectUri" value="http://localhost:7900/auth/oauth2/callback" placeholder="http://localhost:7900/auth/oauth2/callback">
         </div>
 
         <div class="form-group">
@@ -290,23 +290,40 @@
         }
 
         // 페이지 로드 시 URL 파라미터 확인 (OAuth2 callback 처리)
-        window.onload = function() {
+        window.onload = async function() {
             const urlParams = new URLSearchParams(window.location.search);
             
-            if (urlParams.has('success') && urlParams.has('access_token')) {
-                // OAuth2 성공
+            if (urlParams.has('success') && urlParams.has('state')) {
+                // OAuth2 성공 - state로 토큰 요청
                 const success = urlParams.get('success');
-                const accessToken = urlParams.get('access_token');
-                const refreshToken = urlParams.get('refresh_token');
-                const expiresIn = urlParams.get('expires_in');
-                const userId = urlParams.get('user_id');
+                const state = urlParams.get('state');
 
-                if (success === 'true') {
-                    showResult(`✅ OAuth2 로그인 성공!\n\n` +
-                        `User ID: ${userId}\n` +
-                        `Access Token: ${accessToken}\n` +
-                        `Refresh Token: ${refreshToken}\n` +
-                        `Expires In: ${expiresIn}초`, 'success');
+                if (success === 'true' && state) {
+                    try {
+                        showResult('🔄 토큰 요청 중...', 'info');
+                        
+                        const serverUrl = document.getElementById('serverUrl').value;
+                        const tokenResponse = await fetch(`${serverUrl}/auth/oauth2/token?state=${encodeURIComponent(state)}`);
+                        const tokenData = await tokenResponse.json();
+                        
+                        if (tokenData.success) {
+                            // HTTP 헤더에서 토큰 정보 추출
+                            const accessToken = tokenResponse.headers.get('X-Access-Token');
+                            const refreshToken = tokenResponse.headers.get('X-Refresh-Token');
+                            const expiresIn = tokenResponse.headers.get('X-Expires-In');
+                            const userId = tokenResponse.headers.get('X-User-Id');
+                            
+                            showResult(`✅ OAuth2 로그인 성공!\n\n` +
+                                `User ID: ${userId}\n` +
+                                `Access Token: ${accessToken}\n` +
+                                `Refresh Token: ${refreshToken}\n` +
+                                `Expires In: ${expiresIn}초`, 'success');
+                        } else {
+                            showResult(`❌ 토큰 요청 실패: ${tokenData.message}`, 'error');
+                        }
+                    } catch (error) {
+                        showResult(`❌ 토큰 요청 중 오류: ${error.message}`, 'error');
+                    }
                 } else {
                     const error = urlParams.get('error');
                     showResult(`❌ OAuth2 로그인 실패: ${error}`, 'error');

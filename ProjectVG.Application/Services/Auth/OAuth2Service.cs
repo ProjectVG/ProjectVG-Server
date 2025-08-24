@@ -2,10 +2,10 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ProjectVG.Common.Configuration;
 using ProjectVG.Application.Models.Auth;
+
 
 namespace ProjectVG.Application.Services.Auth
 {
@@ -15,6 +15,7 @@ namespace ProjectVG.Application.Services.Auth
         private readonly ILogger<OAuth2Service> _logger;
         private readonly OAuth2ProviderSettings _settings;
         private readonly Dictionary<string, string> _oauth2Requests = new();
+        private readonly Dictionary<string, string> _tokenData = new();
 
         public OAuth2Service(
             IHttpClientFactory httpClientFactory,
@@ -190,6 +191,29 @@ namespace ProjectVG.Application.Services.Auth
             await Task.CompletedTask;
         }
 
+        public async Task StoreTokenDataAsync(string state, object tokenData)
+        {
+            _tokenData[state] = JsonSerializer.Serialize(tokenData);
+            await Task.CompletedTask;
+        }
+
+        public async Task<object?> GetTokenDataAsync(string state)
+        {
+            if (_tokenData.TryGetValue(state, out var json))
+            {
+                await Task.CompletedTask;
+                return JsonSerializer.Deserialize<OAuth2TokenData>(json);
+            }
+            await Task.CompletedTask;
+            return null;
+        }
+
+        public async Task DeleteTokenDataAsync(string state)
+        {
+            _tokenData.Remove(state);
+            await Task.CompletedTask;
+        }
+
         private OAuth2Settings? GetProviderByClientId(string clientId)
         {
             return _settings.Providers.Values.FirstOrDefault(p => p.ClientId == clientId);
@@ -221,6 +245,26 @@ namespace ProjectVG.Application.Services.Auth
                 "microsoft" => "https://graph.microsoft.com/v1.0/me",
                 _ => throw new ArgumentException($"Unsupported provider: {provider}")
             };
+        }
+
+        public Task StoreSessionAsync(string sessionId, object sessionData, TimeSpan? expiry = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<object?> GetSessionAsync(string sessionId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task DeleteSessionAsync(string sessionId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> ExtendSessionAsync(string sessionId, TimeSpan expiry)
+        {
+            throw new NotImplementedException();
         }
     }
 }

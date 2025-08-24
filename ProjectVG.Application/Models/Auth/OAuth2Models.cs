@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ProjectVG.Application.Models.Auth
 {
     public class TokenExchangeRequest
@@ -41,6 +43,15 @@ namespace ProjectVG.Application.Models.Auth
         public string CodeChallenge { get; set; } = string.Empty;
         public string CodeVerifier { get; set; } = string.Empty;
         public string CodeChallengeMethod { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class OAuth2TokenData
+    {
+        public string AccessToken { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
+        public int ExpiresIn { get; set; }
+        public string UserId { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
     }
 }
