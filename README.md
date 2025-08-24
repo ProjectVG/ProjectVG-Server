@@ -132,6 +132,39 @@ dotnet test --filter "FullyQualifiedName~JwtProviderTests"
 - **Auth Service**: 100% (15개 테스트)
 - **JWT Filter**: 100% (10개 테스트)
 
+### OAuth2 테스트 클라이언트
+
+#### 자동 실행 스크립트
+```powershell
+# PowerShell 스크립트 (권장)
+.\scripts\start-oauth2-client.ps1
+
+# 배치 파일
+.\scripts\start-oauth2-client.bat
+```
+
+#### 수동 실행
+```powershell
+# 테스트 클라이언트 디렉토리로 이동
+cd test-clients
+
+# Python 서버 실행
+python start-oauth2-client.py
+```
+
+#### 브라우저 접속
+```
+http://localhost:3000
+```
+
+#### OAuth2 테스트 기능
+- ✅ PKCE (Proof Key for Code Exchange) 생성
+- ✅ OAuth2 Authorization Code Flow 테스트
+- ✅ Google OAuth2 연동
+- ✅ JWT 토큰 발급 확인
+- ✅ 사용자 정보 표시
+- ✅ 클립보드 복사 기능
+
 ## 📝 환경 변수
 
 ### 환경 변수 설정

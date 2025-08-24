@@ -12,8 +12,6 @@ using ProjectVG.Infrastructure.Persistence.Session;
 using ProjectVG.Infrastructure.Auth;
 using ProjectVG.Common.Configuration;
 using StackExchange.Redis;
-
-
 using Microsoft.EntityFrameworkCore;
 
 namespace ProjectVG.Infrastructure
@@ -30,6 +28,7 @@ namespace ProjectVG.Infrastructure
             AddPersistenceServices(services);
             AddAuthServices(services, configuration);
             AddRedisServices(services, configuration);
+            AddOAuth2Services(services, configuration);
 
             return services;
         }
@@ -101,9 +100,24 @@ namespace ProjectVG.Infrastructure
         /// </summary>
         private static void AddAuthServices(IServiceCollection services, IConfiguration configuration)
         {
+            // JWT 키를 여러 소스에서 찾기
+            var jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? 
+                        configuration["JWT_SECRET_KEY"] ?? 
+                        configuration["JWT:SecretKey"] ??
+                        Environment.GetEnvironmentVariable("JWT_KEY") ?? 
+                        "your-super-secret-jwt-key-here-minimum-32-characters";
+            
+            // 환경변수 치환 문자열이 그대로 남아있는 경우 처리
+            if (jwtKey.StartsWith("${") && jwtKey.EndsWith("}"))
+            {
+                var envVarName = jwtKey.Substring(2, jwtKey.Length - 3);
+                jwtKey = Environment.GetEnvironmentVariable(envVarName) ?? 
+                        "your-super-secret-jwt-key-here-minimum-32-characters";
+            }
+            
             var jwtSettings = configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings
             {
-                Key = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? Environment.GetEnvironmentVariable("JWT_KEY") ?? "your-super-secret-key-with-at-least-32-characters",
+                Key = jwtKey,
                 Issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "ProjectVG",
                 Audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "ProjectVG",
                 AccessTokenExpirationMinutes = configuration.GetValue<int>("Jwt:AccessTokenExpirationMinutes", 15),
@@ -112,9 +126,20 @@ namespace ProjectVG.Infrastructure
 
             services.AddSingleton(jwtSettings);
             services.AddScoped<IJwtProvider, JwtProvider>(sp => 
-                new JwtProvider(jwtSettings.Key, jwtSettings.Issuer, jwtSettings.Audience, jwtSettings.AccessTokenExpirationMinutes, jwtSettings.RefreshTokenExpirationMinutes));
+                new JwtProvider(jwtKey, jwtSettings.Issuer, jwtSettings.Audience, jwtSettings.AccessTokenExpirationMinutes, jwtSettings.RefreshTokenExpirationMinutes));
             
             services.AddScoped<ITokenService, TokenService>();
+
+            // OAuth2 JWT 서비스 추가 (동일한 jwtKey 사용)
+            services.AddSingleton(new JwtService(jwtKey));
+        }
+
+        /// <summary>
+        /// OAuth2 서비스
+        /// </summary>
+        private static void AddOAuth2Services(IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<OAuth2ProviderSettings>(configuration.GetSection("OAuth2"));
         }
 
         /// <summary>

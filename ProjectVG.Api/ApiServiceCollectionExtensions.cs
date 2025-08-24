@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using ProjectVG.Api.Services;
 using ProjectVG.Api.Filters;
+using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
 namespace ProjectVG.Api
@@ -37,27 +37,27 @@ namespace ProjectVG.Api
         /// </summary>
         public static IServiceCollection AddApiAuthentication(this IServiceCollection services)
         {
-            services.AddAuthentication(options =>
-            {
-                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
-            })
-            .AddCookie()
-            .AddOpenIdConnect("oidc", options =>
-            {
-                options.Authority = "https://auth.example.com";
-                options.ClientId = "YOUR_CLIENT_ID";
-                options.ClientSecret = "YOUR_CLIENT_SECRET";
-                options.ResponseType = "code";
-                options.SaveTokens = true;
-                options.Scope.Add("openid");
-                options.Scope.Add("profile");
-                options.GetClaimsFromUserInfoEndpoint = true;
-            });
+            services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
+                .AddNegotiate();
 
             services.AddAuthorization(options => {
                 options.FallbackPolicy = null;
             });
+
+            return services;
+        }
+
+        /// <summary>
+        /// OAuth2 인증 서비스 (선택적)
+        /// </summary>
+        public static IServiceCollection AddOAuth2Authentication(this IServiceCollection services)
+        {
+            // OAuth2는 별도 컨트롤러에서 처리하므로 기본 인증만 설정
+            services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            })
+            .AddCookie();
 
             return services;
         }

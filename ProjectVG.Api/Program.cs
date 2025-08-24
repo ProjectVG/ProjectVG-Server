@@ -17,6 +17,14 @@ builder.WebHost.ConfigureKestrel(options => {
 // 모듈별 서비스 등록
 builder.Services.AddApiServices();
 builder.Services.AddApiAuthentication();
+
+// OAuth2 활성화 여부 확인 (환경 변수 지원)
+var oauth2Enabled = builder.Configuration.GetValue<bool>("OAuth2:Enabled", true);
+if (oauth2Enabled)
+{
+    builder.Services.AddOAuth2Authentication();
+}
+
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices();
 builder.Services.AddDevelopmentCors();

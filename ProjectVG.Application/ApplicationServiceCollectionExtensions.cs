@@ -24,6 +24,7 @@ namespace ProjectVG.Application
             services.AddScoped<ICharacterService, CharacterService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddSingleton<IOAuth2Service, OAuth2Service>();
             services.AddScoped<ChatRequestValidator>();
             services.AddScoped<ChatLLMProcessor>();
             services.AddScoped<ChatTTSProcessor>();

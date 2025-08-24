@@ -7,6 +7,7 @@ namespace ProjectVG.Application.Models.Auth
         public string Code { get; set; } = string.Empty;
         public string CodeVerifier { get; set; } = string.Empty;
         public string GrantType { get; set; } = string.Empty;
+        public string State { get; set; } = string.Empty;
     }
 
     public class TokenResponse
@@ -35,8 +36,10 @@ namespace ProjectVG.Application.Models.Auth
     {
         public string ClientId { get; set; } = string.Empty;
         public string RedirectUri { get; set; } = string.Empty;
+        public string ClientRedirectUri { get; set; } = string.Empty; // 클라이언트가 최종적으로 리다이렉트받을 URL
         public string State { get; set; } = string.Empty;
         public string CodeChallenge { get; set; } = string.Empty;
+        public string CodeVerifier { get; set; } = string.Empty;
         public string CodeChallengeMethod { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
     }

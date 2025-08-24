@@ -5,7 +5,7 @@ namespace ProjectVG.Application.Services.Auth
 {
     public interface IAuthService
     {
-        Task<AuthResult> LoginWithOAuthAsync(string provider, string accessToken);
+        Task<AuthResult> LoginWithOAuthAsync(string provider, string providerUserId);
         Task<AuthResult> RefreshTokenAsync(string refreshToken);
         Task<bool> LogoutAsync(string refreshToken);
         Task<bool> ValidateAccessTokenAsync(string accessToken);

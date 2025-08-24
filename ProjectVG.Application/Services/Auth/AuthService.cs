@@ -19,45 +19,67 @@ namespace ProjectVG.Application.Services.Auth
             _logger = logger;
         }
 
-        public async Task<AuthResult> LoginWithOAuthAsync(string provider, string accessToken)
+        public async Task<AuthResult> LoginWithOAuthAsync(string provider, string providerUserId)
         {
             try
             {
-                // TODO: 실제 OAuth 검증 로직 구현
-                // 임시로 테스트용 사용자 생성 (테스트 시 accessToken이 UserId로 전달됨)
+                // OAuth 프로바이더별 사용자 처리
                 Guid userId;
-                if (provider == "test" && Guid.TryParse(accessToken, out userId))
+                UserDto user;
+
+                // 테스트 프로바이더인 경우
+                if (provider == "test" && Guid.TryParse(providerUserId, out userId))
                 {
-                    var testUser = new UserDto
+                    user = new UserDto
                     {
                         Id = userId,
                         Username = $"test_user_{userId}",
                         Name = $"Test User {userId}",
                         Email = $"test{userId}@example.com",
                         Provider = provider,
-                        ProviderId = accessToken,
+                        ProviderId = providerUserId,
+                        IsActive = true
+                    };
+                }
+                // 실제 OAuth 프로바이더인 경우 (Google, GitHub 등)
+                else if (provider == "google" || provider == "github" || provider == "microsoft")
+                {
+                    // 새로운 사용자 ID 생성
+                    userId = Guid.NewGuid();
+                    
+                    user = new UserDto
+                    {
+                        Id = userId,
+                        Username = $"{provider}_user_{providerUserId}",
+                        Name = $"{provider} User",
+                        Email = $"{providerUserId}@{provider}.oauth",
+                        Provider = provider,
+                        ProviderId = providerUserId,
                         IsActive = true
                     };
 
-                    var tokens = await _tokenService.GenerateTokensAsync(testUser.Id);
-                    
-                    _logger.LogInformation("User {UserId} logged in with OAuth provider: {Provider}", testUser.Id, provider);
-                    
-                    return new AuthResult
-                    {
-                        IsSuccess = true,
-                        Tokens = tokens,
-                        User = testUser
-                    };
+                    _logger.LogInformation("New OAuth user created: {UserId} from {Provider} with ProviderId: {ProviderId}", 
+                        userId, provider, providerUserId);
                 }
                 else
                 {
                     return new AuthResult
                     {
                         IsSuccess = false,
-                        ErrorMessage = "Invalid test user ID format"
+                        ErrorMessage = $"Unsupported OAuth provider: {provider}"
                     };
                 }
+
+                var tokens = await _tokenService.GenerateTokensAsync(user.Id);
+                
+                _logger.LogInformation("User {UserId} logged in with OAuth provider: {Provider}", user.Id, provider);
+                
+                return new AuthResult
+                {
+                    IsSuccess = true,
+                    Tokens = tokens,
+                    User = user
+                };
             }
             catch (Exception ex)
             {
