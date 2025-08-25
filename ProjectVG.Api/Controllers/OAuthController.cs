@@ -118,7 +118,7 @@ namespace ProjectVG.Api.Controllers
                 Response.Headers.Append("X-Access-Token", tokenData.AccessToken);
                 Response.Headers.Append("X-Refresh-Token", tokenData.RefreshToken);
                 Response.Headers.Append("X-Expires-In", tokenData.ExpiresIn.ToString());
-                Response.Headers.Append("X-User-Id", tokenData.UID);
+                Response.Headers.Append("X-UID", tokenData.UID);
 
                 return Ok(new { success = true });
             }

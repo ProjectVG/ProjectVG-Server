@@ -311,10 +311,10 @@
                             const accessToken = tokenResponse.headers.get('X-Access-Token');
                             const refreshToken = tokenResponse.headers.get('X-Refresh-Token');
                             const expiresIn = tokenResponse.headers.get('X-Expires-In');
-                            const userId = tokenResponse.headers.get('X-User-Id');
+                            const userUID = tokenResponse.headers.get('X-UID');
                             
                             showResult(`✅ OAuth2 로그인 성공!\n\n` +
-                                `User ID: ${userId}\n` +
+                                `User UID: ${userUID}\n` +
                                 `Access Token: ${accessToken}\n` +
                                 `Refresh Token: ${refreshToken}\n` +
                                 `Expires In: ${expiresIn}초`, 'success');
