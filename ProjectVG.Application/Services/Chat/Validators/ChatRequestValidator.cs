@@ -1,5 +1,5 @@
 using ProjectVG.Infrastructure.Persistence.Session;
-using ProjectVG.Application.Services.User;
+using ProjectVG.Application.Services.Users;
 using ProjectVG.Application.Services.Character;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Chat;
@@ -35,7 +35,7 @@ namespace ProjectVG.Application.Services.Chat.Validators
                 }
             }
 
-            var userExists = await _userService.UserExistsAsync(command.UserId);
+            var userExists = await _userService.ExistsByIdAsync(command.UserId);
             if (!userExists) {
                 _logger.LogWarning("사용자 ID 검증 실패: {UserId}", command.UserId);
                 throw new NotFoundException(ErrorCode.USER_NOT_FOUND, command.UserId);

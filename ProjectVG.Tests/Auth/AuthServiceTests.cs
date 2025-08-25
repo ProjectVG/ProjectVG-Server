@@ -2,7 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using ProjectVG.Application.Services.Auth;
-using ProjectVG.Application.Services.User;
+using ProjectVG.Application.Services.Users;
 using ProjectVG.Infrastructure.Auth;
 using ProjectVG.Common.Models;
 using ProjectVG.Application.Models.User;

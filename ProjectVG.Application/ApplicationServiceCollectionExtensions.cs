@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using ProjectVG.Application.Services.Character;
-using ProjectVG.Application.Services.User;
+using ProjectVG.Application.Services.Users;
 using ProjectVG.Application.Services.Chat;
 using ProjectVG.Application.Services.Chat.CostTracking;
 using ProjectVG.Application.Services.Chat.Preprocessors;

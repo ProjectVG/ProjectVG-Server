@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.User;
-using ProjectVG.Application.Services.User;
+using ProjectVG.Application.Services.Users;
 using ProjectVG.Infrastructure.Auth;
 using ProjectVG.Common.Models;
 using ProjectVG.Domain.Entities.Users;
@@ -74,7 +74,7 @@ namespace ProjectVG.Application.Services.Auth
 
                 var tokens = await _tokenService.GenerateTokensAsync(user.Id);
                 
-                _logger.LogInformation("User {UserId} logged in with OAuth provider: {Provider}", user.Id, provider);
+                _logger.LogInformation("Users {UserId} logged in with OAuth provider: {Provider}", user.Id, provider);
                 
                 return new AuthResult
                 {
@@ -109,7 +109,7 @@ namespace ProjectVG.Application.Services.Auth
                 }
 
                 var userId = await _tokenService.GetUserIdFromTokenAsync(refreshToken);
-                var user = userId.HasValue ? await _userService.GetUserByIdAsync(userId.Value) : null;
+                var user = userId.HasValue ? await _userService.TryGetByIdAsync(userId.Value) : null;
 
                 return new AuthResult
                 {
@@ -137,7 +137,7 @@ namespace ProjectVG.Application.Services.Auth
                 if (revoked)
                 {
                     var userId = await _tokenService.GetUserIdFromTokenAsync(refreshToken);
-                    _logger.LogInformation("User {UserId} logged out successfully", userId);
+                    _logger.LogInformation("Users {UserId} logged out successfully", userId);
                 }
                 return revoked;
             }
@@ -185,5 +185,7 @@ namespace ProjectVG.Application.Services.Auth
                 return null;
             }
         }
+
+
     }
 }

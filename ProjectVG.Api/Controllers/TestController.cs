@@ -12,7 +12,7 @@ namespace ProjectVG.Api.Controllers
         [HttpGet("me")]
         public IActionResult Me()
         {
-            // JWT 검증 후 User ID 가져오기
+            // JWT 검증 후 Users ID 가져오기
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var userIdClaim = User.FindFirst("user_id")?.Value;
 

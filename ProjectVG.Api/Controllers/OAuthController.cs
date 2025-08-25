@@ -141,7 +141,7 @@ namespace ProjectVG.Api.Controllers
                 // 사용된 authorization request 삭제
                 await _oauth2Service.DeleteOAuth2RequestAsync(state);
 
-                // Google User Info API 호출
+                // Google Users Info API 호출
                 var providerName = GetProviderNameFromClientId(authRequest.ClientId);
                 var userInfo = await _oauth2Service.GetUserInfoAsync(tokenResponse.Tokens!.AccessToken, providerName);
 
@@ -211,7 +211,7 @@ namespace ProjectVG.Api.Controllers
                 Response.Headers.Append("X-Access-Token", tokenData.AccessToken);
                 Response.Headers.Append("X-Refresh-Token", tokenData.RefreshToken);
                 Response.Headers.Append("X-Expires-In", tokenData.ExpiresIn.ToString());
-                Response.Headers.Append("X-User-UID", tokenData.UID);
+                Response.Headers.Append("X-Users-UID", tokenData.UID);
 
                 return Ok(new { success = true });
             }

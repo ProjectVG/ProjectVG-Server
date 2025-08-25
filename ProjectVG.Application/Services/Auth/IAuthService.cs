@@ -5,6 +5,10 @@ namespace ProjectVG.Application.Services.Auth
 {
     public interface IAuthService
     {
+        // 로그인을 실행 (provider Id와 )
+
+
+
         Task<AuthResult> LoginWithOAuthAsync(string provider, string providerUserId);
         Task<AuthResult> RefreshTokenAsync(string refreshToken);
         Task<bool> LogoutAsync(string refreshToken);
