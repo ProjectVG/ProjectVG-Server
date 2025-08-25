@@ -54,4 +54,11 @@ namespace ProjectVG.Application.Models.Auth
         public string UID { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
     }
+
+    public class OAuth2CallbackResult
+    {
+        public bool Success { get; set; }
+        public string? RedirectUrl { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
 }
