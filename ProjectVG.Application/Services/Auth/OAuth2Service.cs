@@ -203,17 +203,27 @@ namespace ProjectVG.Application.Services.Auth
 
         public async Task<OAuth2AuthRequest> StoreOAuth2RequestAsync(string state, OAuth2AuthRequest request)
         {
-            _oauth2Requests[state] = JsonSerializer.Serialize(request);
-            await Task.CompletedTask;
-            return request;
+            try
+            {
+                _oauth2Requests[state] = JsonSerializer.Serialize(request);
+                await Task.CompletedTask;
+                return request;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "OAuth2 요청 저장 실패: State={State}", state);
+                throw;
+            }
         }
 
         public async Task<OAuth2AuthRequest?> GetOAuth2RequestAsync(string state)
-        {
+        {            
             if (_oauth2Requests.TryGetValue(state, out var json)) {
+                var request = JsonSerializer.Deserialize<OAuth2AuthRequest>(json);
                 await Task.CompletedTask;
-                return JsonSerializer.Deserialize<OAuth2AuthRequest>(json);
+                return request;
             }
+            
             await Task.CompletedTask;
             return null;
         }

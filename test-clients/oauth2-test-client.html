@@ -6,7 +6,7 @@
     <title>OAuth2 Test Client</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
@@ -18,10 +18,15 @@
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
+        h1 {
             color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        p {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
         }
         .form-group {
             margin-bottom: 20px;
@@ -32,26 +37,25 @@
             font-weight: bold;
             color: #555;
         }
-        input[type="text"], input[type="url"] {
+        input, select {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 14px;
-            box-sizing: border-box;
         }
         button {
-            background-color: #4285f4;
+            background-color: #007bff;
             color: white;
             padding: 12px 24px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
-            margin-right: 10px;
+            margin: 5px;
         }
         button:hover {
-            background-color: #3367d6;
+            background-color: #0056b3;
         }
         button:disabled {
             background-color: #ccc;
@@ -65,6 +69,11 @@
             font-family: monospace;
             font-size: 12px;
         }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
         .success {
             background-color: #d4edda;
             border: 1px solid #c3e6cb;
@@ -75,31 +84,56 @@
             border: 1px solid #f5c6cb;
             color: #721c24;
         }
-        .info {
-            background-color: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-        }
-        .token-display {
+        .code-display {
             background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
+            border: 1px solid #e9ecef;
             padding: 10px;
             border-radius: 5px;
-            margin-top: 10px;
-        }
-        .copy-btn {
-            background-color: #6c757d;
-            padding: 5px 10px;
+            font-family: monospace;
             font-size: 12px;
-            margin-left: 10px;
+            word-break: break-all;
+            margin-bottom: 10px;
+        }
+        .provider-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .provider-btn {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .provider-btn:hover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        .provider-btn.active {
+            border-color: #007bff;
+            background-color: #e3f2fd;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🔐 OAuth2 Test Client</h1>
-            <p>ProjectVG OAuth2 Flow 테스트</p>
+        <h1>🔐 OAuth2 Test Client</h1>
+        <p>ProjectVG OAuth2 Flow 테스트</p>
+
+        <!-- 제공자 선택 -->
+        <div class="provider-selector">
+            <div class="provider-btn active" onclick="selectProvider('google')">
+                <strong>Google</strong><br>
+                <small>OAuth2</small>
+            </div>
+            <div class="provider-btn" onclick="selectProvider('apple')">
+                <strong>Apple</strong><br>
+                <small>Sign-In</small>
+            </div>
         </div>
 
         <div class="form-group">
@@ -109,7 +143,7 @@
 
         <div class="form-group">
             <label for="clientId">Client ID:</label>
-            <input type="text" id="clientId" value="test-client-id" placeholder="Google OAuth2 Client ID">
+            <input type="text" id="clientId" value="test-client-id" placeholder="OAuth2 Client ID">
         </div>
 
         <div class="form-group">
@@ -119,67 +153,76 @@
 
         <div class="form-group">
             <label for="scope">Scope:</label>
-            <input type="text" id="scope" value="openid profile email" placeholder="openid profile email">
+            <input type="text" id="scope" value="openid email profile" placeholder="openid email profile">
+        </div>
+
+        <button onclick="generatePKCE()" id="pkceBtn">🔑 PKCE 생성</button>
+        <button onclick="startOAuth2()" id="oauthBtn" disabled>🚀 OAuth2 로그인 시작</button>
+        <button onclick="clearResults()">🗑️ 결과 지우기</button>
+
+        <div class="form-group">
+            <label>PKCE Code Verifier:</label>
+            <div class="code-display" id="codeVerifier">생성되지 않음</div>
+            <button onclick="copyToClipboard('codeVerifier')">📋 복사</button>
         </div>
 
         <div class="form-group">
-            <button onclick="generatePKCE()">🔑 PKCE 생성</button>
-            <button onclick="startOAuth2()" id="oauthBtn" disabled>🚀 OAuth2 로그인 시작</button>
-            <button onclick="clearResults()">🗑️ 결과 지우기</button>
+            <label>PKCE Code Challenge:</label>
+            <div class="code-display" id="codeChallenge">생성되지 않음</div>
+            <button onclick="copyToClipboard('codeChallenge')">📋 복사</button>
         </div>
 
         <div class="form-group">
-            <label>PKCE 정보:</label>
-            <div class="token-display">
-                <strong>Code Verifier:</strong> <span id="codeVerifier">생성되지 않음</span>
-                <button class="copy-btn" onclick="copyToClipboard('codeVerifier')">복사</button><br>
-                <strong>Code Challenge:</strong> <span id="codeChallenge">생성되지 않음</span>
-                <button class="copy-btn" onclick="copyToClipboard('codeChallenge')">복사</button><br>
-                <strong>State:</strong> <span id="state">생성되지 않음</span>
-                <button class="copy-btn" onclick="copyToClipboard('state')">복사</button>
-            </div>
+            <label>State:</label>
+            <div class="code-display" id="state">생성되지 않음</div>
+            <button onclick="copyToClipboard('state')">📋 복사</button>
         </div>
 
         <div class="form-group">
             <label>OAuth2 URL:</label>
-            <div class="token-display">
-                <span id="oauthUrl">생성되지 않음</span>
-                <button class="copy-btn" onclick="copyToClipboard('oauthUrl')">복사</button>
-            </div>
+            <div class="code-display" id="oauthUrl">생성되지 않음</div>
+            <button onclick="copyToClipboard('oauthUrl')">📋 복사</button>
         </div>
 
-        <div class="form-group">
-            <label>결과:</label>
-            <div id="result" class="result info">OAuth2 테스트를 시작하세요.</div>
-        </div>
+        <div id="result" class="result info">OAuth2 테스트를 시작하세요.</div>
     </div>
 
     <script>
-        // PKCE 생성 함수
+        let selectedProvider = 'google';
+
+        // 제공자 선택
+        function selectProvider(provider) {
+            selectedProvider = provider;
+            
+            // 버튼 스타일 업데이트
+            document.querySelectorAll('.provider-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.closest('.provider-btn').classList.add('active');
+            
+            // 제공자별 기본값 설정
+            if (provider === 'google') {
+                document.getElementById('scope').value = 'openid email profile';
+            } else if (provider === 'apple') {
+                document.getElementById('scope').value = 'name email';
+            }
+            
+            showResult(`✅ ${provider.toUpperCase()} 제공자가 선택되었습니다.`, 'success');
+        }
+
+        // PKCE 생성
         async function generatePKCE() {
             try {
+                showResult('🔄 PKCE 생성 중...', 'info');
+
                 // Code Verifier 생성 (43-128자 랜덤 문자열)
-                const array = new Uint8Array(32);
-                crypto.getRandomValues(array);
-                const codeVerifier = btoa(String.fromCharCode(...array))
-                    .replace(/\+/g, '-')
-                    .replace(/\//g, '_')
-                    .replace(/=/g, '');
-
+                const codeVerifier = generateRandomString(64);
+                
                 // Code Challenge 생성 (SHA256 해시)
-                const encoder = new TextEncoder();
-                const data = encoder.encode(codeVerifier);
-                const hash = await crypto.subtle.digest('SHA-256', data);
-                const codeChallenge = btoa(String.fromCharCode(...new Uint8Array(hash)))
-                    .replace(/\+/g, '-')
-                    .replace(/\//g, '_')
-                    .replace(/=/g, '');
-
+                const codeChallenge = await generateCodeChallenge(codeVerifier);
+                
                 // State 생성
-                const state = btoa(String.fromCharCode(...new Uint8Array(16)))
-                    .replace(/\+/g, '-')
-                    .replace(/\//g, '_')
-                    .replace(/=/g, '');
+                const state = generateRandomString(32);
 
                 // UI 업데이트
                 document.getElementById('codeVerifier').textContent = codeVerifier;
@@ -203,14 +246,12 @@
             const redirectUri = document.getElementById('redirectUri').value;
             const scope = document.getElementById('scope').value;
 
-            const authUrl = `${serverUrl}/auth/oauth2/authorize?` +
-                `client_id=${encodeURIComponent(clientId)}&` +
-                `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-                `response_type=code&` +
-                `scope=${encodeURIComponent(scope)}&` +
+            const authUrl = `${serverUrl}/auth/oauth2/authorize/${selectedProvider}?` +
                 `state=${state}&` +
                 `code_challenge=${codeChallenge}&` +
-                `code_challenge_method=S256`;
+                `code_challenge_method=S256&` +
+                `code_verifier=${encodeURIComponent(codeVerifier)}&` +
+                `client_redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}`;
 
             document.getElementById('oauthUrl').textContent = authUrl;
         }
@@ -219,9 +260,6 @@
         async function startOAuth2() {
             try {
                 const serverUrl = document.getElementById('serverUrl').value;
-                const clientId = document.getElementById('clientId').value;
-                const redirectUri = document.getElementById('redirectUri').value;
-                const scope = document.getElementById('scope').value;
                 const codeVerifier = document.getElementById('codeVerifier').textContent;
                 const codeChallenge = document.getElementById('codeChallenge').textContent;
                 const state = document.getElementById('state').textContent;
@@ -237,24 +275,20 @@
                 const clientRedirectUri = window.location.origin + window.location.pathname;
                 
                 // 서버에 OAuth2 인증 요청
-                const authUrl = `${serverUrl}/auth/oauth2/authorize?` +
-                    `client_id=${encodeURIComponent(clientId)}&` +
-                    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-                    `response_type=code&` +
-                    `scope=${encodeURIComponent(scope)}&` +
+                const authUrl = `${serverUrl}/auth/oauth2/authorize/${selectedProvider}?` +
                     `state=${state}&` +
                     `code_challenge=${codeChallenge}&` +
                     `code_challenge_method=S256&` +
                     `code_verifier=${encodeURIComponent(codeVerifier)}&` +
                     `client_redirect_uri=${encodeURIComponent(clientRedirectUri)}`;
 
-                // 서버에서 Google OAuth2 URL을 받아와서 리다이렉트
+                // 서버에서 OAuth2 URL을 받아와서 리다이렉트
                 const response = await fetch(authUrl);
                 const data = await response.json();
                 
                 if (data.success && data.auth_url) {
-                    showResult('🔄 Google OAuth2 페이지로 이동 중...', 'info');
-                    // Google OAuth2 페이지로 리다이렉트
+                    showResult(`🔄 ${selectedProvider.toUpperCase()} OAuth2 페이지로 이동 중...`, 'info');
+                    // OAuth2 페이지로 리다이렉트
                     window.location.href = data.auth_url;
                 } else {
                     showResult('❌ OAuth2 URL 생성 실패: ' + (data.message || 'Unknown error'), 'error');
@@ -289,48 +323,59 @@
             document.getElementById('oauthBtn').disabled = true;
         }
 
+        // 랜덤 문자열 생성
+        function generateRandomString(length) {
+            const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            return result;
+        }
+
+        // Code Challenge 생성 (SHA256)
+        async function generateCodeChallenge(codeVerifier) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(codeVerifier);
+            const digest = await crypto.subtle.digest('SHA-256', data);
+            return btoa(String.fromCharCode(...new Uint8Array(digest)))
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+        }
+
         // 페이지 로드 시 URL 파라미터 확인 (OAuth2 callback 처리)
         window.onload = async function() {
             const urlParams = new URLSearchParams(window.location.search);
-            
-            if (urlParams.has('success') && urlParams.has('state')) {
-                // OAuth2 성공 - state로 토큰 요청
-                const success = urlParams.get('success');
-                const state = urlParams.get('state');
+            const success = urlParams.get('success');
+            const state = urlParams.get('state');
 
-                if (success === 'true' && state) {
-                    try {
-                        showResult('🔄 토큰 요청 중...', 'info');
-                        
-                        const serverUrl = document.getElementById('serverUrl').value;
-                        const tokenResponse = await fetch(`${serverUrl}/auth/oauth2/token?state=${encodeURIComponent(state)}`);
-                        const tokenData = await tokenResponse.json();
-                        
-                        if (tokenData.success) {
-                            // HTTP 헤더에서 토큰 정보 추출
-                            const accessToken = tokenResponse.headers.get('X-Access-Token');
-                            const refreshToken = tokenResponse.headers.get('X-Refresh-Token');
-                            const expiresIn = tokenResponse.headers.get('X-Expires-In');
-                            const userUID = tokenResponse.headers.get('X-UID');
-                            
-                            showResult(`✅ OAuth2 로그인 성공!\n\n` +
-                                `User UID: ${userUID}\n` +
-                                `Access Token: ${accessToken}\n` +
-                                `Refresh Token: ${refreshToken}\n` +
-                                `Expires In: ${expiresIn}초`, 'success');
-                        } else {
-                            showResult(`❌ 토큰 요청 실패: ${tokenData.message}`, 'error');
-                        }
-                    } catch (error) {
-                        showResult(`❌ 토큰 요청 중 오류: ${error.message}`, 'error');
+            if (success === 'true' && state) {
+                try {
+                    showResult('🔄 OAuth2 콜백 처리 중...', 'info');
+
+                    const serverUrl = document.getElementById('serverUrl').value;
+                    
+                    // OAuth2 성공 - state로 토큰 요청
+                    const tokenResponse = await fetch(`${serverUrl}/auth/oauth2/token?state=${encodeURIComponent(state)}`);
+                    
+                    if (tokenResponse.ok) {
+                        const accessToken = tokenResponse.headers.get('X-Access-Token');
+                        const refreshToken = tokenResponse.headers.get('X-Refresh-Token');
+                        const expiresIn = tokenResponse.headers.get('X-Expires-In');
+                        const uid = tokenResponse.headers.get('X-UID');
+
+                        showResult(`✅ OAuth2 로그인 성공!\n\n` +
+                            `Access Token: ${accessToken?.substring(0, 20)}...\n` +
+                            `Refresh Token: ${refreshToken?.substring(0, 20)}...\n` +
+                            `Expires In: ${expiresIn} seconds\n` +
+                            `UID: ${uid}`, 'success');
+                    } else {
+                        throw new Error(`HTTP ${tokenResponse.status}`);
                     }
-                } else {
-                    const error = urlParams.get('error');
+                } catch (error) {
                     showResult(`❌ OAuth2 로그인 실패: ${error}`, 'error');
                 }
-
-                // URL에서 파라미터 제거
-                window.history.replaceState({}, document.title, window.location.pathname);
             }
         };
     </script>
