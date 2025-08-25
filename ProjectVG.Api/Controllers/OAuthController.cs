@@ -164,7 +164,7 @@ namespace ProjectVG.Api.Controllers
                     AccessToken = authResult.Tokens!.AccessToken,
                     RefreshToken = authResult.Tokens.RefreshToken,
                     ExpiresIn = (int)(authResult.Tokens.AccessTokenExpiresAt - DateTime.UtcNow).TotalSeconds,
-                    UserId = authResult.User!.Id.ToString(),
+                    UID = authResult.User!.UID,
                     CreatedAt = DateTime.UtcNow
                 };
                 
@@ -211,7 +211,7 @@ namespace ProjectVG.Api.Controllers
                 Response.Headers.Append("X-Access-Token", tokenData.AccessToken);
                 Response.Headers.Append("X-Refresh-Token", tokenData.RefreshToken);
                 Response.Headers.Append("X-Expires-In", tokenData.ExpiresIn.ToString());
-                Response.Headers.Append("X-User-Id", tokenData.UserId);
+                Response.Headers.Append("X-User-UID", tokenData.UID);
 
                 return Ok(new { success = true });
             }

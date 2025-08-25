@@ -1,7 +1,6 @@
 using ProjectVG.Infrastructure.Persistence.Repositories.Users;
 using ProjectVG.Application.Models.User;
-using ProjectVG.Common.Exceptions;
-using ProjectVG.Common.Constants;
+using ProjectVG.Domain.Entities.Users;
 
 namespace ProjectVG.Application.Services.User
 {
@@ -9,6 +8,8 @@ namespace ProjectVG.Application.Services.User
     {
         private readonly IUserRepository _userRepository;
         private readonly ILogger<UserService> _logger;
+        private const int UID_LENGTH = 12;
+        private const string UID_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
         public UserService(IUserRepository userRepository, ILogger<UserService> logger)
         {
@@ -41,9 +42,16 @@ namespace ProjectVG.Application.Services.User
             await ValidateUserUniqueness(userDto);
 
             var user = userDto.ToEntity();
+            
+            // UID가 비어있으면 자동 생성
+            if (string.IsNullOrEmpty(user.UID))
+            {
+                user.UID = await GenerateUniqueUIDAsync();
+            }
+
             var createdUser = await _userRepository.CreateAsync(user);
 
-            _logger.LogInformation("사용자 생성 완료: ID {UserId}, 사용자명 {Username}", createdUser.Id, createdUser.Username);
+            _logger.LogInformation("사용자 생성 완료: ID {UserId}, UID {UID}, 사용자명 {Username}", createdUser.Id, createdUser.UID, createdUser.Username);
 
             return new UserDto(createdUser);
         }
@@ -73,10 +81,9 @@ namespace ProjectVG.Application.Services.User
                 throw new NotFoundException(ErrorCode.USER_NOT_FOUND, userId);
             }
 
-            user.Name = userDto.Name;
             user.Username = userDto.Username;
             user.Email = userDto.Email;
-            user.IsActive = userDto.IsActive;
+            user.Status = userDto.Status;
 
             var updatedUser = await _userRepository.UpdateAsync(user);
             return new UserDto(updatedUser);
@@ -89,7 +96,10 @@ namespace ProjectVG.Application.Services.User
                 throw new NotFoundException(ErrorCode.USER_NOT_FOUND, userId);
             }
 
-            await _userRepository.DeleteAsync(userId);
+            // 실제 삭제 대신 상태를 Deleted로 변경
+            user.Status = AccountStatus.Deleted;
+            await _userRepository.UpdateAsync(user);
+            
             _logger.LogInformation("사용자 삭제 완료: ID {UserId}, 사용자명 {Username}", userId, user.Username);
             return true;
         }
@@ -98,6 +108,18 @@ namespace ProjectVG.Application.Services.User
         {
             var user = await _userRepository.GetByIdAsync(userId);
             return user != null ? new UserDto(user) : null;
+        }
+
+        public async Task<UserDto?> GetUserByUIDAsync(string uid)
+        {
+            var user = await _userRepository.GetByUIDAsync(uid);
+            return user != null ? new UserDto(user) : null;
+        }
+
+        public async Task<bool> ExistsByUIDAsync(string uid)
+        {
+            var user = await _userRepository.GetByUIDAsync(uid);
+            return user != null;
         }
 
 
@@ -111,6 +133,50 @@ namespace ProjectVG.Application.Services.User
             if (await UsernameExistsAsync(userDto.Username)) {
                 throw new ValidationException(ErrorCode.USERNAME_ALREADY_EXISTS, userDto.Username);
             }
+        }
+
+        /// <summary>
+        /// 고유한 UID 생성
+        /// </summary>
+        private async Task<string> GenerateUniqueUIDAsync()
+        {
+            string uid;
+            int attempts = 0;
+            const int maxAttempts = 10;
+
+            do
+            {
+                uid = GenerateRandomUID();
+                attempts++;
+
+                if (attempts > maxAttempts)
+                {
+                    throw new InvalidOperationException("UID 생성 시도 횟수 초과");
+                }
+
+            } while (await ExistsByUIDAsync(uid));
+
+            return uid;
+        }
+
+        /// <summary>
+        /// 랜덤 UID 생성
+        /// </summary>
+        private string GenerateRandomUID()
+        {
+            var randomBytes = new byte[UID_LENGTH];
+            using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(randomBytes);
+            }
+
+            var uid = new char[UID_LENGTH];
+            for (int i = 0; i < UID_LENGTH; i++)
+            {
+                uid[i] = UID_CHARS[randomBytes[i] % UID_CHARS.Length];
+            }
+
+            return new string(uid);
         }
     }
 }

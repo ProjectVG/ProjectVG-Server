@@ -51,7 +51,7 @@ namespace ProjectVG.Application.Models.Auth
         public string AccessToken { get; set; } = string.Empty;
         public string RefreshToken { get; set; } = string.Empty;
         public int ExpiresIn { get; set; }
-        public string UserId { get; set; } = string.Empty;
+        public string UID { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
     }
 }

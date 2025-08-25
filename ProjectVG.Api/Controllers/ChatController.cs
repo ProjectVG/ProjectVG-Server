@@ -2,6 +2,7 @@ using ProjectVG.Application.Models.API.Request;
 using ProjectVG.Application.Services.Chat;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using ProjectVG.Api.Filters;
 
 namespace ProjectVG.Api.Controllers
 {
@@ -21,6 +22,7 @@ namespace ProjectVG.Api.Controllers
             _logger = logger;
         }
 
+        [JwtAuthentication]
         [HttpPost]
         public async Task<IActionResult> ProcessChat([FromBody] ChatRequest request)
         {

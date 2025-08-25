@@ -3,7 +3,7 @@ using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.WebSocket;
 using ProjectVG.Infrastructure.Integrations.MemoryClient;
-using ProjectVG.Domain.Enums;
+using ProjectVG.Domain.Entities.ConversationHistorys;
 
 namespace ProjectVG.Application.Services.Chat.Processors
 {

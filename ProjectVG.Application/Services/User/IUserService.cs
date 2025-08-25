@@ -66,5 +66,19 @@ namespace ProjectVG.Application.Services.User
         /// <param name="userId">사용자 ID</param>
         /// <returns>사용자 정보</returns>
         Task<UserDto?> GetUserByIdAsync(Guid userId);
+
+        /// <summary>
+        /// UID로 사용자 조회
+        /// </summary>
+        /// <param name="uid">외부 노출용 UID</param>
+        /// <returns>사용자 정보</returns>
+        Task<UserDto?> GetUserByUIDAsync(string uid);
+
+        /// <summary>
+        /// UID 중복 확인
+        /// </summary>
+        /// <param name="uid">외부 노출용 UID</param>
+        /// <returns>UID 중복 여부</returns>
+        Task<bool> ExistsByUIDAsync(string uid);
     }
 } 

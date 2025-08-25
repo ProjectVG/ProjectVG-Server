@@ -3,6 +3,7 @@ using ProjectVG.Application.Models.User;
 using ProjectVG.Application.Services.User;
 using ProjectVG.Infrastructure.Auth;
 using ProjectVG.Common.Models;
+using ProjectVG.Domain.Entities.Users;
 
 namespace ProjectVG.Application.Services.Auth
 {
@@ -34,11 +35,8 @@ namespace ProjectVG.Application.Services.Auth
                     {
                         Id = userId,
                         Username = $"test_user_{userId}",
-                        Name = $"Test User {userId}",
                         Email = $"test{userId}@example.com",
-                        Provider = provider,
-                        ProviderId = providerUserId,
-                        IsActive = true
+                        Status = AccountStatus.Active
                     };
                 }
                 // 실제 OAuth 프로바이더인 경우 (Google, GitHub 등)
@@ -51,11 +49,8 @@ namespace ProjectVG.Application.Services.Auth
                     {
                         Id = userId,
                         Username = $"{provider}_user_{providerUserId}",
-                        Name = $"{provider} User",
                         Email = $"{providerUserId}@{provider}.oauth",
-                        Provider = provider,
-                        ProviderId = providerUserId,
-                        IsActive = true
+                        Status = AccountStatus.Active
                     };
 
                     _logger.LogInformation("New OAuth user created: {UserId} from {Provider} with ProviderId: {ProviderId}", 
@@ -68,6 +63,13 @@ namespace ProjectVG.Application.Services.Auth
                         IsSuccess = false,
                         ErrorMessage = $"Unsupported OAuth provider: {provider}"
                     };
+                }
+
+                // OAuth2 사용자인 경우 Provider 정보를 포함하여 사용자 생성
+                if (provider != "test")
+                {
+                    user.Provider = provider;
+                    user.ProviderId = providerUserId;
                 }
 
                 var tokens = await _tokenService.GenerateTokensAsync(user.Id);

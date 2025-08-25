@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ProjectVG.Domain.Entities.Characters;
 using ProjectVG.Domain.Entities.ConversationHistorys;
 using ProjectVG.Domain.Entities.Users;
-using ProjectVG.Common.Constants;
+using ProjectVG.Infrastructure.Persistence.Data;
 
 namespace ProjectVG.Infrastructure.Persistence.EfCore
 {
@@ -25,13 +25,15 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).ValueGeneratedOnAdd();
+                entity.Property(e => e.UID).IsRequired().HasMaxLength(12);
                 entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Username).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.ProviderId).IsRequired().HasMaxLength(255);
                 entity.Property(e => e.Provider).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Status).IsRequired();
                 
                 // 인덱스 설정
+                entity.HasIndex(e => e.UID).IsUnique();
                 entity.HasIndex(e => e.Email).IsUnique();
                 entity.HasIndex(e => e.ProviderId);
             });
@@ -89,7 +91,7 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
 
         private void SeedData(ModelBuilder modelBuilder)
         {
-            var defaultCharacters = AppConstants.DefaultCharacterPool.Select(p => new Character
+            var defaultCharacters = DatabaseSeedData.DefaultCharacterPool.Select(p => new Character
             {
                 Id = p.Id,
                 Name = p.Name,
@@ -104,15 +106,15 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 UpdatedAt = DateTime.UtcNow
             }).ToList();
 
-            var defaultUsers = AppConstants.DefaultUserPool.Select(p => new User
+            var defaultUsers = DatabaseSeedData.DefaultUserPool.Select(p => new User
             {
                 Id = p.Id,
+                UID = p.UID,
                 Username = p.Username,
-                Name = p.Name,
                 Email = p.Email,
                 Provider = p.Provider,
                 ProviderId = p.ProviderId,
-                IsActive = p.IsActive,
+                Status = p.Status,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             }).ToList();

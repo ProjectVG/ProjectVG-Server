@@ -1,25 +1,56 @@
 using ProjectVG.Domain.Common;
-using ProjectVG.Domain.Enums;
+
 
 namespace ProjectVG.Domain.Entities.ConversationHistorys
 {
+    /// <summary>
+    /// 대화 기록 엔티티
+    /// 
+    /// 대화 관리:
+    /// - 사용자와 AI 캐릭터 간의 대화 기록
+    /// - 역할별 메시지 구분 (User, Assistant, System)
+    /// - 메타데이터를 통한 추가 정보 저장
+    /// </summary>
     public class ConversationHistory : BaseEntity
     {
-        // 대화 기록 고유 ID
+        /// <summary>
+        /// 대화 기록 고유 ID
+        /// </summary>
         public Guid Id { get; set; } = Guid.NewGuid();
-        // 캐릭터 ID
+        
+        /// <summary>
+        /// 캐릭터 ID
+        /// </summary>
         public Guid CharacterId { get; set; }
-        // 사용자 ID
+        
+        /// <summary>
+        /// 사용자 ID
+        /// </summary>
         public Guid UserId { get; set; }
-        // 채팅 역할 (Users, Assistant, System)
-        public ChatRole Role { get; set; }                          
-        // 대화 내용
-        public string Content { get; set; } = string.Empty;          
-        // 대화 발생 시각
-        public DateTime Timestamp { get; set; } = DateTime.UtcNow;   
-        // 추가 메타데이터 (JSON으로 저장)
+        
+        /// <summary>
+        /// 채팅 역할 (User, Assistant, System)
+        /// </summary>
+        public ChatRole Role { get; set; }
+        
+        /// <summary>
+        /// 대화 내용
+        /// </summary>
+        public string Content { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// 대화 발생 시각
+        /// </summary>
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        
+        /// <summary>
+        /// 추가 메타데이터 (JSON으로 저장)
+        /// </summary>
         public string MetadataJson { get; set; } = "{}";
-        // 삭제 여부
+        
+        /// <summary>
+        /// 삭제 여부
+        /// </summary>
         public bool IsDeleted { get; set; } = false;
     }
 } 

@@ -1,6 +1,4 @@
 using ProjectVG.Application.Services.Conversation;
-using ProjectVG.Domain.Enums;
-using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Chat;
 
 namespace ProjectVG.Application.Services.Chat.Validators

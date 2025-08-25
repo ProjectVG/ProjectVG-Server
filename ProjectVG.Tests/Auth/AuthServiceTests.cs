@@ -6,6 +6,7 @@ using ProjectVG.Application.Services.User;
 using ProjectVG.Infrastructure.Auth;
 using ProjectVG.Common.Models;
 using ProjectVG.Application.Models.User;
+using ProjectVG.Domain.Entities.Users;
 using Xunit;
 
 namespace ProjectVG.Tests.Auth
@@ -59,7 +60,7 @@ namespace ProjectVG.Tests.Auth
             result.User!.Id.Should().Be(userId);
             result.User.Provider.Should().Be(provider);
             result.User.ProviderId.Should().Be(accessToken);
-            result.User.IsActive.Should().BeTrue();
+            result.User.Status.Should().Be(AccountStatus.Active);
 
             _mockTokenService.Verify(x => x.GenerateTokensAsync(userId), Times.Once);
         }
@@ -115,11 +116,10 @@ namespace ProjectVG.Tests.Auth
             {
                 Id = userId,
                 Username = "testuser",
-                Name = "Test User",
                 Email = "test@example.com",
                 Provider = "test",
                 ProviderId = userId.ToString(),
-                IsActive = true
+                Status = AccountStatus.Active
             };
 
             _mockTokenService.Setup(x => x.RefreshAccessTokenAsync(refreshToken)).ReturnsAsync(tokenResponse);
