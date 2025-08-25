@@ -129,6 +129,24 @@
       box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
     }
 
+    #login-btn:hover {
+      background: #1976d2;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    }
+
+    #login-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 6px rgba(33, 150, 243, 0.3);
+    }
+
+    #login-btn:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
     #audio-player {
       display: none;
     }
@@ -140,10 +158,21 @@
     <div id="status">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; align-items: center; gap: 1em;">
-          <span>WebSocket 상태: <span id="ws-status">초기화 대기 중</span></span>
+          <span>로그인: <span id="login-status">대기 중</span></span>
+          <span style="color: #6c757d; font-size: 0.85em;">| WebSocket: <span id="ws-status">대기 중</span></span>
           <span style="color: #6c757d; font-size: 0.85em;">| 세션: <span id="session-id">없음</span></span>
         </div>
         <span style="color: #6c757d; font-size: 0.85em;">서버: <span id="server-info"></span></span>
+      </div>
+    </div>
+
+    <div id="login-section">
+      <div style="display: flex; align-items: center; gap: 1em; margin-bottom: 1em;">
+        <input id="guest-id" type="text" placeholder="게스트 ID를 입력하세요" value="test-guest-123" 
+               style="flex: 1; padding: 0.75em; border-radius: 8px; border: 1px solid #c8e6c9; font-size: 1em;" />
+        <button id="login-btn" style="background: #2196f3; color: white; border: none; padding: 0.75em 1.5em; border-radius: 8px; font-size: 1em; cursor: pointer; font-weight: 500;">
+          게스트 로그인
+        </button>
       </div>
     </div>
 
@@ -182,13 +211,17 @@
     const ENDPOINT = `${currentHost}:${serverPort}`;
     const WS_URL = `ws://${ENDPOINT}/ws`;
     const HTTP_URL = `http://${ENDPOINT}/api/v1/chat`;
+    const LOGIN_URL = `http://${ENDPOINT}/api/auth/guest-login`;
     const SERVER_MESSAGE_TYPE = "json";
     let sessionId = null;
     let ws = null;
     let reconnectAttempts = 0;
     const MAX_RECONNECT = 3;
+    let authToken = null;
+    let isLoggedIn = false;
 
     const statusBox = document.getElementById('status');
+    const loginStatus = document.getElementById('login-status');
     const wsStatus = document.getElementById('ws-status');
     const sessionIdDisplay = document.getElementById('session-id');
     const serverInfo = document.getElementById('server-info');
@@ -197,6 +230,9 @@
     const sendBtn = document.getElementById('send-btn');
     const audioPlayer = document.getElementById('audio-player');
     const characterSelect = document.getElementById('character-select');
+    const guestIdInput = document.getElementById('guest-id');
+    const loginBtn = document.getElementById('login-btn');
+    const loginSection = document.getElementById('login-section');
 
     const audioQueue = [];
     let isPlayingAudio = false;
@@ -212,11 +248,65 @@
         if (response.ok) {
           serverConfig = await response.json();
           console.log("서버 설정:", serverConfig);
-          setStatus(`연결됨`);
         }
       } catch (e) {
         console.warn("서버 설정 확인 실패:", e);
-        setStatus("연결됨 (설정 확인 실패)");
+      }
+    }
+
+    // Guest 로그인 함수
+    async function guestLogin() {
+      const guestId = guestIdInput.value.trim();
+      if (!guestId) {
+        appendLog('<span style="color:red">[로그인 오류] 게스트 ID를 입력하세요</span>');
+        return;
+      }
+
+      setLoginStatus('로그인 중...', false);
+      loginBtn.disabled = true;
+      loginBtn.textContent = '로그인 중...';
+
+      try {
+        const response = await fetch(LOGIN_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            guestId: guestId
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.tokens) {
+            authToken = data.tokens.accessToken;
+            isLoggedIn = true;
+            setLoginStatus('로그인 성공', false);
+            updateOverallStatus();
+            
+            appendLog(`<b>[로그인 성공]</b> 게스트 ID: ${guestId}`);
+            appendLog(`<small>사용자: ${data.user.username} (${data.user.email})</small>`);
+            
+            loginSection.style.display = 'none';
+            
+            // 로그인 성공 후 WebSocket 연결 시작
+            connectWebSocket();
+          } else {
+            throw new Error(data.message || '로그인 실패');
+          }
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.message || `HTTP ${response.status}`);
+        }
+      } catch (error) {
+        console.error('로그인 오류:', error);
+        setLoginStatus('로그인 실패', true);
+        updateOverallStatus();
+        appendLog(`<span style="color:red">[로그인 오류] ${error.message}</span>`);
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = '게스트 로그인';
       }
     }
 
@@ -275,11 +365,20 @@
       }
     }
 
-    function setStatus(message, isError = false) {
+    function setLoginStatus(message, isError = false) {
+      loginStatus.textContent = message;
+      loginStatus.style.color = isError ? '#dc3545' : '#2e7d32';
+    }
+
+    function setWSStatus(message, isError = false) {
       wsStatus.textContent = message;
       wsStatus.style.color = isError ? '#dc3545' : '#2e7d32';
-      statusBox.style.background = isError ? '#ffebee' : '#e8f5e8';
-      statusBox.style.borderColor = isError ? '#ffcdd2' : '#c8e6c9';
+    }
+
+    function updateOverallStatus() {
+      const hasError = loginStatus.style.color === 'rgb(220, 53, 69)' || wsStatus.style.color === 'rgb(220, 53, 69)';
+      statusBox.style.background = hasError ? '#ffebee' : '#e8f5e8';
+      statusBox.style.borderColor = hasError ? '#ffcdd2' : '#c8e6c9';
     }
 
     function updateSessionId(sessionId) {
@@ -336,11 +435,21 @@
     }
 
     function connectWebSocket() {
+      if (!isLoggedIn) {
+        setWSStatus("로그인 필요", true);
+        updateOverallStatus();
+        return;
+      }
+
+      setWSStatus("연결 중...", false);
+      updateOverallStatus();
+      
       ws = new WebSocket(sessionId ? `${WS_URL}?sessionId=${sessionId}` : WS_URL);
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
-        setStatus("연결됨");
+        setWSStatus("연결됨", false);
+        updateOverallStatus();
         reconnectAttempts = 0;
         checkServerConfig();
       };
@@ -528,14 +637,16 @@
       };
 
       ws.onclose = () => {
-        setStatus("연결 종료됨", true);
+        setWSStatus("연결 종료됨", true);
+        updateOverallStatus();
         updateSessionId(null);
         appendLog("<b>[WebSocket 연결 종료]</b>");
-        tryReconnect();
+        if (isLoggedIn) tryReconnect();
       };
 
       ws.onerror = () => {
-        setStatus("오류 발생", true);
+        setWSStatus("오류 발생", true);
+        updateOverallStatus();
         updateSessionId(null);
         appendLog("<b>[WebSocket 오류]</b>");
       };
@@ -544,10 +655,12 @@
     function tryReconnect() {
       if (reconnectAttempts < MAX_RECONNECT) {
         reconnectAttempts++;
-        setStatus(`재연결 시도 중... (${reconnectAttempts}/${MAX_RECONNECT})`, true);
+        setWSStatus(`재연결 시도 중... (${reconnectAttempts}/${MAX_RECONNECT})`, true);
+        updateOverallStatus();
         setTimeout(connectWebSocket, 1000 * reconnectAttempts);
       } else {
-        setStatus("재연결 실패. 새로고침 해주세요.", true);
+        setWSStatus("재연결 실패. 새로고침 해주세요.", true);
+        updateOverallStatus();
       }
     }
 
@@ -566,9 +679,14 @@
       };
       if (sessionId) payload.session_id = sessionId;
 
+      const headers = { "Content-Type": "application/json" };
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`;
+      }
+
       fetch(HTTP_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: headers,
         body: JSON.stringify(payload)
       })
         .then(res => {
@@ -589,6 +707,9 @@
 
     sendBtn.onclick = sendChat;
     userInput.onkeydown = (e) => { if (e.key === "Enter") sendChat(); };
+    
+    loginBtn.onclick = guestLogin;
+    guestIdInput.onkeydown = (e) => { if (e.key === "Enter") guestLogin(); };
 
     characterSelect.onchange = () => {
       userInput.value = "";
@@ -596,7 +717,8 @@
       appendLog(`<i>[캐릭터 변경됨: ${characterSelect.options[characterSelect.selectedIndex].text}]</i>`);
     };
 
-    connectWebSocket();
+    // 초기화 - 로그인을 기다림
+    appendLog('<b>[시작]</b> 게스트 ID를 입력하고 로그인하세요.');
   </script>
 </body>
 
