@@ -3,6 +3,8 @@ using ProjectVG.Application.Services.Chat;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using ProjectVG.Api.Filters;
+using ProjectVG.Application.Models.Chat;
+using System.Security.Claims;
 
 namespace ProjectVG.Api.Controllers
 {
@@ -12,21 +14,29 @@ namespace ProjectVG.Api.Controllers
     public class ChatController : ControllerBase
     {
         private readonly IChatService _chatService;
-        private readonly IServiceScopeFactory _scopeFactory;
-        private readonly ILogger<ChatController> _logger;
 
-        public ChatController(IChatService chatService, IServiceScopeFactory scopeFactory, ILogger<ChatController> logger)
+        public ChatController(IChatService chatService)
         {
             _chatService = chatService;
-            _scopeFactory = scopeFactory;
-            _logger = logger;
         }
 
         [JwtAuthentication]
         [HttpPost]
         public async Task<IActionResult> ProcessChat([FromBody] ChatRequest request)
         {
-            var command = request.ToProcessChatCommand();
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
+            {
+                return Unauthorized(new { success = false, message = "Invalid user information from token" });
+            }
+          
+            ProcessChatCommand command = new() {
+                UserId = userGuid,
+                CharacterId = request.CharacterId,
+                Message = request.Message,
+                SessionId = request.SessionId,
+            };
+
             var requestResponse = await _chatService.EnqueueChatRequestAsync(command);
 
             return Ok(new { 
