@@ -83,5 +83,27 @@ namespace ProjectVG.Infrastructure.Auth
                 return false;
             }
         }
+
+        public async Task<DateTime?> GetRefreshTokenExpiresAtAsync(string refreshToken)
+        {
+            try
+            {
+                var db = _redis.GetDatabase();
+                var key = $"{KeyPrefix}{refreshToken}";
+                var timeToLive = await db.KeyTimeToLiveAsync(key);
+                
+                if (timeToLive.HasValue)
+                {
+                    return DateTime.UtcNow.Add(timeToLive.Value);
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get refresh token expiration time");
+                return null;
+            }
+        }
     }
 }

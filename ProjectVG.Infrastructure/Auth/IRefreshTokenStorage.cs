@@ -32,5 +32,12 @@ namespace ProjectVG.Infrastructure.Auth
         /// <param name="refreshToken">검사할 리프레시 토큰</param>
         /// <returns>유효성 검사 결과</returns>
         Task<bool> IsRefreshTokenValidAsync(string refreshToken);
+
+        /// <summary>
+        /// 리프레시 토큰의 만료 시간 조회
+        /// </summary>
+        /// <param name="refreshToken">만료 시간을 조회할 리프레시 토큰</param>
+        /// <returns>토큰의 만료 시간</returns>
+        Task<DateTime?> GetRefreshTokenExpiresAtAsync(string refreshToken);
     }
 }

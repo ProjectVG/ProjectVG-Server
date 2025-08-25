@@ -272,9 +272,8 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            guestId: guestId
-          })
+          body: JSON.stringify(guestId) // 문자열로 직접 전송
+          // body: JSON.stringify({ guestId: guestId }) // JSON 객체로 전송 (Controller 수정 시)
         });
 
         if (response.ok) {

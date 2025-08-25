@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using ProjectVG.Application.Services.Auth;
-using ProjectVG.Infrastructure.Auth;
 using Microsoft.Extensions.Options;
 using ProjectVG.Common.Configuration;
 
@@ -27,29 +26,16 @@ namespace ProjectVG.Api.Controllers
             [FromQuery] string code_verifier,
             [FromQuery] string client_redirect_uri)
         {
-            try
-            {
-                if (string.IsNullOrEmpty(code_challenge) || code_challenge_method != "S256")
-                {
-                    return BadRequest("Invalid PKCE parameters");
-                }
+            if (string.IsNullOrEmpty(code_challenge) || code_challenge_method != "S256") {
+                throw new ValidationException(ErrorCode.OAUTH2_PKCE_INVALID);
+            }
 
-                var googleAuthUrl = await _oauth2Service.BuildAuthorizationUrlAsync(state, code_challenge, code_challenge_method, code_verifier, client_redirect_uri);
-                
-                return Ok(new
-                {
-                    success = true,
-                    auth_url = googleAuthUrl
-                });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest("OAuth2 authorization failed");
-            }
+            var googleAuthUrl = await _oauth2Service.BuildAuthorizationUrlAsync(state, code_challenge, code_challenge_method, code_verifier, client_redirect_uri);
+
+            return Ok(new {
+                success = true,
+                auth_url = googleAuthUrl
+            });
         }
 
         [HttpGet("oauth2/callback")]
@@ -59,22 +45,15 @@ namespace ProjectVG.Api.Controllers
             [FromQuery] string state,
             [FromQuery] string error = null)
         {
-            if (!string.IsNullOrEmpty(error))
-            {
-                return BadRequest(new { success = false, message = $"OAuth2 error: {error}" });
+            if (!string.IsNullOrEmpty(error)) {
+                throw new ValidationException(ErrorCode.OAUTH2_CALLBACK_FAILED);
             }
 
-            if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
-            {
-                return BadRequest(new { success = false, message = "Missing required parameters: code or state" });
+            if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state)) {
+                throw new ValidationException(ErrorCode.REQUIRED_PARAMETER_MISSING);
             }
 
             var result = await _oauth2Service.HandleOAuth2CallbackAsync(code, state);
-            
-            if (!result.Success)
-            {
-                return BadRequest(new { success = false, message = result.Message });
-            }
 
             return Redirect(result.RedirectUrl!);
         }
@@ -82,37 +61,23 @@ namespace ProjectVG.Api.Controllers
         [HttpGet("oauth2/token")]
         public async Task<IActionResult> GetOAuth2Token([FromQuery] string state)
         {
-            try
-            {
-                if (string.IsNullOrEmpty(state))
-                {
-                    return BadRequest(new { success = false, message = "State parameter is required" });
-                }
-
-                var tokenData = await _oauth2Service.GetTokenDataAsync(state);
-                if (tokenData == null)
-                {
-                    return BadRequest(new { success = false, message = "Invalid or expired token request" });
-                }
-
-                await _oauth2Service.DeleteTokenDataAsync(state);
-
-                Console.WriteLine($"[OAuth2 Token] User UID: {tokenData.UID}");
-                Console.WriteLine($"[OAuth2 Token] Access Token: {tokenData.AccessToken[..Math.Min(20, tokenData.AccessToken.Length)]}...");
-                Console.WriteLine($"[OAuth2 Token] Refresh Token: {tokenData.RefreshToken[..Math.Min(20, tokenData.RefreshToken.Length)]}...");
-                Console.WriteLine($"[OAuth2 Token] Expires In: {tokenData.ExpiresIn} seconds");
-
-                Response.Headers.Append("X-Access-Token", tokenData.AccessToken);
-                Response.Headers.Append("X-Refresh-Token", tokenData.RefreshToken);
-                Response.Headers.Append("X-Expires-In", tokenData.ExpiresIn.ToString());
-                Response.Headers.Append("X-UID", tokenData.UID);
-
-                return Ok(new { success = true });
+            if (string.IsNullOrEmpty(state)) {
+                throw new ValidationException(ErrorCode.REQUIRED_PARAMETER_MISSING);
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { success = false, message = ex.Message });
+
+            var tokenData = await _oauth2Service.GetTokenDataAsync(state);
+            if (tokenData == null) {
+                throw new ValidationException(ErrorCode.OAUTH2_REQUEST_NOT_FOUND);
             }
+
+            await _oauth2Service.DeleteTokenDataAsync(state);
+
+            Response.Headers.Append("X-Access-Token", tokenData.AccessToken);
+            Response.Headers.Append("X-Refresh-Token", tokenData.RefreshToken);
+            Response.Headers.Append("X-Expires-In", tokenData.ExpiresIn.ToString());
+            Response.Headers.Append("X-UID", tokenData.UID);
+
+            return Ok(new { success = true });
         }
 
     }

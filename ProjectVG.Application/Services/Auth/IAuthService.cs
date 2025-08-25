@@ -22,14 +22,14 @@ namespace ProjectVG.Application.Services.Auth
         /// </summary>
         /// <param name="refreshToken">유효한 리프레시 토큰</param>
         /// <returns>새로운 토큰 쌍과 사용자 정보</returns>
-        Task<AuthResult> RefreshTokenAsync(string refreshToken);
+        Task<AuthResult> RefreshTokenAsync(string? refreshToken);
 
         /// <summary>
         /// 사용자 로그아웃 처리 (리프레시 토큰 무효화)
         /// </summary>
         /// <param name="refreshToken">무효화할 리프레시 토큰</param>
         /// <returns>로그아웃 성공 여부</returns>
-        Task<bool> LogoutAsync(string refreshToken);
+        Task<bool> LogoutAsync(string? refreshToken);
     }
 
     /// <summary>
@@ -37,16 +37,10 @@ namespace ProjectVG.Application.Services.Auth
     /// </summary>
     public class AuthResult
     {
-        /// <summary>인증 성공 여부</summary>
-        public bool IsSuccess { get; set; }
+        /// <summary>JWT 토큰 정보</summary>
+        public TokenResponse Tokens { get; set; } = null!;
         
-        /// <summary>실패시 오류 메시지</summary>
-        public string? ErrorMessage { get; set; }
-        
-        /// <summary>성공시 JWT 토큰 정보</summary>
-        public TokenResponse? Tokens { get; set; }
-        
-        /// <summary>성공시 사용자 정보</summary>
-        public UserDto? User { get; set; }
+        /// <summary>사용자 정보</summary>
+        public UserDto User { get; set; } = null!;
     }
 }

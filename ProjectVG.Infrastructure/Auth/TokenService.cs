@@ -70,15 +70,24 @@ namespace ProjectVG.Infrastructure.Auth
                 return null;
             }
 
+            // 새로운 Access Token만 생성 (Refresh Token은 기존 것 유지)
             var newAccessToken = _jwtProvider.GenerateAccessToken(userId.Value);
             var accessTokenExpiresAt = DateTime.UtcNow.AddMinutes(15);
+
+            // 기존 Refresh Token의 만료 시간 조회
+            var refreshTokenExpiresAt = await _refreshTokenStorage.GetRefreshTokenExpiresAtAsync(refreshToken);
+            if (!refreshTokenExpiresAt.HasValue)
+            {
+                _logger.LogWarning("Refresh token expiration time not found");
+                return null;
+            }
 
             return new TokenResponse
             {
                 AccessToken = newAccessToken,
-                RefreshToken = refreshToken,
+                RefreshToken = refreshToken, // 기존 Refresh Token 유지
                 AccessTokenExpiresAt = accessTokenExpiresAt,
-                RefreshTokenExpiresAt = DateTime.UtcNow.AddMinutes(1440)
+                RefreshTokenExpiresAt = refreshTokenExpiresAt.Value
             };
         }
 

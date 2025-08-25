@@ -1,11 +1,9 @@
 using System.Net.Http.Headers;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using ProjectVG.Common.Configuration;
 using ProjectVG.Application.Models.Auth;
-using ProjectVG.Application.Services.Auth;
+
 
 
 namespace ProjectVG.Application.Services.Auth
@@ -34,11 +32,11 @@ namespace ProjectVG.Application.Services.Auth
         public async Task<string> BuildAuthorizationUrlAsync(string state, string codeChallenge, string codeChallengeMethod, string codeVerifier, string clientRedirectUri)
         {
             if (!_settings.Providers.TryGetValue("google", out var googleProvider) || !googleProvider.Enabled) {
-                throw new InvalidOperationException("Google OAuth2 is not configured or disabled");
+                throw new ValidationException(ErrorCode.OAUTH2_PROVIDER_NOT_CONFIGURED);
             }
 
             if (string.IsNullOrEmpty(googleProvider.ClientId)) {
-                throw new InvalidOperationException("Google OAuth2 Client ID is not configured");
+                throw new ValidationException(ErrorCode.OAUTH2_CLIENT_ID_INVALID);
             }
 
             var authRequest = new OAuth2AuthRequest {
@@ -63,97 +61,92 @@ namespace ProjectVG.Application.Services.Auth
                                 $"&code_challenge={codeChallenge}" +
                                 $"&code_challenge_method={codeChallengeMethod}";
 
-
             return googleAuthUrl;
         }
 
         public async Task<TokenResponse> ExchangeAuthorizationCodeAsync(string code, string clientId, string redirectUri, string codeVerifier = "")
         {
-            try
+            var provider = GetProviderByClientId(clientId);
+            if (provider == null)
             {
-                var provider = GetProviderByClientId(clientId);
-                if (provider == null)
+                throw new ValidationException(ErrorCode.OAUTH2_CLIENT_ID_INVALID);
+            }
+
+            var providerName = GetProviderName(clientId);
+            var tokenEndpoint = GetTokenEndpoint(providerName);
+            var parameters = new Dictionary<string, string>
+            {
+                { "grant_type", "authorization_code" },
+                { "code", code },
+                { "redirect_uri", redirectUri },
+                { "client_id", provider.ClientId },
+                { "client_secret", provider.ClientSecret }
+            };
+
+            if (!string.IsNullOrEmpty(codeVerifier))
+            {
+                parameters.Add("code_verifier", codeVerifier);
+            }
+
+            var content = new FormUrlEncodedContent(parameters);
+            var response = await _httpClient.PostAsync(tokenEndpoint, content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                var tokenData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+
+                return new TokenResponse
                 {
-                    return new TokenResponse { Success = false, Message = "Invalid client ID" };
-                }
-
-                var providerName = GetProviderName(clientId);
-                var tokenEndpoint = GetTokenEndpoint(providerName);
-                var parameters = new Dictionary<string, string>
-                {
-                    { "grant_type", "authorization_code" },
-                    { "code", code },
-                    { "redirect_uri", redirectUri },
-                    { "client_id", provider.ClientId },
-                    { "client_secret", provider.ClientSecret }
-                };
-
-                if (!string.IsNullOrEmpty(codeVerifier))
-                {
-                    parameters.Add("code_verifier", codeVerifier);
-                }
-
-                var content = new FormUrlEncodedContent(parameters);
-                var response = await _httpClient.PostAsync(tokenEndpoint, content);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var json = await response.Content.ReadAsStringAsync();
-                    var tokenData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
-
-                    return new TokenResponse
+                    Success = true,
+                    Tokens = new Tokens
                     {
-                        Success = true,
-                        Tokens = new Tokens
-                        {
-                            AccessToken = tokenData!["access_token"].GetString()!,
-                            RefreshToken = tokenData["refresh_token"].GetString()!,
-                            ExpiresIn = tokenData["expires_in"].GetInt32(),
-                            TokenType = tokenData["token_type"].GetString()!
-                        }
-                    };
-                }
+                        AccessToken = tokenData!["access_token"].GetString()!,
+                        RefreshToken = tokenData["refresh_token"].GetString()!,
+                        ExpiresIn = tokenData["expires_in"].GetInt32(),
+                        TokenType = tokenData["token_type"].GetString()!
+                    }
+                };
+            }
 
-                var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError("OAuth2 token exchange failed: {Error}", errorContent);
-                return new TokenResponse { Success = false, Message = $"Token exchange failed: {errorContent}" };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "OAuth2 token exchange error");
-                return new TokenResponse { Success = false, Message = "Internal error" };
-            }
+            var errorContent = await response.Content.ReadAsStringAsync();
+            _logger.LogError("OAuth2 토큰 교환 실패: {Error}", errorContent);
+            throw new ExternalServiceException(
+                "OAuth2",
+                tokenEndpoint,
+                $"OAuth2 토큰 교환 실패: {errorContent}",
+                ErrorCode.OAUTH2_TOKEN_EXCHANGE_FAILED
+            );
         }
 
 
         public async Task<OAuth2UserInfo> GetUserInfoAsync(string accessToken, string provider)
         {
-            try
-            {
-                var userInfoEndpoint = GetUserInfoEndpoint(provider);
-                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            var userInfoEndpoint = GetUserInfoEndpoint(provider);
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-                var response = await _httpClient.GetAsync(userInfoEndpoint);
-                if (response.IsSuccessStatusCode)
+            var response = await _httpClient.GetAsync(userInfoEndpoint);
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                var userData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+
+                return new OAuth2UserInfo
                 {
-                    var json = await response.Content.ReadAsStringAsync();
-                    var userData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
-
-                    return new OAuth2UserInfo
-                    {
-                        Id = userData!["id"].GetString()!,
-                        Email = userData["email"].GetString()!,
-                        Provider = provider
-                    };
-                }
-
-                return new OAuth2UserInfo();
+                    Id = userData!["id"].GetString()!,
+                    Email = userData["email"].GetString()!,
+                    Provider = provider
+                };
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "OAuth2 user info error");
-                return new OAuth2UserInfo();
-            }
+
+            var errorContent = await response.Content.ReadAsStringAsync();
+            _logger.LogError("OAuth2 사용자 정보 조회 실패: {Error}", errorContent);
+            throw new ExternalServiceException(
+                "OAuth2",
+                userInfoEndpoint,
+                $"OAuth2 사용자 정보 조회 실패: {errorContent}",
+                ErrorCode.OAUTH2_USER_INFO_FAILED
+            );
         }
 
         public async Task<OAuth2AuthRequest> StoreOAuth2RequestAsync(string state, OAuth2AuthRequest request)
@@ -241,88 +234,54 @@ namespace ProjectVG.Application.Services.Auth
 
         public async Task<OAuth2CallbackResult> HandleOAuth2CallbackAsync(string code, string state)
         {
-            try
+            var authRequest = await GetOAuth2RequestAsync(state);
+            if (authRequest == null)
             {
-                var authRequest = await GetOAuth2RequestAsync(state);
-                if (authRequest == null)
-                {
-                    return new OAuth2CallbackResult
-                    {
-                        Success = false,
-                        Message = "Invalid or expired authorization request"
-                    };
-                }
-
-                var tokenResponse = await ExchangeAuthorizationCodeAsync(
-                    code,
-                    authRequest.ClientId,
-                    authRequest.RedirectUri,
-                    authRequest.CodeVerifier);
-
-                if (!tokenResponse.Success)
-                {
-                    return new OAuth2CallbackResult
-                    {
-                        Success = false,
-                        Message = tokenResponse.Message
-                    };
-                }
-
-                await DeleteOAuth2RequestAsync(state);
-
-                var providerName = GetProviderNameFromClientId(authRequest.ClientId);
-                var userInfo = await GetUserInfoAsync(tokenResponse.Tokens!.AccessToken, providerName);
-
-                if (string.IsNullOrEmpty(userInfo.Id))
-                {
-                    return new OAuth2CallbackResult
-                    {
-                        Success = false,
-                        Message = "Failed to get user information"
-                    };
-                }
-
-                var authResult = await _authService.LoginWithOAuthAsync(providerName, userInfo.Id);
-
-                if (!authResult.IsSuccess)
-                {
-                    return new OAuth2CallbackResult
-                    {
-                        Success = false,
-                        Message = authResult.ErrorMessage
-                    };
-                }
-
-                var tokenData = new OAuth2TokenData
-                {
-                    AccessToken = authResult.Tokens!.AccessToken,
-                    RefreshToken = authResult.Tokens.RefreshToken,
-                    ExpiresIn = (int)(authResult.Tokens.AccessTokenExpiresAt - DateTime.UtcNow).TotalSeconds,
-                    UID = authResult.User!.UID,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                await StoreTokenDataAsync(state, tokenData);
-
-                var clientRedirectUrl = $"{authRequest.ClientRedirectUri}?" +
-                                       $"success=true&" +
-                                       $"state={Uri.EscapeDataString(state)}";
-
-                return new OAuth2CallbackResult
-                {
-                    Success = true,
-                    RedirectUrl = clientRedirectUrl
-                };
+                throw new ValidationException(ErrorCode.OAUTH2_REQUEST_NOT_FOUND);
             }
-            catch (Exception ex)
+
+            var tokenResponse = await ExchangeAuthorizationCodeAsync(
+                code,
+                authRequest.ClientId,
+                authRequest.RedirectUri,
+                authRequest.CodeVerifier);
+
+            if (!tokenResponse.Success)
             {
-                _logger.LogError(ex, "OAuth2 callback processing failed");
-                return new OAuth2CallbackResult
-                {
-                    Success = false,
-                    Message = "Internal error during OAuth2 callback processing"
-                };
+                throw new ValidationException(ErrorCode.OAUTH2_TOKEN_EXCHANGE_FAILED);
             }
+
+            await DeleteOAuth2RequestAsync(state);
+
+            var providerName = GetProviderNameFromClientId(authRequest.ClientId);
+            var userInfo = await GetUserInfoAsync(tokenResponse.Tokens!.AccessToken, providerName);
+
+            if (string.IsNullOrEmpty(userInfo.Id))
+            {
+                throw new ValidationException(ErrorCode.OAUTH2_USER_INFO_FAILED);
+            }
+
+            var authResult = await _authService.LoginWithOAuthAsync(providerName, userInfo.Id);
+
+            var tokenData = new OAuth2TokenData
+            {
+                AccessToken = authResult.Tokens!.AccessToken,
+                RefreshToken = authResult.Tokens.RefreshToken,
+                ExpiresIn = (int)(authResult.Tokens.AccessTokenExpiresAt - DateTime.UtcNow).TotalSeconds,
+                UID = authResult.User!.UID
+            };
+
+            await StoreTokenDataAsync(state, tokenData);
+
+            var clientRedirectUrl = $"{authRequest.ClientRedirectUri}?" +
+                                   $"success=true&" +
+                                   $"state={Uri.EscapeDataString(state)}";
+
+            return new OAuth2CallbackResult
+            {
+                Success = true,
+                RedirectUrl = clientRedirectUrl
+            };
         }
 
         public async Task<OAuth2TokenData?> GetTokenDataAsync(string state)

@@ -20,34 +20,26 @@ namespace ProjectVG.Api.Controllers
             _chatService = chatService;
         }
 
+        [HttpPost("process")]
         [JwtAuthentication]
-        [HttpPost]
         public async Task<IActionResult> ProcessChat([FromBody] ChatRequest request)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
             {
-                return Unauthorized(new { success = false, message = "Invalid user information from token" });
+                throw new ValidationException(ErrorCode.AUTHENTICATION_FAILED);
             }
-          
-            ProcessChatCommand command = new() {
+
+            var command = new ProcessChatCommand
+            {
                 UserId = userGuid,
-                CharacterId = request.CharacterId,
                 Message = request.Message,
-                SessionId = request.SessionId,
+                CharacterId = request.CharacterId
             };
 
-            var requestResponse = await _chatService.EnqueueChatRequestAsync(command);
-
-            return Ok(new { 
-                success = true, 
-                status = requestResponse.Status,
-                message = requestResponse.Message,
-                sessionId = requestResponse.SessionId,
-                userId = requestResponse.UserId,
-                characterId = requestResponse.CharacterId,
-                requestedAt = requestResponse.RequestedAt
-            });
+            var result = await _chatService.EnqueueChatRequestAsync(command);
+            
+            return Ok(result);
         }
     }
 } 

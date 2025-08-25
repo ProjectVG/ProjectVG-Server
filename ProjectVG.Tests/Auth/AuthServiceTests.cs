@@ -7,6 +7,8 @@ using ProjectVG.Infrastructure.Auth;
 using ProjectVG.Common.Models;
 using ProjectVG.Application.Models.User;
 using ProjectVG.Domain.Entities.Users;
+using ProjectVG.Common.Exceptions;
+using ProjectVG.Common.Constants;
 using Xunit;
 
 namespace ProjectVG.Tests.Auth
@@ -35,9 +37,9 @@ namespace ProjectVG.Tests.Auth
         public async Task LoginWithOAuthAsync_ValidTestProvider_ShouldReturnSuccessResult()
         {
             // Arrange
-            var userId = Guid.NewGuid();
             var provider = "test";
-            var accessToken = userId.ToString();
+            var accessToken = Guid.NewGuid().ToString();
+            var userId = Guid.Parse(accessToken);
 
             var tokenResponse = new TokenResponse
             {
@@ -54,7 +56,6 @@ namespace ProjectVG.Tests.Auth
 
             // Assert
             result.Should().NotBeNull();
-            result.IsSuccess.Should().BeTrue();
             result.Tokens.Should().Be(tokenResponse);
             result.User.Should().NotBeNull();
             result.User!.Id.Should().Be(userId);
@@ -66,35 +67,33 @@ namespace ProjectVG.Tests.Auth
         }
 
         [Fact]
-        public async Task LoginWithOAuthAsync_InvalidProvider_ShouldReturnFailureResult()
+        public async Task LoginWithOAuthAsync_InvalidProvider_ShouldThrowValidationException()
         {
             // Arrange
             var provider = "invalid";
             var accessToken = Guid.NewGuid().ToString();
 
-            // Act
-            var result = await _authService.LoginWithOAuthAsync(provider, accessToken);
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ValidationException>(
+                () => _authService.LoginWithOAuthAsync(provider, accessToken)
+            );
 
-            // Assert
-            result.Should().NotBeNull();
-            result.IsSuccess.Should().BeFalse();
-            result.ErrorMessage.Should().Be("Unsupported OAuth provider: invalid");
+            exception.ErrorCode.Should().Be(ErrorCode.INVALID_INPUT);
         }
 
         [Fact]
-        public async Task LoginWithOAuthAsync_InvalidUserIdFormat_ShouldReturnFailureResult()
+        public async Task LoginWithOAuthAsync_InvalidUserIdFormat_ShouldThrowValidationException()
         {
             // Arrange
             var provider = "test";
             var accessToken = "invalid-guid-format";
 
-            // Act
-            var result = await _authService.LoginWithOAuthAsync(provider, accessToken);
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ValidationException>(
+                () => _authService.LoginWithOAuthAsync(provider, accessToken)
+            );
 
-            // Assert
-            result.Should().NotBeNull();
-            result.IsSuccess.Should().BeFalse();
-            result.ErrorMessage.Should().Be("Invalid test user ID format");
+            exception.ErrorCode.Should().Be(ErrorCode.INVALID_INPUT);
         }
 
         [Fact]
@@ -131,7 +130,6 @@ namespace ProjectVG.Tests.Auth
 
             // Assert
             result.Should().NotBeNull();
-            result.IsSuccess.Should().BeTrue();
             result.Tokens.Should().Be(tokenResponse);
             result.User.Should().Be(user);
 
@@ -173,7 +171,6 @@ namespace ProjectVG.Tests.Auth
 
             // Assert
             result.Should().NotBeNull();
-            result.IsSuccess.Should().BeTrue();
             result.Tokens.Should().Be(tokenResponse);
             result.User.Should().NotBeNull();
             result.User!.Id.Should().Be(userId);
@@ -218,7 +215,6 @@ namespace ProjectVG.Tests.Auth
 
             // Assert
             result.Should().NotBeNull();
-            result.IsSuccess.Should().BeTrue();
             result.Tokens.Should().Be(tokenResponse);
             result.User.Should().Be(existingUser);
 
@@ -228,21 +224,48 @@ namespace ProjectVG.Tests.Auth
         }
 
         [Fact]
-        public async Task RefreshTokenAsync_InvalidRefreshToken_ShouldReturnFailureResult()
+        public async Task RefreshTokenAsync_InvalidRefreshToken_ShouldThrowValidationException()
         {
             // Arrange
             var refreshToken = "invalid.refresh.token";
             _mockTokenService.Setup(x => x.RefreshAccessTokenAsync(refreshToken)).ReturnsAsync((TokenResponse?)null);
 
-            // Act
-            var result = await _authService.RefreshTokenAsync(refreshToken);
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ValidationException>(
+                () => _authService.RefreshTokenAsync(refreshToken)
+            );
 
-            // Assert
-            result.Should().NotBeNull();
-            result.IsSuccess.Should().BeFalse();
-            result.ErrorMessage.Should().Be("Invalid or expired refresh token");
+            exception.ErrorCode.Should().Be(ErrorCode.TOKEN_INVALID);
 
             _mockTokenService.Verify(x => x.RefreshAccessTokenAsync(refreshToken), Times.Once);
+        }
+
+        [Fact]
+        public async Task RefreshTokenAsync_EmptyRefreshToken_ShouldThrowValidationException()
+        {
+            // Arrange
+            var refreshToken = "";
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ValidationException>(
+                () => _authService.RefreshTokenAsync(refreshToken)
+            );
+
+            exception.ErrorCode.Should().Be(ErrorCode.TOKEN_INVALID);
+        }
+
+        [Fact]
+        public async Task LogoutAsync_EmptyRefreshToken_ShouldThrowValidationException()
+        {
+            // Arrange
+            var refreshToken = "";
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ValidationException>(
+                () => _authService.LogoutAsync(refreshToken)
+            );
+
+            exception.ErrorCode.Should().Be(ErrorCode.TOKEN_INVALID);
         }
 
         [Fact]
@@ -283,7 +306,7 @@ namespace ProjectVG.Tests.Auth
 
 
         [Fact]
-        public async Task LoginWithOAuthAsync_ExceptionThrown_ShouldReturnFailureResult()
+        public async Task LoginWithOAuthAsync_ExceptionThrown_ShouldPropagateException()
         {
             // Arrange
             var provider = "test";
@@ -292,17 +315,14 @@ namespace ProjectVG.Tests.Auth
             _mockTokenService.Setup(x => x.GenerateTokensAsync(It.IsAny<Guid>()))
                 .ThrowsAsync(new Exception("Test exception"));
 
-            // Act
-            var result = await _authService.LoginWithOAuthAsync(provider, accessToken);
-
-            // Assert
-            result.Should().NotBeNull();
-            result.IsSuccess.Should().BeFalse();
-            result.ErrorMessage.Should().Be("OAuth authentication failed due to internal error");
+            // Act & Assert
+            await Assert.ThrowsAsync<Exception>(
+                () => _authService.LoginWithOAuthAsync(provider, accessToken)
+            );
         }
 
         [Fact]
-        public async Task RefreshTokenAsync_ExceptionThrown_ShouldReturnFailureResult()
+        public async Task RefreshTokenAsync_ExceptionThrown_ShouldPropagateException()
         {
             // Arrange
             var refreshToken = "refresh.token.here";
@@ -310,13 +330,10 @@ namespace ProjectVG.Tests.Auth
             _mockTokenService.Setup(x => x.RefreshAccessTokenAsync(refreshToken))
                 .ThrowsAsync(new Exception("Test exception"));
 
-            // Act
-            var result = await _authService.RefreshTokenAsync(refreshToken);
-
-            // Assert
-            result.Should().NotBeNull();
-            result.IsSuccess.Should().BeFalse();
-            result.ErrorMessage.Should().Be("Token refresh failed due to internal error");
+            // Act & Assert
+            await Assert.ThrowsAsync<Exception>(
+                () => _authService.RefreshTokenAsync(refreshToken)
+            );
         }
 
         [Fact]

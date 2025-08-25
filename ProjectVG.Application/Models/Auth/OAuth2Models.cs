@@ -52,7 +52,6 @@ namespace ProjectVG.Application.Models.Auth
         public string RefreshToken { get; set; } = string.Empty;
         public int ExpiresIn { get; set; }
         public string UID { get; set; } = string.Empty;
-        public DateTime CreatedAt { get; set; }
     }
 
     public class OAuth2CallbackResult

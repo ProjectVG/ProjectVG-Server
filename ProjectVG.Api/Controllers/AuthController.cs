@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ProjectVG.Application.Services.Auth;
-using ProjectVG.Application.Models.User;
+using ProjectVG.Common.Constants;
+using ProjectVG.Common.Exceptions;
 
 namespace ProjectVG.Api.Controllers
 {
@@ -15,150 +16,54 @@ namespace ProjectVG.Api.Controllers
             _authService = authService;
         }
 
-        [HttpPost("test-login")]
-        public async Task<IActionResult> TestLogin([FromBody] TestLoginRequest request)
-        {
-            try
-            {
-                var result = await _authService.LoginWithOAuthAsync("test", request.UserId.ToString());
-                
-                if (result.IsSuccess)
-                {
-                    return Ok(new
-                    {
-                        success = true,
-                        tokens = result.Tokens,
-                        user = result.User
-                    });
-                }
-
-                return BadRequest(new
-                {
-                    success = false,
-                    message = result.ErrorMessage
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Internal server error",
-                    error = ex.Message
-                });
-            }
-        }
-
         [HttpPost("refresh")]
-        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+        public async Task<IActionResult> RefreshToken()
         {
-            try
+            var refreshToken = GetRefreshTokenFromHeader();
+            var result = await _authService.RefreshTokenAsync(refreshToken);
+            
+            return Ok(new
             {
-                var result = await _authService.RefreshTokenAsync(request.RefreshToken);
-                
-                if (result.IsSuccess)
-                {
-                    return Ok(new
-                    {
-                        success = true,
-                        tokens = result.Tokens,
-                        user = result.User
-                    });
-                }
-
-                return BadRequest(new
-                {
-                    success = false,
-                    message = result.ErrorMessage
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Internal server error",
-                    error = ex.Message
-                });
-            }
+                success = true,
+                tokens = result.Tokens,
+                user = result.User
+            });
         }
 
         [HttpPost("logout")]
-        public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
+        public async Task<IActionResult> Logout()
         {
-            try
+            var refreshToken = GetRefreshTokenFromHeader();
+            var success = await _authService.LogoutAsync(refreshToken);
+            
+            return Ok(new
             {
-                var success = await _authService.LogoutAsync(request.RefreshToken);
-                
-                return Ok(new
-                {
-                    success = success,
-                    message = success ? "Logout successful" : "Logout failed"
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Internal server error",
-                    error = ex.Message
-                });
-            }
+                success = success,
+                message = success ? "Logout successful" : "Logout failed"
+            });
         }
 
         [HttpPost("guest-login")]
-        public async Task<IActionResult> GuestLogin([FromBody] GuestLoginRequest request)
+        public async Task<IActionResult> GuestLogin([FromBody] string guestId)
         {
-            try
+            if (string.IsNullOrEmpty(guestId))
             {
-                var result = await _authService.LoginWithOAuthAsync("guest", request.GuestId);
-                
-                if (result.IsSuccess)
-                {
-                    return Ok(new
-                    {
-                        success = true,
-                        tokens = result.Tokens,
-                        user = result.User
-                    });
-                }
+                throw new ValidationException(ErrorCode.GUEST_ID_INVALID);
+            }
 
-                return BadRequest(new
-                {
-                    success = false,
-                    message = result.ErrorMessage
-                });
-            }
-            catch (Exception ex)
+            var result = await _authService.LoginWithOAuthAsync("guest", guestId);
+            
+            return Ok(new
             {
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Internal server error",
-                    error = ex.Message
-                });
-            }
+                success = true,
+                tokens = result.Tokens,
+                user = result.User
+            });
         }
-    }
 
-    public class TestLoginRequest
-    {
-        public Guid UserId { get; set; }
-    }
-
-    public class RefreshTokenRequest
-    {
-        public string RefreshToken { get; set; } = string.Empty;
-    }
-
-    public class LogoutRequest
-    {
-        public string RefreshToken { get; set; } = string.Empty;
-    }
-
-    public class GuestLoginRequest
-    {
-        public string GuestId { get; set; } = string.Empty;
+        private string GetRefreshTokenFromHeader()
+        {
+            return Request.Headers["X-Refresh-Token"].FirstOrDefault() ?? string.Empty;
+        }
     }
 } 

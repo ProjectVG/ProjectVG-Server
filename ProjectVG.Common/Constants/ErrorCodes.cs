@@ -17,10 +17,14 @@ namespace ProjectVG.Common.Constants
         EMAIL_ALREADY_EXISTS,
         USERNAME_ALREADY_EXISTS,
         INVALID_CREDENTIALS,
+        USER_CREATION_FAILED,
+        USER_UPDATE_FAILED,
         
         // 캐릭터 관련 오류
         CHARACTER_NOT_FOUND,
         CHARACTER_ALREADY_EXISTS,
+        CHARACTER_CREATION_FAILED,
+        CHARACTER_UPDATE_FAILED,
         
         // 대화 관련 오류
         CONVERSATION_NOT_FOUND,
@@ -46,7 +50,42 @@ namespace ProjectVG.Common.Constants
         AUTHORIZATION_FAILED,
         TOKEN_EXPIRED,
         TOKEN_INVALID,
-        INVALID_SESSION_ID
+        TOKEN_MISSING,
+        TOKEN_REFRESH_FAILED,
+        TOKEN_REVOKE_FAILED,
+        INVALID_SESSION_ID,
+        
+        // OAuth2 관련 오류
+        OAUTH2_PROVIDER_NOT_SUPPORTED,
+        OAUTH2_PROVIDER_NOT_CONFIGURED,
+        OAUTH2_CLIENT_ID_INVALID,
+        OAUTH2_CLIENT_SECRET_INVALID,
+        OAUTH2_REDIRECT_URI_INVALID,
+        OAUTH2_AUTHORIZATION_CODE_INVALID,
+        OAUTH2_STATE_INVALID,
+        OAUTH2_PKCE_INVALID,
+        OAUTH2_TOKEN_EXCHANGE_FAILED,
+        OAUTH2_USER_INFO_FAILED,
+        OAUTH2_CALLBACK_FAILED,
+        OAUTH2_REQUEST_EXPIRED,
+        OAUTH2_REQUEST_NOT_FOUND,
+        
+        // 입력 검증 오류
+        REQUIRED_PARAMETER_MISSING,
+        INVALID_PARAMETER_FORMAT,
+        INVALID_EMAIL_FORMAT,
+        INVALID_USERNAME_FORMAT,
+        INVALID_PASSWORD_FORMAT,
+        INVALID_GUID_FORMAT,
+        INVALID_DATE_FORMAT,
+        INVALID_JSON_FORMAT,
+        
+        // 비즈니스 로직 오류
+        GUEST_ID_INVALID,
+        PROVIDER_USER_ID_INVALID,
+        SESSION_EXPIRED,
+        RATE_LIMIT_EXCEEDED,
+        RESOURCE_QUOTA_EXCEEDED
     }
 
     public static class ErrorCodeExtensions
@@ -68,10 +107,14 @@ namespace ProjectVG.Common.Constants
             { ErrorCode.EMAIL_ALREADY_EXISTS, "이미 사용 중인 이메일입니다" },
             { ErrorCode.USERNAME_ALREADY_EXISTS, "이미 사용 중인 사용자명입니다" },
             { ErrorCode.INVALID_CREDENTIALS, "잘못된 인증 정보입니다" },
+            { ErrorCode.USER_CREATION_FAILED, "사용자 생성에 실패했습니다" },
+            { ErrorCode.USER_UPDATE_FAILED, "사용자 정보 업데이트에 실패했습니다" },
             
             // 캐릭터 관련 오류
             { ErrorCode.CHARACTER_NOT_FOUND, "캐릭터를 찾을 수 없습니다" },
             { ErrorCode.CHARACTER_ALREADY_EXISTS, "이미 존재하는 캐릭터입니다" },
+            { ErrorCode.CHARACTER_CREATION_FAILED, "캐릭터 생성에 실패했습니다" },
+            { ErrorCode.CHARACTER_UPDATE_FAILED, "캐릭터 정보 업데이트에 실패했습니다" },
             
             // 대화 관련 오류
             { ErrorCode.CONVERSATION_NOT_FOUND, "대화를 찾을 수 없습니다" },
@@ -97,7 +140,42 @@ namespace ProjectVG.Common.Constants
             { ErrorCode.AUTHORIZATION_FAILED, "권한이 부족합니다" },
             { ErrorCode.TOKEN_EXPIRED, "토큰이 만료되었습니다" },
             { ErrorCode.TOKEN_INVALID, "유효하지 않은 토큰입니다" },
-            { ErrorCode.INVALID_SESSION_ID, "유효하지 않은 세션 ID입니다" }
+            { ErrorCode.TOKEN_MISSING, "토큰이 누락되었습니다" },
+            { ErrorCode.TOKEN_REFRESH_FAILED, "토큰 갱신에 실패했습니다" },
+            { ErrorCode.TOKEN_REVOKE_FAILED, "토큰 폐기에 실패했습니다" },
+            { ErrorCode.INVALID_SESSION_ID, "유효하지 않은 세션 ID입니다" },
+            
+            // OAuth2 관련 오류
+            { ErrorCode.OAUTH2_PROVIDER_NOT_SUPPORTED, "지원하지 않는 OAuth2 제공자입니다" },
+            { ErrorCode.OAUTH2_PROVIDER_NOT_CONFIGURED, "OAuth2 제공자가 구성되지 않았습니다" },
+            { ErrorCode.OAUTH2_CLIENT_ID_INVALID, "유효하지 않은 OAuth2 클라이언트 ID입니다" },
+            { ErrorCode.OAUTH2_CLIENT_SECRET_INVALID, "유효하지 않은 OAuth2 클라이언트 시크릿입니다" },
+            { ErrorCode.OAUTH2_REDIRECT_URI_INVALID, "유효하지 않은 OAuth2 리다이렉트 URI입니다" },
+            { ErrorCode.OAUTH2_AUTHORIZATION_CODE_INVALID, "유효하지 않은 OAuth2 인증 코드입니다" },
+            { ErrorCode.OAUTH2_STATE_INVALID, "유효하지 않은 OAuth2 상태값입니다" },
+            { ErrorCode.OAUTH2_PKCE_INVALID, "유효하지 않은 PKCE 파라미터입니다" },
+            { ErrorCode.OAUTH2_TOKEN_EXCHANGE_FAILED, "OAuth2 토큰 교환에 실패했습니다" },
+            { ErrorCode.OAUTH2_USER_INFO_FAILED, "OAuth2 사용자 정보 조회에 실패했습니다" },
+            { ErrorCode.OAUTH2_CALLBACK_FAILED, "OAuth2 콜백 처리에 실패했습니다" },
+            { ErrorCode.OAUTH2_REQUEST_EXPIRED, "OAuth2 요청이 만료되었습니다" },
+            { ErrorCode.OAUTH2_REQUEST_NOT_FOUND, "OAuth2 요청을 찾을 수 없습니다" },
+            
+            // 입력 검증 오류
+            { ErrorCode.REQUIRED_PARAMETER_MISSING, "필수 파라미터가 누락되었습니다" },
+            { ErrorCode.INVALID_PARAMETER_FORMAT, "파라미터 형식이 올바르지 않습니다" },
+            { ErrorCode.INVALID_EMAIL_FORMAT, "이메일 형식이 올바르지 않습니다" },
+            { ErrorCode.INVALID_USERNAME_FORMAT, "사용자명 형식이 올바르지 않습니다" },
+            { ErrorCode.INVALID_PASSWORD_FORMAT, "비밀번호 형식이 올바르지 않습니다" },
+            { ErrorCode.INVALID_GUID_FORMAT, "GUID 형식이 올바르지 않습니다" },
+            { ErrorCode.INVALID_DATE_FORMAT, "날짜 형식이 올바르지 않습니다" },
+            { ErrorCode.INVALID_JSON_FORMAT, "JSON 형식이 올바르지 않습니다" },
+            
+            // 비즈니스 로직 오류
+            { ErrorCode.GUEST_ID_INVALID, "유효하지 않은 게스트 ID입니다" },
+            { ErrorCode.PROVIDER_USER_ID_INVALID, "유효하지 않은 제공자 사용자 ID입니다" },
+            { ErrorCode.SESSION_EXPIRED, "세션이 만료되었습니다" },
+            { ErrorCode.RATE_LIMIT_EXCEEDED, "요청 한도를 초과했습니다" },
+            { ErrorCode.RESOURCE_QUOTA_EXCEEDED, "리소스 할당량을 초과했습니다" }
         };
 
         public static string GetMessage(this ErrorCode errorCode)
