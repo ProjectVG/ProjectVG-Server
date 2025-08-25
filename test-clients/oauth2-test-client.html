@@ -289,35 +289,21 @@
             document.getElementById('oauthBtn').disabled = true;
         }
 
-        // 페이지 로드 시 URL Fragment 확인 (OAuth2 callback 처리)
+        // 페이지 로드 시 URL 파라미터 확인 (OAuth2 callback 처리)
         window.onload = async function() {
             const urlParams = new URLSearchParams(window.location.search);
-            const hash = window.location.hash.substring(1);
-            const hashParams = new URLSearchParams(hash);
             
-            if (hashParams.has('exchange_token')) {
-                // OAuth2 성공 - exchange token으로 실제 토큰 요청
-                const exchangeToken = hashParams.get('exchange_token');
+            if (urlParams.has('success') && urlParams.has('state')) {
+                // OAuth2 성공 - state로 토큰 요청
+                const success = urlParams.get('success');
+                const state = urlParams.get('state');
 
-                if (exchangeToken) {
+                if (success === 'true' && state) {
                     try {
-                        showResult('🔄 토큰 교환 중...', 'info');
-                        
-                        // Fragment 즉시 정리 (보안)
-                        window.location.hash = '';
+                        showResult('🔄 토큰 요청 중...', 'info');
                         
                         const serverUrl = document.getElementById('serverUrl').value;
-                        const tokenResponse = await fetch(`${serverUrl}/auth/oauth2/exchange`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                exchangeToken: exchangeToken,
-                                clientFingerprint: generateBrowserFingerprint()
-                            })
-                        });
-                        
+                        const tokenResponse = await fetch(`${serverUrl}/auth/oauth2/token?state=${encodeURIComponent(state)}`);
                         const tokenData = await tokenResponse.json();
                         
                         if (tokenData.success) {
@@ -333,33 +319,20 @@
                                 `Refresh Token: ${refreshToken}\n` +
                                 `Expires In: ${expiresIn}초`, 'success');
                         } else {
-                            showResult(`❌ 토큰 교환 실패: ${tokenData.message}`, 'error');
+                            showResult(`❌ 토큰 요청 실패: ${tokenData.message}`, 'error');
                         }
                     } catch (error) {
-                        showResult(`❌ 토큰 교환 중 오류: ${error.message}`, 'error');
+                        showResult(`❌ 토큰 요청 중 오류: ${error.message}`, 'error');
                     }
+                } else {
+                    const error = urlParams.get('error');
+                    showResult(`❌ OAuth2 로그인 실패: ${error}`, 'error');
                 }
-            }
-            
-            // URL 파라미터에서 에러 확인
-            if (urlParams.has('error')) {
-                const error = urlParams.get('error');
-                showResult(`❌ OAuth2 로그인 실패: ${error}`, 'error');
-                
+
                 // URL에서 파라미터 제거
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         };
-
-        // 간단한 브라우저 핑거프린트 생성
-        function generateBrowserFingerprint() {
-            const screen = `${window.screen.width}x${window.screen.height}`;
-            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            const language = navigator.language;
-            const userAgent = navigator.userAgent.substring(0, 100);
-            
-            return btoa(`${screen}-${timezone}-${language}-${userAgent}`).substring(0, 32);
-        }
     </script>
 </body>
 </html>
