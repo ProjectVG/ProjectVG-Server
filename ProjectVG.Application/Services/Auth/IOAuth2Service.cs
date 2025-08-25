@@ -4,20 +4,21 @@ namespace ProjectVG.Application.Services.Auth
 {
     /// <summary>
     /// OAuth2 인증 플로우 관리 서비스
-    /// Google, GitHub, Microsoft 등의 외부 OAuth2 제공자와의 인증 처리를 담당
+    /// Google, Apple 등의 외부 OAuth2 제공자와의 인증 처리를 담당
     /// </summary>
     public interface IOAuth2Service
     {
         /// <summary>
-        /// OAuth2 인증 URL 생성 (PKCE 플로우 지원)
+        /// 특정 제공자로 OAuth2 인증 URL 생성 (PKCE 플로우 지원)
         /// </summary>
+        /// <param name="providerName">제공자 이름 (google, apple)</param>
         /// <param name="state">CSRF 보호를 위한 상태값</param>
         /// <param name="codeChallenge">PKCE code challenge</param>
         /// <param name="codeChallengeMethod">PKCE challenge 방법 (S256)</param>
         /// <param name="codeVerifier">PKCE code verifier</param>
         /// <param name="clientRedirectUri">클라이언트 리다이렉트 URI</param>
         /// <returns>OAuth2 인증 URL</returns>
-        Task<string> BuildAuthorizationUrlAsync(string state, string codeChallenge, string codeChallengeMethod, string codeVerifier, string clientRedirectUri);
+        Task<string> BuildAuthorizationUrlAsync(string providerName, string state, string codeChallenge, string codeChallengeMethod, string codeVerifier, string clientRedirectUri);
         
         /// <summary>
         /// OAuth2 콜백 처리 (인증 코드를 토큰으로 교환하고 사용자 로그인 처리)
@@ -54,7 +55,7 @@ namespace ProjectVG.Application.Services.Auth
         /// OAuth2 제공자에서 사용자 정보 조회
         /// </summary>
         /// <param name="accessToken">OAuth2 액세스 토큰</param>
-        /// <param name="provider">제공자명 (google, github, microsoft)</param>
+        /// <param name="provider">제공자명 (google, apple)</param>
         /// <returns>사용자 정보</returns>
         Task<OAuth2UserInfo> GetUserInfoAsync(string accessToken, string provider);
         

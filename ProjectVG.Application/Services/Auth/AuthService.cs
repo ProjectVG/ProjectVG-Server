@@ -55,12 +55,12 @@ namespace ProjectVG.Application.Services.Auth
                     _logger.LogInformation("Existing guest user logged in: {UserId} with GuestId: {GuestId}", user.Id, providerUserId);
                 }
             }
-            // 실제 OAuth 프로바이더인 경우 (Google, GitHub 등)
-            else if (provider == "google" || provider == "github" || provider == "microsoft")
+            // 실제 OAuth 프로바이더인 경우 (Google, Apple 등)
+            else if (provider == "google" || provider == "apple")
             {
                 if (string.IsNullOrEmpty(providerUserId))
                 {
-                    throw new ValidationException(ErrorCode.PROVIDER_USER_ID_INVALID, "OAuth 제공자 사용자 ID가 필요합니다");
+                    throw new ValidationException(ErrorCode.PROVIDER_USER_ID_INVALID);
                 }
 
                 // 새로운 사용자 ID 생성
@@ -79,7 +79,7 @@ namespace ProjectVG.Application.Services.Auth
             }
             else
             {
-                throw new ValidationException(ErrorCode.OAUTH2_PROVIDER_NOT_SUPPORTED, $"지원하지 않는 OAuth 제공자입니다: {provider}");
+                throw new ValidationException(ErrorCode.OAUTH2_PROVIDER_NOT_SUPPORTED);
             }
 
             // OAuth2 사용자인 경우 Provider 정보를 포함하여 사용자 생성 (test와 guest는 이미 처리됨)
