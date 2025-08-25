@@ -92,28 +92,26 @@ namespace ProjectVG.Api.Controllers
             return Redirect(result.RedirectUrl!);
         }
 
-        [HttpGet("oauth2/token")]
-        public async Task<IActionResult> GetOAuth2Token([FromQuery] string state)
+        [HttpPost("oauth2/exchange")]
+        public async Task<IActionResult> ExchangeOAuth2Token([FromBody] ExchangeTokenRequest request)
         {
             try
             {
-                if (string.IsNullOrEmpty(state))
+                if (string.IsNullOrEmpty(request.ExchangeToken))
                 {
-                    return BadRequest(new { success = false, message = "State parameter is required" });
+                    return BadRequest(new { success = false, message = "Exchange token is required" });
                 }
 
-                var tokenData = await _oauth2Service.GetTokenDataAsync(state);
+                var tokenData = await _oauth2Service.ExchangeTokenAsync(request.ExchangeToken, HttpContext);
                 if (tokenData == null)
                 {
-                    return BadRequest(new { success = false, message = "Invalid or expired token request" });
+                    return BadRequest(new { success = false, message = "Invalid or expired exchange token" });
                 }
 
-                await _oauth2Service.DeleteTokenDataAsync(state);
-
-                Console.WriteLine($"[OAuth2 Token] User UID: {tokenData.UID}");
-                Console.WriteLine($"[OAuth2 Token] Access Token: {tokenData.AccessToken[..Math.Min(20, tokenData.AccessToken.Length)]}...");
-                Console.WriteLine($"[OAuth2 Token] Refresh Token: {tokenData.RefreshToken[..Math.Min(20, tokenData.RefreshToken.Length)]}...");
-                Console.WriteLine($"[OAuth2 Token] Expires In: {tokenData.ExpiresIn} seconds");
+                Console.WriteLine($"[OAuth2 Exchange] User UID: {tokenData.UID}");
+                Console.WriteLine($"[OAuth2 Exchange] Access Token: {tokenData.AccessToken[..Math.Min(20, tokenData.AccessToken.Length)]}...");
+                Console.WriteLine($"[OAuth2 Exchange] Refresh Token: {tokenData.RefreshToken[..Math.Min(20, tokenData.RefreshToken.Length)]}...");
+                Console.WriteLine($"[OAuth2 Exchange] Expires In: {tokenData.ExpiresIn} seconds");
 
                 Response.Headers.Append("X-Access-Token", tokenData.AccessToken);
                 Response.Headers.Append("X-Refresh-Token", tokenData.RefreshToken);

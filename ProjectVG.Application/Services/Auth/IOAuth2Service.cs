@@ -8,6 +8,7 @@ namespace ProjectVG.Application.Services.Auth
         Task<OAuth2CallbackResult> HandleOAuth2CallbackAsync(string code, string state);
         Task<OAuth2TokenData?> GetTokenDataAsync(string state);
         Task DeleteTokenDataAsync(string state);
+        Task<OAuth2TokenData?> ExchangeTokenAsync(string exchangeToken, Microsoft.AspNetCore.Http.HttpContext httpContext);
         Task<TokenResponse> ExchangeAuthorizationCodeAsync(string code, string clientId, string redirectUri, string codeVerifier = "");
         Task<OAuth2UserInfo> GetUserInfoAsync(string accessToken, string provider);
         Task<OAuth2AuthRequest> StoreOAuth2RequestAsync(string state, OAuth2AuthRequest request);

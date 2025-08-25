@@ -18,6 +18,7 @@ namespace ProjectVG.Application.Services.Auth
         private readonly IAuthService _authService;
         private readonly Dictionary<string, string> _oauth2Requests = new();
         private readonly Dictionary<string, string> _tokenData = new();
+        private readonly Dictionary<string, string> _exchangeTokens = new();
 
         public OAuth2Service(
             IHttpClientFactory httpClientFactory,
@@ -303,14 +304,18 @@ namespace ProjectVG.Application.Services.Auth
                     RefreshToken = authResult.Tokens.RefreshToken,
                     ExpiresIn = (int)(authResult.Tokens.AccessTokenExpiresAt - DateTime.UtcNow).TotalSeconds,
                     UID = authResult.User!.UID,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    ClientIP = string.Empty,
+                    UserAgent = string.Empty,
+                    IsUsed = false
                 };
 
-                await StoreTokenDataAsync(state, tokenData);
+                var exchangeToken = GenerateExchangeToken();
+                await StoreExchangeTokenDataAsync(exchangeToken, tokenData);
 
-                var clientRedirectUrl = $"{authRequest.ClientRedirectUri}?" +
-                                       $"success=true&" +
-                                       $"state={Uri.EscapeDataString(state)}";
+                var clientRedirectUrl = $"{authRequest.ClientRedirectUri}#" +
+                                       $"exchange_token={Uri.EscapeDataString(exchangeToken)}&" +
+                                       $"expires_in=300";
 
                 return new OAuth2CallbackResult
                 {
@@ -338,6 +343,44 @@ namespace ProjectVG.Application.Services.Auth
             }
             await Task.CompletedTask;
             return null;
+        }
+
+        private string GenerateExchangeToken()
+        {
+            using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+            var bytes = new byte[32];
+            rng.GetBytes(bytes);
+            return Convert.ToBase64String(bytes).Replace("+", "-").Replace("/", "_").Replace("=", "");
+        }
+
+        public async Task StoreExchangeTokenDataAsync(string exchangeToken, OAuth2TokenData tokenData)
+        {
+            _exchangeTokens[exchangeToken] = JsonSerializer.Serialize(tokenData);
+            await Task.CompletedTask;
+        }
+
+        public async Task<OAuth2TokenData?> ExchangeTokenAsync(string exchangeToken, Microsoft.AspNetCore.Http.HttpContext httpContext)
+        {
+            if (!_exchangeTokens.TryGetValue(exchangeToken, out var json))
+            {
+                return null;
+            }
+
+            var tokenData = JsonSerializer.Deserialize<OAuth2TokenData>(json);
+            if (tokenData == null || tokenData.IsUsed)
+            {
+                return null;
+            }
+
+            if (DateTime.UtcNow > tokenData.CreatedAt.AddMinutes(5))
+            {
+                _exchangeTokens.Remove(exchangeToken);
+                return null;
+            }
+
+            _exchangeTokens.Remove(exchangeToken);
+
+            return tokenData;
         }
 
     }

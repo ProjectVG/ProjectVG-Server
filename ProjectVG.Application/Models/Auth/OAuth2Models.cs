@@ -53,6 +53,9 @@ namespace ProjectVG.Application.Models.Auth
         public int ExpiresIn { get; set; }
         public string UID { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
+        public string ClientIP { get; set; } = string.Empty;
+        public string UserAgent { get; set; } = string.Empty;
+        public bool IsUsed { get; set; } = false;
     }
 
     public class OAuth2CallbackResult
@@ -60,5 +63,11 @@ namespace ProjectVG.Application.Models.Auth
         public bool Success { get; set; }
         public string? RedirectUrl { get; set; }
         public string Message { get; set; } = string.Empty;
+    }
+
+    public class ExchangeTokenRequest
+    {
+        public string ExchangeToken { get; set; } = string.Empty;
+        public string? ClientFingerprint { get; set; }
     }
 }
