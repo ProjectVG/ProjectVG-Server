@@ -29,15 +29,50 @@ namespace ProjectVG.Application.Services.Auth
                 UserDto user;
 
                 // 테스트 프로바이더인 경우
-                if (provider == "test" && Guid.TryParse(providerUserId, out userId))
+                if (provider == "test")
                 {
+                    if (!Guid.TryParse(providerUserId, out userId))
+                    {
+                        return new AuthResult
+                        {
+                            IsSuccess = false,
+                            ErrorMessage = "Invalid test user ID format"
+                        };
+                    }
+                    
                     user = new UserDto
                     {
                         Id = userId,
                         Username = $"test_user_{userId}",
                         Email = $"test{userId}@example.com",
-                        Status = AccountStatus.Active
+                        Status = AccountStatus.Active,
+                        Provider = provider,
+                        ProviderId = providerUserId
                     };
+                }
+                // 게스트 로그인인 경우
+                else if (provider == "guest")
+                {
+                    // 기존 게스트 사용자가 있는지 확인
+                    user = await _userService.TryGetByProviderAsync("guest", providerUserId);
+                    
+                    if (user == null)
+                    {
+                        // 새로운 게스트 사용자 생성
+                        var createCommand = new UserCreateCommand(
+                            Username: $"guest_{providerUserId}",
+                            Email: $"guest_{providerUserId}@guest.local",
+                            ProviderId: providerUserId,
+                            Provider: "guest"
+                        );
+                        
+                        user = await _userService.CreateUserAsync(createCommand);
+                        _logger.LogInformation("New guest user created: {UserId} with GuestId: {GuestId}", user.Id, providerUserId);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Existing guest user logged in: {UserId} with GuestId: {GuestId}", user.Id, providerUserId);
+                    }
                 }
                 // 실제 OAuth 프로바이더인 경우 (Google, GitHub 등)
                 else if (provider == "google" || provider == "github" || provider == "microsoft")
@@ -65,8 +100,8 @@ namespace ProjectVG.Application.Services.Auth
                     };
                 }
 
-                // OAuth2 사용자인 경우 Provider 정보를 포함하여 사용자 생성
-                if (provider != "test")
+                // OAuth2 사용자인 경우 Provider 정보를 포함하여 사용자 생성 (test와 guest는 이미 처리됨)
+                if (provider != "test" && provider != "guest")
                 {
                     user.Provider = provider;
                     user.ProviderId = providerUserId;

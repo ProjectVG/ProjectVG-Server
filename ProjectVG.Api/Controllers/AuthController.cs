@@ -106,6 +106,40 @@ namespace ProjectVG.Api.Controllers
                 });
             }
         }
+
+        [HttpPost("guest-login")]
+        public async Task<IActionResult> GuestLogin([FromBody] GuestLoginRequest request)
+        {
+            try
+            {
+                var result = await _authService.LoginWithOAuthAsync("guest", request.GuestId);
+                
+                if (result.IsSuccess)
+                {
+                    return Ok(new
+                    {
+                        success = true,
+                        tokens = result.Tokens,
+                        user = result.User
+                    });
+                }
+
+                return BadRequest(new
+                {
+                    success = false,
+                    message = result.ErrorMessage
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Internal server error",
+                    error = ex.Message
+                });
+            }
+        }
     }
 
     public class TestLoginRequest
@@ -121,5 +155,10 @@ namespace ProjectVG.Api.Controllers
     public class LogoutRequest
     {
         public string RefreshToken { get; set; } = string.Empty;
+    }
+
+    public class GuestLoginRequest
+    {
+        public string GuestId { get; set; } = string.Empty;
     }
 } 

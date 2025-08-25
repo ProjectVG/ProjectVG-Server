@@ -10,6 +10,7 @@ namespace ProjectVG.Application.Services.Users
         Task<UserDto?> TryGetByIdAsync(Guid userId);
         Task<UserDto?> TryGetByUidAsync(string uid);
         Task<UserDto?> TryGetByUsernameAsync(string username);
+        Task<UserDto?> TryGetByProviderAsync(string provider, string providerId);
 
         Task<bool> ExistsByIdAsync(Guid userId);
         Task<bool> ExistsByUidAsync(string uid);

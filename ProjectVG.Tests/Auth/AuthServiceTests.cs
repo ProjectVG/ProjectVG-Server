@@ -78,7 +78,7 @@ namespace ProjectVG.Tests.Auth
             // Assert
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
-            result.ErrorMessage.Should().Be("Invalid test user ID format");
+            result.ErrorMessage.Should().Be("Unsupported OAuth provider: invalid");
         }
 
         [Fact]
@@ -124,7 +124,7 @@ namespace ProjectVG.Tests.Auth
 
             _mockTokenService.Setup(x => x.RefreshAccessTokenAsync(refreshToken)).ReturnsAsync(tokenResponse);
             _mockTokenService.Setup(x => x.GetUserIdFromTokenAsync(refreshToken)).ReturnsAsync(userId);
-            _mockUserService.Setup(x => x.GetUserByIdAsync(userId)).ReturnsAsync(user);
+            _mockUserService.Setup(x => x.TryGetByIdAsync(userId)).ReturnsAsync(user);
 
             // Act
             var result = await _authService.RefreshTokenAsync(refreshToken);
@@ -137,7 +137,94 @@ namespace ProjectVG.Tests.Auth
 
             _mockTokenService.Verify(x => x.RefreshAccessTokenAsync(refreshToken), Times.Once);
             _mockTokenService.Verify(x => x.GetUserIdFromTokenAsync(refreshToken), Times.Once);
-            _mockUserService.Verify(x => x.GetUserByIdAsync(userId), Times.Once);
+            _mockUserService.Verify(x => x.TryGetByIdAsync(userId), Times.Once);
+        }
+
+        [Fact]
+        public async Task LoginWithOAuthAsync_NewGuestUser_ShouldCreateAndReturnSuccessResult()
+        {
+            // Arrange
+            var provider = "guest";
+            var guestId = "guest123";
+            var userId = Guid.NewGuid();
+            var createdUser = new UserDto
+            {
+                Id = userId,
+                Username = $"guest_{guestId}",
+                Email = $"guest_{guestId}@guest.local",
+                Provider = provider,
+                ProviderId = guestId,
+                Status = AccountStatus.Active
+            };
+            var tokenResponse = new TokenResponse
+            {
+                AccessToken = "access.token.here",
+                RefreshToken = "refresh.token.here",
+                AccessTokenExpiresAt = DateTime.UtcNow.AddMinutes(15),
+                RefreshTokenExpiresAt = DateTime.UtcNow.AddMinutes(1440)
+            };
+
+            _mockUserService.Setup(x => x.TryGetByProviderAsync("guest", guestId)).ReturnsAsync((UserDto?)null);
+            _mockUserService.Setup(x => x.CreateUserAsync(It.IsAny<UserCreateCommand>())).ReturnsAsync(createdUser);
+            _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
+
+            // Act
+            var result = await _authService.LoginWithOAuthAsync(provider, guestId);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+            result.Tokens.Should().Be(tokenResponse);
+            result.User.Should().NotBeNull();
+            result.User!.Id.Should().Be(userId);
+            result.User.Provider.Should().Be(provider);
+            result.User.ProviderId.Should().Be(guestId);
+            result.User.Status.Should().Be(AccountStatus.Active);
+
+            _mockUserService.Verify(x => x.TryGetByProviderAsync("guest", guestId), Times.Once);
+            _mockUserService.Verify(x => x.CreateUserAsync(It.IsAny<UserCreateCommand>()), Times.Once);
+            _mockTokenService.Verify(x => x.GenerateTokensAsync(userId), Times.Once);
+        }
+
+        [Fact]
+        public async Task LoginWithOAuthAsync_ExistingGuestUser_ShouldReturnSuccessResult()
+        {
+            // Arrange
+            var provider = "guest";
+            var guestId = "guest123";
+            var userId = Guid.NewGuid();
+            var existingUser = new UserDto
+            {
+                Id = userId,
+                Username = $"guest_{guestId}",
+                Email = $"guest_{guestId}@guest.local",
+                Provider = provider,
+                ProviderId = guestId,
+                Status = AccountStatus.Active
+            };
+            var tokenResponse = new TokenResponse
+            {
+                AccessToken = "access.token.here",
+                RefreshToken = "refresh.token.here",
+                AccessTokenExpiresAt = DateTime.UtcNow.AddMinutes(15),
+                RefreshTokenExpiresAt = DateTime.UtcNow.AddMinutes(1440)
+            };
+
+            _mockUserService.Setup(x => x.TryGetByProviderAsync("guest", guestId)).ReturnsAsync(existingUser);
+            _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
+
+            // Act
+            var result = await _authService.LoginWithOAuthAsync(provider, guestId);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+            result.Tokens.Should().Be(tokenResponse);
+            result.User.Should().Be(existingUser);
+
+            _mockUserService.Verify(x => x.TryGetByProviderAsync("guest", guestId), Times.Once);
+            _mockUserService.Verify(x => x.CreateUserAsync(It.IsAny<UserCreateCommand>()), Times.Never);
+            _mockTokenService.Verify(x => x.GenerateTokensAsync(userId), Times.Once);
         }
 
         [Fact]
