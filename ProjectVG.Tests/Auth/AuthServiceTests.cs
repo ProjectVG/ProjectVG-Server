@@ -281,73 +281,6 @@ namespace ProjectVG.Tests.Auth
             _mockTokenService.Verify(x => x.RevokeRefreshTokenAsync(refreshToken), Times.Once);
         }
 
-        [Fact]
-        public async Task ValidateAccessTokenAsync_ValidToken_ShouldReturnTrue()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var accessToken = "access.token.here";
-
-            _mockTokenService.Setup(x => x.GetUserIdFromTokenAsync(accessToken)).ReturnsAsync(userId);
-
-            // Act
-            var result = await _authService.ValidateAccessTokenAsync(accessToken);
-
-            // Assert
-            result.Should().BeTrue();
-
-            _mockTokenService.Verify(x => x.GetUserIdFromTokenAsync(accessToken), Times.Once);
-        }
-
-        [Fact]
-        public async Task ValidateAccessTokenAsync_InvalidToken_ShouldReturnFalse()
-        {
-            // Arrange
-            var accessToken = "invalid.access.token";
-            _mockTokenService.Setup(x => x.GetUserIdFromTokenAsync(accessToken)).ReturnsAsync((Guid?)null);
-
-            // Act
-            var result = await _authService.ValidateAccessTokenAsync(accessToken);
-
-            // Assert
-            result.Should().BeFalse();
-
-            _mockTokenService.Verify(x => x.GetUserIdFromTokenAsync(accessToken), Times.Once);
-        }
-
-        [Fact]
-        public async Task GetCurrentUserIdAsync_ValidToken_ShouldReturnUserId()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var accessToken = "access.token.here";
-
-            _mockTokenService.Setup(x => x.GetUserIdFromTokenAsync(accessToken)).ReturnsAsync(userId);
-
-            // Act
-            var result = await _authService.GetCurrentUserIdAsync(accessToken);
-
-            // Assert
-            result.Should().Be(userId);
-
-            _mockTokenService.Verify(x => x.GetUserIdFromTokenAsync(accessToken), Times.Once);
-        }
-
-        [Fact]
-        public async Task GetCurrentUserIdAsync_InvalidToken_ShouldReturnNull()
-        {
-            // Arrange
-            var accessToken = "invalid.access.token";
-            _mockTokenService.Setup(x => x.GetUserIdFromTokenAsync(accessToken)).ReturnsAsync((Guid?)null);
-
-            // Act
-            var result = await _authService.GetCurrentUserIdAsync(accessToken);
-
-            // Assert
-            result.Should().BeNull();
-
-            _mockTokenService.Verify(x => x.GetUserIdFromTokenAsync(accessToken), Times.Once);
-        }
 
         [Fact]
         public async Task LoginWithOAuthAsync_ExceptionThrown_ShouldReturnFailureResult()
@@ -402,36 +335,5 @@ namespace ProjectVG.Tests.Auth
             result.Should().BeFalse();
         }
 
-        [Fact]
-        public async Task ValidateAccessTokenAsync_ExceptionThrown_ShouldReturnFalse()
-        {
-            // Arrange
-            var accessToken = "access.token.here";
-
-            _mockTokenService.Setup(x => x.GetUserIdFromTokenAsync(accessToken))
-                .ThrowsAsync(new Exception("Test exception"));
-
-            // Act
-            var result = await _authService.ValidateAccessTokenAsync(accessToken);
-
-            // Assert
-            result.Should().BeFalse();
-        }
-
-        [Fact]
-        public async Task GetCurrentUserIdAsync_ExceptionThrown_ShouldReturnNull()
-        {
-            // Arrange
-            var accessToken = "access.token.here";
-
-            _mockTokenService.Setup(x => x.GetUserIdFromTokenAsync(accessToken))
-                .ThrowsAsync(new Exception("Test exception"));
-
-            // Act
-            var result = await _authService.GetCurrentUserIdAsync(accessToken);
-
-            // Assert
-            result.Should().BeNull();
-        }
     }
 }

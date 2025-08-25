@@ -19,6 +19,10 @@ namespace ProjectVG.Infrastructure.Auth
         Task<TokenResponse?> RefreshAccessTokenAsync(string refreshToken);
 
         /// <summary>
+        /// 리프레시 토큰 무효화
+        /// </summary>
+        /// <param name="refreshToken">무효화할 리프레시 토큰</param>
+        /// <returns>무효화 성공 여부</returns>
         Task<bool> RevokeRefreshTokenAsync(string refreshToken);
 
         /// <summary>
@@ -27,6 +31,13 @@ namespace ProjectVG.Infrastructure.Auth
         /// <param name="refreshToken">검사할 리프레시 토큰</param>
         /// <returns>유효성 검사 결과</returns>
         Task<bool> ValidateRefreshTokenAsync(string refreshToken);
+
+        /// <summary>
+        /// 액세스 토큰 유효성 검증
+        /// </summary>
+        /// <param name="accessToken">검증할 액세스 토큰</param>
+        /// <returns>토큰 유효성</returns>
+        Task<bool> ValidateAccessTokenAsync(string accessToken);
 
         /// <summary>
         /// 토큰에서 사용자 ID 추출

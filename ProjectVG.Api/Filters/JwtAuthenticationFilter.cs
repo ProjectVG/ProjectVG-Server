@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
-using ProjectVG.Application.Services.Auth;
+using ProjectVG.Infrastructure.Auth;
 using System.Security.Claims;
 
 namespace ProjectVG.Api.Filters
@@ -12,7 +12,7 @@ namespace ProjectVG.Api.Filters
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<JwtAuthenticationAttribute>>();
-            var authService = context.HttpContext.RequestServices.GetRequiredService<IAuthService>();
+            var tokenService = context.HttpContext.RequestServices.GetRequiredService<ITokenService>();
             
             // 디버그: 모든 헤더 로깅
             logger.LogInformation("=== JWT 인증 디버그 시작 ===");
@@ -47,7 +47,7 @@ namespace ProjectVG.Api.Filters
             logger.LogInformation("토큰 추출 성공. 토큰 길이: {TokenLength}", token.Length);
             logger.LogInformation("토큰 미리보기: {TokenPreview}", token.Length > 20 ? token.Substring(0, 20) + "..." : token);
 
-            var isValid = await authService.ValidateAccessTokenAsync(token);
+            var isValid = await tokenService.ValidateAccessTokenAsync(token);
             logger.LogInformation("토큰 검증 결과: {IsValid}", isValid);
             
             if (!isValid)
@@ -66,7 +66,7 @@ namespace ProjectVG.Api.Filters
                 return;
             }
 
-            var userId = await authService.GetCurrentUserIdAsync(token);
+            var userId = await tokenService.GetUserIdFromTokenAsync(token);
             logger.LogInformation("추출된 사용자 ID: {UserId}", userId);
             
             if (!userId.HasValue)

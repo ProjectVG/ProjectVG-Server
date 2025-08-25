@@ -1,9 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using ProjectVG.Application.Services.Auth;
-using ProjectVG.Application.Models.Auth;
 using ProjectVG.Infrastructure.Auth;
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.Extensions.Options;
 using ProjectVG.Common.Configuration;
 
@@ -14,24 +11,16 @@ namespace ProjectVG.Api.Controllers
     public class OAuthController : ControllerBase
     {
         private readonly IOAuth2Service _oauth2Service;
-        private readonly IAuthService _authService;
-        private readonly OAuth2ProviderSettings _oauth2Settings;
 
         public OAuthController(
-            IHttpClientFactory httpClientFactory, 
-            JwtService jwtService,
             IOAuth2Service oauth2Service,
-            IAuthService authService,
             IOptions<OAuth2ProviderSettings> oauth2Settings)
         {
             _oauth2Service = oauth2Service;
-            _authService = authService;
-            _oauth2Settings = oauth2Settings.Value;
         }
 
         [HttpGet("oauth2/authorize")]
         public async Task<IActionResult> OAuth2Authorize(
-            [FromQuery] string scope,
             [FromQuery] string state,
             [FromQuery] string code_challenge,
             [FromQuery] string code_challenge_method,
@@ -45,14 +34,12 @@ namespace ProjectVG.Api.Controllers
                     return BadRequest("Invalid PKCE parameters");
                 }
 
-                var googleAuthUrl = await _oauth2Service.BuildAuthorizationUrlAsync(scope, state, code_challenge, code_challenge_method, code_verifier, client_redirect_uri);
+                var googleAuthUrl = await _oauth2Service.BuildAuthorizationUrlAsync(state, code_challenge, code_challenge_method, code_verifier, client_redirect_uri);
                 
                 return Ok(new
                 {
                     success = true,
-                    auth_url = googleAuthUrl,
-                    state = state,
-                    message = "Redirect to this URL to start OAuth2 login"
+                    auth_url = googleAuthUrl
                 });
             }
             catch (InvalidOperationException ex)

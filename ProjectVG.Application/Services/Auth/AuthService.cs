@@ -182,45 +182,5 @@ namespace ProjectVG.Application.Services.Auth
                 return false;
             }
         }
-
-        public async Task<bool> ValidateAccessTokenAsync(string accessToken)
-        {
-            try
-            {
-                _logger.LogInformation("=== ValidateAccessTokenAsync 디버그 ===");
-                
-                var userId = await _tokenService.GetUserIdFromTokenAsync(accessToken);
-                _logger.LogInformation("추출된 UserId: {UserId}", userId);
-                
-                if (!userId.HasValue)
-                {
-                    _logger.LogWarning("UserId가 null이므로 검증 실패");
-                    return false;
-                }
-
-                _logger.LogInformation("JWT 토큰 검증 성공 - UserId: {UserId}", userId.Value);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Access token validation failed");
-                return false;
-            }
-        }
-
-        public async Task<Guid?> GetCurrentUserIdAsync(string accessToken)
-        {
-            try
-            {
-                return await _tokenService.GetUserIdFromTokenAsync(accessToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to get user ID from access token");
-                return null;
-            }
-        }
-
-
     }
 }

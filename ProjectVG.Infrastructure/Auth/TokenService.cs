@@ -104,6 +104,18 @@ namespace ProjectVG.Infrastructure.Auth
             return await _refreshTokenStorage.IsRefreshTokenValidAsync(refreshToken);
         }
 
+        public Task<bool> ValidateAccessTokenAsync(string accessToken)
+        {
+            var principal = _jwtProvider.ValidateToken(accessToken);
+            if (principal == null)
+            {
+                return Task.FromResult(false);
+            }
+
+            var tokenType = principal.FindFirst("token_type")?.Value;
+            return Task.FromResult(tokenType == "access");
+        }
+
         public Task<Guid?> GetUserIdFromTokenAsync(string token)
         {
             var userId = _jwtProvider.GetUserIdFromToken(token);

@@ -31,6 +31,42 @@ namespace ProjectVG.Application.Services.Auth
             _authService = authService;
         }
 
+        public async Task<string> BuildAuthorizationUrlAsync(string state, string codeChallenge, string codeChallengeMethod, string codeVerifier, string clientRedirectUri)
+        {
+            if (!_settings.Providers.TryGetValue("google", out var googleProvider) || !googleProvider.Enabled) {
+                throw new InvalidOperationException("Google OAuth2 is not configured or disabled");
+            }
+
+            if (string.IsNullOrEmpty(googleProvider.ClientId)) {
+                throw new InvalidOperationException("Google OAuth2 Client ID is not configured");
+            }
+
+            var authRequest = new OAuth2AuthRequest {
+                ClientId = googleProvider.ClientId,
+                RedirectUri = googleProvider.RedirectUri,
+                ClientRedirectUri = clientRedirectUri,
+                State = state,
+                CodeChallenge = codeChallenge,
+                CodeVerifier = codeVerifier,
+                CodeChallengeMethod = codeChallengeMethod,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await StoreOAuth2RequestAsync(state, authRequest);
+
+            var googleAuthUrl = $"https://accounts.google.com/o/oauth2/v2/auth" +
+                                $"?client_id={Uri.EscapeDataString(googleProvider.ClientId)}" +
+                                $"&redirect_uri={Uri.EscapeDataString(googleProvider.RedirectUri)}" +
+                                $"&response_type=code" +
+                                $"&scope={Uri.EscapeDataString("openid email profile")}" +
+                                $"&state={state}" +
+                                $"&code_challenge={codeChallenge}" +
+                                $"&code_challenge_method={codeChallengeMethod}";
+
+
+            return googleAuthUrl;
+        }
+
         public async Task<TokenResponse> ExchangeAuthorizationCodeAsync(string code, string clientId, string redirectUri, string codeVerifier = "")
         {
             try
@@ -107,8 +143,6 @@ namespace ProjectVG.Application.Services.Auth
                     {
                         Id = userData!["id"].GetString()!,
                         Email = userData["email"].GetString()!,
-                        Name = userData["name"].GetString()!,
-                        Picture = userData.ContainsKey("picture") ? userData["picture"].GetString() : null,
                         Provider = provider
                     };
                 }
@@ -204,44 +238,6 @@ namespace ProjectVG.Application.Services.Auth
             return "google";
         }
 
-
-        public async Task<string> BuildAuthorizationUrlAsync(string scope, string state, string codeChallenge, string codeChallengeMethod, string codeVerifier, string clientRedirectUri)
-        {
-            if (!_settings.Providers.TryGetValue("google", out var googleProvider) || !googleProvider.Enabled)
-            {
-                throw new InvalidOperationException("Google OAuth2 is not configured or disabled");
-            }
-
-            if (string.IsNullOrEmpty(googleProvider.ClientId))
-            {
-                throw new InvalidOperationException("Google OAuth2 Client ID is not configured");
-            }
-
-            var authRequest = new OAuth2AuthRequest
-            {
-                ClientId = googleProvider.ClientId,
-                RedirectUri = googleProvider.RedirectUri,
-                ClientRedirectUri = clientRedirectUri,
-                State = state,
-                CodeChallenge = codeChallenge,
-                CodeVerifier = codeVerifier,
-                CodeChallengeMethod = codeChallengeMethod,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await StoreOAuth2RequestAsync(state, authRequest);
-
-            var googleAuthUrl = $"https://accounts.google.com/o/oauth2/v2/auth" +
-                               $"?client_id={Uri.EscapeDataString(googleProvider.ClientId)}" +
-                               $"&redirect_uri={Uri.EscapeDataString(googleProvider.RedirectUri)}" +
-                               $"&response_type=code" +
-                               $"&scope={Uri.EscapeDataString(scope)}" +
-                               $"&state={state}" +
-                               $"&code_challenge={codeChallenge}" +
-                               $"&code_challenge_method={codeChallengeMethod}";
-
-            return googleAuthUrl;
-        }
 
         public async Task<OAuth2CallbackResult> HandleOAuth2CallbackAsync(string code, string state)
         {
