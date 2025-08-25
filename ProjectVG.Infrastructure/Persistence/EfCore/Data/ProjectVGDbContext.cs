@@ -25,7 +25,7 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).ValueGeneratedOnAdd();
-                entity.Property(e => e.UID).IsRequired().HasMaxLength(12);
+                entity.Property(e => e.UID).IsRequired().HasMaxLength(16);
                 entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
                 entity.Property(e => e.Username).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.ProviderId).IsRequired().HasMaxLength(255);
