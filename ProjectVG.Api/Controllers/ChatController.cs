@@ -20,7 +20,7 @@ namespace ProjectVG.Api.Controllers
             _chatService = chatService;
         }
 
-        [HttpPost("process")]
+        [HttpPost]
         [JwtAuthentication]
         public async Task<IActionResult> ProcessChat([FromBody] ChatRequest request)
         {

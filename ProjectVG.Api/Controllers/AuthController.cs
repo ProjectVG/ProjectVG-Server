@@ -6,7 +6,7 @@ using ProjectVG.Common.Exceptions;
 namespace ProjectVG.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;

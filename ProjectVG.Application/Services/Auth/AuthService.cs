@@ -41,8 +41,8 @@ namespace ProjectVG.Application.Services.Auth
                 {
                     // 새로운 게스트 사용자 생성
                     var createCommand = new UserCreateCommand(
-                        Username: $"guest_{providerUserId}",
-                        Email: $"guest_{providerUserId}@guest.local",
+                        Username: $"guest",
+                        Email: $"guest@guest.local",
                         ProviderId: providerUserId,
                         Provider: "guest"
                     );

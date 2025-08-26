@@ -3,6 +3,10 @@ using ProjectVG.Application.Services.Auth;
 using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.Chat;
 using ProjectVG.Application.Services.Chat.CostTracking;
+using ProjectVG.Application.Services.Chat.Preprocessors;
+using ProjectVG.Application.Services.Chat.Processors;
+using ProjectVG.Application.Services.Chat.Validators;
+using ProjectVG.Application.Services.Chat.Handlers;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Session;
 using ProjectVG.Application.Services.Users;
@@ -25,9 +29,33 @@ namespace ProjectVG.Application
             // Character Services
             services.AddScoped<ICharacterService, CharacterService>();
 
-            // Chat Services
+            // Chat Services - Core
             services.AddScoped<IChatService, ChatService>();
             services.AddScoped<IChatMetricsService, ChatMetricsService>();
+
+            services.AddScoped<ICharacterService, CharacterService>();
+            services.AddScoped<IUserService, UserService>();
+
+            // Chat Services - Validators
+            services.AddScoped<ChatRequestValidator>();
+            
+            // Chat Services - Preprocessors
+            services.AddScoped<MemoryContextPreprocessor>();
+            services.AddScoped<UserInputAnalysisProcessor>();
+            
+            // Chat Services - Processors
+            services.AddScoped<UserInputActionProcessor>();
+            services.AddScoped<ChatLLMProcessor>();
+            services.AddScoped<ChatTTSProcessor>();
+            services.AddScoped<ChatResultProcessor>();
+            
+            // Chat Services - Handlers
+            services.AddScoped<ChatFailureHandler>();
+            
+            // Chat Services - Cost Tracking Decorators
+            services.AddCostTrackingDecorator<UserInputAnalysisProcessor>("UserInputAnalysis");
+            services.AddCostTrackingDecorator<ChatLLMProcessor>("ChatLLM");
+            services.AddCostTrackingDecorator<ChatTTSProcessor>("ChatTTS");
 
             // Conversation Services
             services.AddScoped<IConversationService, ConversationService>();
