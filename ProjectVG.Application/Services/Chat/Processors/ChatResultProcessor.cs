@@ -4,6 +4,7 @@ using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.WebSocket;
 using ProjectVG.Infrastructure.Integrations.MemoryClient;
 using ProjectVG.Domain.Entities.ConversationHistorys;
+using ProjectVG.Infrastructure.Integrations.MemoryClient.Models;
 
 namespace ProjectVG.Application.Services.Chat.Processors
 {
@@ -30,9 +31,28 @@ namespace ProjectVG.Application.Services.Chat.Processors
         {
             await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.User, context.UserMessage);
             await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.Assistant, context.Response);
-            await _memoryClient.AddMemoryAsync(context.MemoryStore, context.Response);
+            await PersistMemoryAsync(context);
 
-            _logger.LogDebug("채팅 결과 저장 완료: 세션 {SessionId}, 사용자 {UserId}", context.SessionId, context.UserId);
+            _logger.LogDebug("채팅 결과 저장 완료: 세션 {UserId}, 사용자 {UserId}", context.SessionId, context.UserId);
+        }
+
+        private async Task PersistMemoryAsync(ChatProcessContext context)
+        {
+            var insert = new MemoryInsertRequest
+            {
+                Text = context.Response,
+                UserId = context.UserId.ToString(),
+                Speaker = "ai"
+            };
+
+            try
+            {
+                await _memoryClient.InsertAutoAsync(insert);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "메모리 삽입 실패");
+            }
         }
 
         public async Task SendResultsAsync(ChatProcessContext context)
@@ -51,10 +71,10 @@ namespace ProjectVG.Application.Services.Chat.Processors
                 integratedMessage.SetAudioData(segment.AudioData);
 
                 var wsMessage = new WebSocketMessage("chat", integratedMessage);
-                await _webSocketService.SendAsync(context.SessionId, wsMessage);
+                await _webSocketService.SendAsync(context.UserId.ToString(), wsMessage);
             }
 
-            _logger.LogDebug("채팅 결과 전송 완료: 세션 {SessionId}, 세그먼트 {SegmentCount}개",
+            _logger.LogDebug("채팅 결과 전송 완료: 세션 {UserId}, 세그먼트 {SegmentCount}개",
                 context.SessionId, context.Segments.Count(s => !s.IsEmpty));
         }
     }

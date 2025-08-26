@@ -61,7 +61,7 @@ namespace ProjectVG.Application
             services.AddScoped<IConversationService, ConversationService>();
 
             // Session Services
-            services.AddScoped<IConnectionRegistry, ConnectionRegistry>();
+            services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
 
             // WebSocket Services
             services.AddScoped<IWebSocketManager, WebSocketManager>();

@@ -20,14 +20,14 @@ namespace ProjectVG.Application.Services.Chat.Processors
         public async Task ProcessAsync(ChatProcessContext context)
         {
             if (!context.UseTTS || string.IsNullOrWhiteSpace(context.Character?.VoiceId) || context.Segments?.Count == 0) {
-                _logger.LogDebug("TTS 처리 건너뜀: 세션 {SessionId}, TTS사용여부 {UseTTS}, 음성ID {VoiceId}, 세그먼트 수 {SegmentCount}",
+                _logger.LogDebug("TTS 처리 건너뜀: 세션 {UserId}, TTS사용여부 {UseTTS}, 음성ID {VoiceId}, 세그먼트 수 {SegmentCount}",
                     context.SessionId, context.UseTTS, context.Character?.VoiceId, context.Segments?.Count ?? 0);
                 return;
             }
 
             var profile = VoiceCatalog.GetProfile(context.Character.VoiceId);
             if (profile == null) {
-                _logger.LogWarning("존재하지 않는 보이스: {VoiceId}, 세션 {SessionId}", context.Character.VoiceId, context.SessionId);
+                _logger.LogWarning("존재하지 않는 보이스: {VoiceId}, 세션 {UserId}", context.Character.VoiceId, context.SessionId);
                 return;
             }
 
@@ -58,7 +58,7 @@ namespace ProjectVG.Application.Services.Chat.Processors
                 }
             }
 
-            _logger.LogDebug("TTS 처리 완료: 세션 {SessionId}, 처리된 세그먼트 {ProcessedCount}개, 총 비용 {TotalCost}",
+            _logger.LogDebug("TTS 처리 완료: 세션 {UserId}, 처리된 세그먼트 {ProcessedCount}개, 총 비용 {TotalCost}",
                 context.SessionId, processedCount, context.Cost);
         }
 

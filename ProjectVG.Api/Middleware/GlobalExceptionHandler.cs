@@ -1,5 +1,7 @@
 using System.Net;
 using System.Text.Json;
+using ProjectVG.Common.Exceptions;
+using ProjectVG.Common.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace ProjectVG.Api.Middleware
@@ -46,12 +48,16 @@ namespace ProjectVG.Api.Middleware
 
         private ErrorResponse CreateErrorResponse(Exception exception, HttpContext context)
         {
-            if (exception is ProjectVG.Common.Exceptions.ValidationException validationEx) {
+            if (exception is ValidationException validationEx) {
                 return HandleValidationException(validationEx, context);
             }
 
             if (exception is NotFoundException notFoundEx) {
                 return HandleNotFoundException(notFoundEx, context);
+            }
+
+            if (exception is AuthenticationException authEx) {
+                return HandleAuthenticationException(authEx, context);
             }
 
             if (exception is ProjectVGException projectVGEx) {
@@ -112,6 +118,19 @@ namespace ProjectVG.Api.Middleware
         private ErrorResponse HandleNotFoundException(NotFoundException exception, HttpContext context)
         {
             _logger.LogWarning(exception, "리소스를 찾을 수 없음: {ErrorCode} - {Message}", exception.ErrorCode.ToString(), exception.Message);
+
+            return new ErrorResponse {
+                ErrorCode = exception.ErrorCode.ToString(),
+                Message = exception.Message,
+                StatusCode = exception.StatusCode,
+                Timestamp = DateTime.UtcNow,
+                TraceId = context.TraceIdentifier
+            };
+        }
+
+        private ErrorResponse HandleAuthenticationException(AuthenticationException exception, HttpContext context)
+        {
+            _logger.LogWarning(exception, "인증 실패: {ErrorCode} - {Message}", exception.ErrorCode.ToString(), exception.Message);
 
             return new ErrorResponse {
                 ErrorCode = exception.ErrorCode.ToString(),

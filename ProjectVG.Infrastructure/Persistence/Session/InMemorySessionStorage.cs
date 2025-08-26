@@ -42,7 +42,7 @@ namespace ProjectVG.Infrastructure.Persistence.Session
 				}
 
 				_sessions[session.SessionId] = session;
-				_logger.LogDebug("세션을 생성했습니다: {SessionId}", session.SessionId);
+				_logger.LogDebug("세션을 생성했습니다: {UserId}", session.SessionId);
 				return Task.FromResult(session);
 			}
 		}
@@ -57,7 +57,7 @@ namespace ProjectVG.Infrastructure.Persistence.Session
 				}
 
 				_sessions[session.SessionId] = session;
-				_logger.LogDebug("세션을 수정했습니다: {SessionId}", session.SessionId);
+				_logger.LogDebug("세션을 수정했습니다: {UserId}", session.SessionId);
 				return Task.FromResult(session);
 			}
 		}
@@ -68,11 +68,11 @@ namespace ProjectVG.Infrastructure.Persistence.Session
 			{
 				if (_sessions.Remove(sessionId))
 				{
-					_logger.LogDebug("세션을 삭제했습니다: {SessionId}", sessionId);
+					_logger.LogDebug("세션을 삭제했습니다: {UserId}", sessionId);
 				}
 				else
 				{
-					_logger.LogWarning("세션 ID {SessionId}를 삭제하려 했지만 세션을 찾을 수 없습니다", sessionId);
+					_logger.LogWarning("세션 ID {UserId}를 삭제하려 했지만 세션을 찾을 수 없습니다", sessionId);
 				}
 			}
 			return Task.CompletedTask;

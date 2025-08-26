@@ -213,12 +213,12 @@
     const HTTP_URL = `http://${ENDPOINT}/api/v1/chat`;
     const LOGIN_URL = `http://${ENDPOINT}/api/v1/auth/guest-login`;
     const SERVER_MESSAGE_TYPE = "json";
-    let sessionId = null;
     let ws = null;
     let reconnectAttempts = 0;
     const MAX_RECONNECT = 3;
     let authToken = null;
     let isLoggedIn = false;
+    let userId = null;
 
     const statusBox = document.getElementById('status');
     const loginStatus = document.getElementById('login-status');
@@ -280,12 +280,14 @@
           const data = await response.json();
           if (data.success && data.tokens) {
             authToken = data.tokens.accessToken;
+            userId = data.user.id;
             isLoggedIn = true;
             setLoginStatus('로그인 성공', false);
             updateOverallStatus();
             
             appendLog(`<b>[로그인 성공]</b> 게스트 ID: ${guestId}`);
             appendLog(`<small>사용자: ${data.user.username} (${data.user.email})</small>`);
+            updateSessionId(userId);
             
             loginSection.style.display = 'none';
             
@@ -380,10 +382,10 @@
       statusBox.style.borderColor = hasError ? '#ffcdd2' : '#c8e6c9';
     }
 
-    function updateSessionId(sessionId) {
-      if (sessionId) {
-        sessionIdDisplay.textContent = sessionId.substring(0, 20) + '...';
-        sessionIdDisplay.title = sessionId;
+    function updateSessionId(userId) {
+      if (userId) {
+        sessionIdDisplay.textContent = userId.substring(0, 20) + '...';
+        sessionIdDisplay.title = userId;
         sessionIdDisplay.style.color = '#4caf50';
       } else {
         sessionIdDisplay.textContent = '없음';
@@ -434,7 +436,7 @@
     }
 
     function connectWebSocket() {
-      if (!isLoggedIn) {
+      if (!isLoggedIn || !authToken) {
         setWSStatus("로그인 필요", true);
         updateOverallStatus();
         return;
@@ -443,7 +445,8 @@
       setWSStatus("연결 중...", false);
       updateOverallStatus();
       
-      ws = new WebSocket(sessionId ? `${WS_URL}?sessionId=${sessionId}` : WS_URL);
+      // JWT 토큰을 쿼리 파라미터로 전달 (브라우저 제한으로 헤더 사용 불가)
+      ws = new WebSocket(`${WS_URL}?token=${authToken}`);
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
@@ -463,10 +466,12 @@
             if (data.type && data.data !== undefined) {
               console.log(`메시지 타입: ${data.type}`);
 
-              // 세션 ID 처리
-              if (data.type === "session" || data.type === "session_id") {
-                sessionId = data.data.session_id;
-                updateSessionId(sessionId);
+              // 세션 처리 (UserId 확인)
+              if (data.type === "session") {
+                const receivedUserId = data.data.user_id;
+                if (receivedUserId) {
+                  appendLog(`<i>[WebSocket 세션 확인] User ID: ${receivedUserId.substring(0, 8)}...</i>`);
+                }
                 return;
               }
 
@@ -534,12 +539,7 @@
               return;
             }
 
-            // 하위 호환성을 위한 기존 구조 처리
-            if (data.type === "session" || data.type === "session_id") {
-              sessionId = data.session_id;
-              updateSessionId(sessionId);
-              return;
-            }
+            // sessionId 로직은 더 이상 사용하지 않음
 
             if (data.type === "chat") {
               let messageText = "";
@@ -638,7 +638,6 @@
       ws.onclose = () => {
         setWSStatus("연결 종료됨", true);
         updateOverallStatus();
-        updateSessionId(null);
         appendLog("<b>[WebSocket 연결 종료]</b>");
         if (isLoggedIn) tryReconnect();
       };
@@ -646,7 +645,6 @@
       ws.onerror = () => {
         setWSStatus("오류 발생", true);
         updateOverallStatus();
-        updateSessionId(null);
         appendLog("<b>[WebSocket 오류]</b>");
       };
     }
@@ -674,9 +672,8 @@
         message: msg,
         action: "chat",
         character_id: characterSelect.value,
-        user_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+        user_id: userId || "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
       };
-      if (sessionId) payload.session_id = sessionId;
 
       const headers = { "Content-Type": "application/json" };
       if (authToken) {
@@ -696,7 +693,7 @@
           return res.json();
         })
         .then(data => {
-          if (data && data.id) sessionId = data.id;
+          // sessionId 로직 제거 - 응답 처리는 WebSocket을 통해
         })
         .catch(err => {
           appendLog(`<span style='color:red'>[HTTP 오류] ${err}</span>`);

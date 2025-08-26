@@ -10,6 +10,8 @@ namespace ProjectVG.Application.Models.Chat
         public string? EnhancedQuery { get; set; }
         public DateTime? ContextTime { get; set; }
         public double Cost { get; set; }
+        public string ContainsTemporalExpression { get; set; } = string.Empty;
+        public List<string> Emotions { get; set; } = new List<string>();
 
         private UserInputAnalysis()
         {

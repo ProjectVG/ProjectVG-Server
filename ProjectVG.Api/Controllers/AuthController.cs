@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using ProjectVG.Application.Services.Auth;
-using ProjectVG.Common.Constants;
-using ProjectVG.Common.Exceptions;
 
 namespace ProjectVG.Api.Controllers
 {

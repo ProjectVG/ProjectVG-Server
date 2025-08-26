@@ -36,7 +36,7 @@ namespace ProjectVG.Application.Services.Chat.Processors
             var cost = format.CalculateCost(llmResponse.InputTokens, llmResponse.OutputTokens);
 
             Console.WriteLine($"[LLM_DEBUG] ID: {llmResponse.Id}, 입력 토큰: {llmResponse.InputTokens}, 출력 토큰: {llmResponse.OutputTokens}, 계산된 비용: {cost:F0} Cost");
-            _logger.LogDebug("LLM 처리 완료: 세션 {SessionId}, ID {Id}, 입력 토큰 {InputTokens}, 출력 토큰 {OutputTokens}, 비용 {Cost}",
+            _logger.LogDebug("LLM 처리 완료: 세션 {UserId}, ID {Id}, 입력 토큰 {InputTokens}, 출력 토큰 {OutputTokens}, 비용 {Cost}",
                 context.SessionId, llmResponse.Id, llmResponse.InputTokens, llmResponse.OutputTokens, cost);
 
             context.SetResponse(llmResponse.Response, segments, cost);

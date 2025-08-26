@@ -27,7 +27,7 @@ namespace ProjectVG.Application.Services.Chat.Handlers
 
         public Task HandleFailureAsync(ChatProcessContext context, Exception exception)
         {
-            _logger.LogError(exception, "채팅 처리 실패: 세션 {SessionId}", context.SessionId);
+            _logger.LogError(exception, "채팅 처리 실패: 세션 {UserId}", context.SessionId);
             return SendErrorMessageAsync(context, "요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
         }
 
@@ -36,11 +36,11 @@ namespace ProjectVG.Application.Services.Chat.Handlers
             try
             {
                 var errorResponse = new WebSocketMessage("error", new { message = errorMessage });
-                await _webSocketService.SendAsync(context.SessionId, errorResponse);
+                await _webSocketService.SendAsync(context.UserId.ToString(), errorResponse);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "오류 메시지 전송 실패: 세션 {SessionId}", context.SessionId);
+                _logger.LogError(ex, "오류 메시지 전송 실패: 세션 {UserId}", context.SessionId);
             }
         }
     }

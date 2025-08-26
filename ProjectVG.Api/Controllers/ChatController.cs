@@ -1,16 +1,14 @@
-using ProjectVG.Application.Models.API.Request;
-using ProjectVG.Application.Services.Chat;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using ProjectVG.Api.Filters;
 using ProjectVG.Application.Models.Chat;
+using ProjectVG.Application.Models.API.Request;
+using ProjectVG.Application.Services.Chat;
 using System.Security.Claims;
 
 namespace ProjectVG.Api.Controllers
 {
     [ApiController]
     [Route("api/v1/chat")]
-    [AllowAnonymous]
     public class ChatController : ControllerBase
     {
         private readonly IChatService _chatService;

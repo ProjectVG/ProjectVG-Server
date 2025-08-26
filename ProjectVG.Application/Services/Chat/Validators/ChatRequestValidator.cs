@@ -30,7 +30,7 @@ namespace ProjectVG.Application.Services.Chat.Validators
             if (!string.IsNullOrEmpty(command.SessionId)) {
                 var sessionExists = await _sessionStorage.ExistsAsync(command.SessionId);
                 if (!sessionExists) {
-                    _logger.LogWarning("세션 ID 검증 실패: {SessionId}", command.SessionId);
+                    _logger.LogWarning("세션 ID 검증 실패: {UserId}", command.SessionId);
                     throw new ValidationException(ErrorCode.INVALID_SESSION_ID, command.SessionId);
                 }
             }

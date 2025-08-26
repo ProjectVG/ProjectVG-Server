@@ -79,7 +79,7 @@ namespace ProjectVG.Application.Services.Chat.CostTracking
 
             var totalCostInDollars = (double)metrics.TotalCost / 100_000.0;
             _logger.LogInformation(
-                "채팅 메트릭 - SessionId: {SessionId}, 총 비용: ${TotalCost:F6}, 총 시간: {TotalDuration}",
+                "채팅 메트릭 - UserId: {UserId}, 총 비용: ${TotalCost:F6}, 총 시간: {TotalDuration}",
                 metrics.SessionId, totalCostInDollars, metrics.TotalDuration);
 
             foreach (var process in metrics.ProcessMetrics)
