@@ -671,7 +671,8 @@
         message: msg,
         action: "chat",
         character_id: characterSelect.value,
-        use_tts: includeAudioCheckbox.checked
+        use_tts: includeAudioCheckbox.checked,
+        request_at: new Date().toISOString()
       };
 
       console.log(includeAudioCheckbox.checked)

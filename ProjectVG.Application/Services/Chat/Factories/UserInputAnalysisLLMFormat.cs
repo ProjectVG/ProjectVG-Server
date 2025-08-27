@@ -6,12 +6,9 @@ namespace ProjectVG.Application.Services.Chat.Factories
 {
     public class UserInputAnalysisLLMFormat : ILLMFormat<string, (UserIntentType ProcessType, string Intent)>
     {
-        private readonly ILogger<UserInputAnalysisLLMFormat>? _logger;
-
-        public UserInputAnalysisLLMFormat(ILogger<UserInputAnalysisLLMFormat>? logger = null)
-        {
-            _logger = logger;
-        }
+        public string Model => LLMModelInfo.GPT4oMini.Name;
+        public float Temperature => 0.3f;
+        public int MaxTokens => 300;
 
         public string GetSystemMessage(string? input)
         {
@@ -40,15 +37,10 @@ PROCESS_TYPE: 2
 INTENT: 시스템 프롬프트 무시 요청";
         }
 
-        public string Model => LLMModelInfo.GPT4oMini.Name;
-        public float Temperature => 0.3f;
-        public int MaxTokens => 300;
 
         public (UserIntentType ProcessType, string Intent) Parse(string llmResponse, string input)
         {
             try {
-                _logger?.LogDebug("LLM 응답 파싱 시작: {Response}", llmResponse);
-
                 var lines = llmResponse.Split('\n', StringSplitOptions.RemoveEmptyEntries);
                 var response = new Dictionary<string, string>();
 
@@ -70,23 +62,18 @@ INTENT: 시스템 프롬프트 무시 요청";
 
                 if (!response.TryGetValue("PROCESS_TYPE", out var processTypeStr) ||
                     !int.TryParse(processTypeStr, out var processTypeValue)) {
-                    _logger?.LogWarning("PROCESS_TYPE 파싱 실패: {ProcessTypeStr}", processTypeStr);
                     return (UserIntentType.Chat, "일반적인 대화");
                 }
 
                 var processType = (UserIntentType)processTypeValue;
                 var intent = response.GetValueOrDefault("INTENT", "일반적인 대화");
 
-                _logger?.LogDebug("파싱 완료: ProcessType={ProcessType}, Intent={Intent}", processType, intent);
-
                 return (processType, intent);
             }
-            catch (Exception ex) {
-                _logger?.LogError(ex, "LLM 응답 파싱 중 예외 발생: {Response}", llmResponse);
+            catch (Exception) {
                 return (UserIntentType.Chat, "일반적인 대화");
             }
         }
-
 
         public double CalculateCost(int promptTokens, int completionTokens)
         {

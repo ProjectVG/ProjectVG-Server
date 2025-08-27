@@ -16,5 +16,8 @@ namespace ProjectVG.Application.Models.API.Request
 
         [JsonPropertyName("use_tts")]
         public bool UseTTS { get; set; } = true;
+
+        [JsonPropertyName("request_at")]
+        public DateTime RequestAt { get; set; }
     }
 }

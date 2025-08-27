@@ -31,7 +31,7 @@ namespace ProjectVG.Api.Controllers
                 userGuid, 
                 request.CharacterId, 
                 request.Message,
-                DateTime.UtcNow,
+                request.RequestAt,
                 request.UseTTS);
 
             var result = await _chatService.EnqueueChatRequestAsync(command);

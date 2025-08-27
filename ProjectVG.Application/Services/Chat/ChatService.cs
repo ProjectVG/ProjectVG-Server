@@ -93,7 +93,14 @@ namespace ProjectVG.Application.Services.Chat
             var conversationHistoryContext = await _conversationService.GetConversationHistoryAsync(command.UserId, command.CharacterId, 10);
             var memoryContext = await _memoryPreprocessor.CollectMemoryContextAsync(command);
 
-            return new ChatProcessContext(command, characterInfo, conversationHistoryContext, memoryContext);
+
+
+            return new ChatProcessContext(
+                command,
+                characterInfo, 
+                conversationHistoryContext, 
+                memoryContext
+            );
         }
 
         /// <summary>

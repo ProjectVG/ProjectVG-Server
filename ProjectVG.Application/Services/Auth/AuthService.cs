@@ -39,10 +39,11 @@ namespace ProjectVG.Application.Services.Auth
                 
                 if (user == null)
                 {
+                    string uuid = providerUserId.Substring(0, Math.Min(providerUserId.Length, 20));
                     // 새로운 게스트 사용자 생성
                     var createCommand = new UserCreateCommand(
-                        Username: $"guest_{providerUserId.Substring(0, 20)}",
-                        Email: $"guest@guest{providerUserId.Substring(0,20)}.local",
+                        Username: $"guest_{uuid}",
+                        Email: $"guest@guest{uuid}.local",
                         ProviderId: providerUserId,
                         Provider: "guest"
                     );

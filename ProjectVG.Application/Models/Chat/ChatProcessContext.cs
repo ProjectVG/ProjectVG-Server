@@ -10,6 +10,7 @@ namespace ProjectVG.Application.Models.Chat
         public Guid CharacterId { get; private set; }
         public string UserMessage { get; private set; } = string.Empty;
         public string MemoryStore { get; private set; } = string.Empty;
+        public DateTime UserRequestAt { get; private set; } = DateTime.Now;
         public bool UseTTS { get; private set; } = true;
         
         public CharacterDto? Character { get; private set; }
@@ -19,11 +20,6 @@ namespace ProjectVG.Application.Models.Chat
         public string Response { get; private set; } = string.Empty;
         public double Cost { get; private set; }
         public List<ChatMessageSegment> Segments { get; private set; } = new List<ChatMessageSegment>();
-        
-        public string FullText => string.Join(" ", Segments.Where(s => s.HasText).Select(s => s.Text));
-        public bool HasAudio => Segments.Any(s => s.HasAudio);
-        public bool HasText => Segments.Any(s => s.HasText);
-
 
         public ChatProcessContext(ChatRequestCommand command)
         {
@@ -32,6 +28,7 @@ namespace ProjectVG.Application.Models.Chat
             UserMessage = command.UserPrompt;
             MemoryStore = command.UserId.ToString();
             UseTTS = command.UseTTS;
+            UserRequestAt = command.UserRequestAt;
         }
 
         public ChatProcessContext(
@@ -67,9 +64,7 @@ namespace ProjectVG.Application.Models.Chat
         {
             if (ConversationHistory == null) return Enumerable.Empty<string>();
 
-            return ConversationHistory
-                .Take(count)
-                .Select(h => $"{h.Role}: {h.Content}");
+            return ConversationHistory.Take(count).Select(h => $"{h.Role}: {h.Content}");
         }
     }
 }
