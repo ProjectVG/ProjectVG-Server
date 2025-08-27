@@ -33,6 +33,11 @@ namespace ProjectVG.Infrastructure.Integrations.MemoryClient
         /// 시스템 전체 통계를 조회한다.
         /// </summary>
         Task<SystemStatsResponse> GetSystemStatsAsync();
+
+        /// <summary>
+        /// 여러 메모리 타입에서 동시 검색한다.
+        /// </summary>
+        Task<MultiSearchResponse> SearchMultiAsync(string query, string userId, int limit = 10, double similarityThreshold = 0.0);
     }
 }
 
@@ -101,5 +106,13 @@ namespace ProjectVG.Infrastructure.Integrations.MemoryClient.Models
         public int TotalUsers { get; set; }
         public long TotalMemories { get; set; }
         public DateTimeOffset? UptimeSince { get; set; }
+    }
+
+    public class MultiSearchResponse
+    {
+        public List<MemorySearchResult> EpisodicResults { get; set; } = new();
+        public List<MemorySearchResult> SemanticResults { get; set; } = new();
+        public int TotalResults { get; set; }
+        public string Query { get; set; } = string.Empty;
     }
 } 

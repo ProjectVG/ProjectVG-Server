@@ -19,7 +19,7 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
             _logger = logger;
         }
 
-        public async Task<List<string>> CollectMemoryContextAsync(string collection, string userMessage, UserInputAnalysis analysis)
+        public async Task<List<string>> CollectMemoryContextAsync(string userId, string userMessage, UserInputAnalysis analysis)
         {
             try {
                 var searchQuery = DetermineSearchQuery(userMessage, analysis);
@@ -28,7 +28,7 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
                     userMessage, searchQuery, string.Join(",", analysis.Keywords));
 
                 var memoryType = ChooseMemoryType(analysis);
-                var searchResults = await _memoryClient.SearchAsync(memoryType, searchQuery, collection, 3);
+                var searchResults = await _memoryClient.SearchAsync(memoryType, searchQuery, userId, 3);
                 return searchResults.Select(r => r.Text).ToList();
             }
             catch (Exception ex) {

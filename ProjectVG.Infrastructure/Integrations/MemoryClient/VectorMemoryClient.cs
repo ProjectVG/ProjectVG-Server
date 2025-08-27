@@ -235,6 +235,40 @@ namespace ProjectVG.Infrastructure.Integrations.MemoryClient
             }
         }
 
+        /// <summary>
+        /// 여러 메모리 타입에서 동시 검색한다.
+        /// </summary>
+        public async Task<MultiSearchResponse> SearchMultiAsync(string query, string userId, int limit = 10, double similarityThreshold = 0.0)
+        {
+            var uri = $"/api/memory/search/multi?query={Uri.EscapeDataString(query)}&limit={limit}";
+            if (similarityThreshold > 0)
+            {
+                uri += $"&similarity_threshold={similarityThreshold.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+            }
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            request.Headers.TryAddWithoutValidation("X-User-ID", userId);
+
+            try
+            {
+                var response = await _httpClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("[MemoryClient] SearchMulti 실패: {StatusCode}", response.StatusCode);
+                    return new MultiSearchResponse { Query = query };
+                }
+
+                var body = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(body);
+                return MapMultiSearchResponse(doc.RootElement, query);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[MemoryClient] SearchMulti 예외 발생");
+                return new MultiSearchResponse { Query = query };
+            }
+        }
+
         private static MemoryInsertResponse MapInsertResponse(JsonElement root)
         {
             var res = new MemoryInsertResponse();
@@ -280,6 +314,40 @@ namespace ProjectVG.Infrastructure.Integrations.MemoryClient
             if (root.TryGetProperty("total_users", out var tu) && tu.ValueKind == JsonValueKind.Number) res.TotalUsers = tu.GetInt32();
             if (root.TryGetProperty("total_memories", out var tm) && tm.ValueKind == JsonValueKind.Number) res.TotalMemories = tm.GetInt64();
             if (root.TryGetProperty("uptime_since", out var up) && up.ValueKind == JsonValueKind.String && DateTimeOffset.TryParse(up.GetString(), out var dto)) res.UptimeSince = dto;
+            return res;
+        }
+
+        private static MultiSearchResponse MapMultiSearchResponse(JsonElement root, string query)
+        {
+            var res = new MultiSearchResponse { Query = query };
+            
+            if (root.TryGetProperty("episodic_results", out var episodicProp) && episodicProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in episodicProp.EnumerateArray())
+                {
+                    var result = new MemorySearchResult();
+                    if (item.TryGetProperty("text", out var textProp)) result.Text = textProp.GetString() ?? string.Empty;
+                    if (item.TryGetProperty("score", out var scoreProp) && scoreProp.ValueKind == JsonValueKind.Number) result.Score = scoreProp.GetSingle();
+                    res.EpisodicResults.Add(result);
+                }
+            }
+            
+            if (root.TryGetProperty("semantic_results", out var semanticProp) && semanticProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in semanticProp.EnumerateArray())
+                {
+                    var result = new MemorySearchResult();
+                    if (item.TryGetProperty("text", out var textProp)) result.Text = textProp.GetString() ?? string.Empty;
+                    if (item.TryGetProperty("score", out var scoreProp) && scoreProp.ValueKind == JsonValueKind.Number) result.Score = scoreProp.GetSingle();
+                    res.SemanticResults.Add(result);
+                }
+            }
+            
+            if (root.TryGetProperty("total_results", out var totalProp) && totalProp.ValueKind == JsonValueKind.Number) 
+                res.TotalResults = totalProp.GetInt32();
+            else
+                res.TotalResults = res.EpisodicResults.Count + res.SemanticResults.Count;
+                
             return res;
         }
     }
