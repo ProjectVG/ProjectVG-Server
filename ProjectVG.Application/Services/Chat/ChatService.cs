@@ -60,9 +60,9 @@ namespace ProjectVG.Application.Services.Chat
             _failureHandler = failureHandler;
         }
 
-        public async Task<ChatRequestResponse> EnqueueChatRequestAsync(ProcessChatCommand command)
+        public async Task<ChatRequestResult> EnqueueChatRequestAsync(ChatRequestCommand command)
         {
-            _metricsService.StartChatMetrics(command.SessionId, command.UserId.ToString(), command.CharacterId.ToString());
+            _metricsService.StartChatMetrics(command.Id.ToString(), command.UserId.ToString(), command.CharacterId.ToString());
             
             await _validator.ValidateAsync(command);
 
@@ -72,22 +72,22 @@ namespace ProjectVG.Application.Services.Chat
                 await ProcessChatRequestInternalAsync(preprocessContext);
             });
 
-            return ChatRequestResponse.Accepted(command.SessionId, command.UserId, command.CharacterId);
+            return ChatRequestResult.Accepted(command.Id.ToString(), command.UserId, command.CharacterId);
         }
 
 
         /// <summary>
-        /// 채팅 요청 준비
+        /// 채팅 요청 전처리 
         /// </summary>
-        private async Task<ChatProcessContext> PrepareChatRequestAsync(ProcessChatCommand command)
+        private async Task<ChatProcessContext> PrepareChatRequestAsync(ChatRequestCommand command)
         {
             var characterDto = await _characterService.GetCharacterByIdAsync(command.CharacterId);
             var conversationHistory = await _conversationService.GetConversationHistoryAsync(command.UserId, command.CharacterId, 10);
 
-            var inputAnalysis = await _inputProcessor.ProcessAsync(command.Message, conversationHistory);
+            var inputAnalysis = await _inputProcessor.ProcessAsync(command.UserPrompt, conversationHistory);
             await _actionProcessor.ProcessAsync(command, inputAnalysis);
             
-            var memoryContext = await _memoryPreprocessor.CollectMemoryContextAsync(command.UserId.ToString(), command.Message, inputAnalysis);
+            var memoryContext = await _memoryPreprocessor.CollectMemoryContextAsync(command.UserId.ToString(), command.UserPrompt, inputAnalysis);
 
             return new ChatProcessContext(command, characterDto!, conversationHistory, memoryContext);
         }

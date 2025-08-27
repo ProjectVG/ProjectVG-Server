@@ -9,6 +9,6 @@ namespace ProjectVG.Application.Services.Chat
         /// </summary>
         /// <param name="command">채팅 처리 명령</param>
         /// <returns>작업 요청 결과</returns>
-        Task<ChatRequestResponse> EnqueueChatRequestAsync(ProcessChatCommand command);
+        Task<ChatRequestResult> EnqueueChatRequestAsync(ChatRequestCommand command);
     }
 } 

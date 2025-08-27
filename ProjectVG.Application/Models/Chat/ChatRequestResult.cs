@@ -1,6 +1,6 @@
 namespace ProjectVG.Application.Models.Chat
 {
-    public class ChatRequestResponse
+    public class ChatRequestResult
     {
         public bool IsAccepted { get; private set; }
         public string Status { get; private set; } = string.Empty;
@@ -11,9 +11,9 @@ namespace ProjectVG.Application.Models.Chat
         public Guid UserId { get; private set; }
         public Guid CharacterId { get; private set; }
 
-        public static ChatRequestResponse Accepted(string sessionId, Guid userId, Guid characterId)
+        public static ChatRequestResult Accepted(string sessionId, Guid userId, Guid characterId)
         {
-            return new ChatRequestResponse
+            return new ChatRequestResult
             {
                 IsAccepted = true,
                 Status = "ACCEPTED",
@@ -25,9 +25,9 @@ namespace ProjectVG.Application.Models.Chat
             };
         }
 
-        public static ChatRequestResponse Rejected(string message, string errorCode = "VALIDATION_ERROR", string sessionId = "", Guid userId = default, Guid characterId = default)
+        public static ChatRequestResult Rejected(string message, string errorCode = "VALIDATION_ERROR", string sessionId = "", Guid userId = default, Guid characterId = default)
         {
-            return new ChatRequestResponse
+            return new ChatRequestResult
             {
                 IsAccepted = false,
                 Status = "REJECTED",

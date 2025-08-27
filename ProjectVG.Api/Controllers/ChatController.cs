@@ -28,10 +28,10 @@ namespace ProjectVG.Api.Controllers
                 throw new ValidationException(ErrorCode.AUTHENTICATION_FAILED);
             }
 
-            var command = new ProcessChatCommand
+            var command = new ChatRequestCommand
             {
                 UserId = userGuid,
-                Message = request.Message,
+                UserPrompt = request.Message,
                 CharacterId = request.CharacterId
             };
 

@@ -25,26 +25,24 @@ namespace ProjectVG.Application.Models.Chat
         public bool HasText => Segments.Any(s => s.HasText);
 
 
-        public ChatProcessContext(ProcessChatCommand command)
+        public ChatProcessContext(ChatRequestCommand command)
         {
-            SessionId = command.SessionId;
             UserId = command.UserId;
             CharacterId = command.CharacterId;
-            UserMessage = command.Message;
+            UserMessage = command.UserPrompt;
             MemoryStore = command.UserId.ToString();
             UseTTS = command.UseTTS;
         }
 
         public ChatProcessContext(
-            ProcessChatCommand command,
+            ChatRequestCommand command,
             CharacterDto character,
             IEnumerable<ConversationHistory> conversationHistory,
             IEnumerable<string> memoryContext)
         {
-            SessionId = command.SessionId;
             UserId = command.UserId;
             CharacterId = command.CharacterId;
-            UserMessage = command.Message;
+            UserMessage = command.UserPrompt;
             MemoryStore = command.UserId.ToString();
             UseTTS = command.UseTTS;
             
