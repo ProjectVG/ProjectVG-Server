@@ -18,31 +18,31 @@ namespace ProjectVG.Application.Services.Chat.Validators
 
         public Task ProcessAsync(ChatRequestCommand command, UserInputAnalysis inputAnalysis)
         {
-            switch (inputAnalysis.Action) {
-                case UserInputAction.Ignore:
+            switch (inputAnalysis.ProcessType) {
+                case UserInputProcessType.Ignore:
                     // 무시: 즉시 프로세스 종료, HTTP 반환
                     _logger.LogInformation("입력 무시: {UserPrompt}", command.UserPrompt);
                     throw new ValidationException(ErrorCode.INVALID_INPUT, inputAnalysis.FailureReason ?? "잘못된 입력입니다.");
 
-                case UserInputAction.Reject:
+                case UserInputProcessType.Reject:
                     // 거절: 캐시된 대화 사용, 대화 내용 저장 후 종료
                     _logger.LogInformation("입력 거절: {UserPrompt}, 사유: {Reason}", command.UserPrompt, inputAnalysis.FailureReason);
                     throw new ValidationException(ErrorCode.INAPPROPRIATE_REQUEST, inputAnalysis.FailureReason ?? "부적절한 요청입니다.");
 
-                case UserInputAction.Chat:
+                case UserInputProcessType.Chat:
                     // 대화: 정상적인 처리 계속
                     _logger.LogDebug("정상 대화 처리: {UserPrompt}", command.UserPrompt);
                     break;
 
-                case UserInputAction.Undefined:
+                case UserInputProcessType.Undefined:
                     // 미정: 현재는 대화로 처리 (향후 확장 가능)
                     _logger.LogInformation("미정 액션을 대화로 처리: {UserPrompt}", command.UserPrompt);
                     break;
 
                 default:
-                    _logger.LogWarning("알 수 없는 액션: {Action}, 메시지: {UserPrompt}",
-                        inputAnalysis.Action, command.UserPrompt);
-                    throw new ValidationException(ErrorCode.UNKNOWN_ACTION, "알 수 없는 액션입니다.");
+                    _logger.LogWarning("알 수 없는 처리타입: {ProcessType}, 메시지: {UserPrompt}",
+                        inputAnalysis.ProcessType, command.UserPrompt);
+                    throw new ValidationException(ErrorCode.UNKNOWN_ACTION, "알 수 없는 처리타입입니다.");
             }
             
             return Task.CompletedTask;

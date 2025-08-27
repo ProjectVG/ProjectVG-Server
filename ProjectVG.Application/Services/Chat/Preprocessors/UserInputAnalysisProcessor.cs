@@ -46,8 +46,8 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
                 analysis.Cost = cost;
                 
                 Console.WriteLine($"[USER_INPUT_ANALYSIS_DEBUG] ID: {llmResponse.Id}, 입력 토큰: {llmResponse.InputTokens}, 출력 토큰: {llmResponse.OutputTokens}, 총 토큰: {llmResponse.TokensUsed}, 계산된 비용: {cost:F0} Cost");
-                _logger.LogDebug("사용자 입력 분석 완료: '{Input}' -> 맥락: {Context}, 의도: {Intent}, 액션: {Action}, 비용: {Cost}", 
-                    userInput, analysis.ConversationContext, analysis.UserIntent, analysis.Action, cost);
+                _logger.LogDebug("사용자 입력 분석 완료: '{Input}' -> 의도: {Intent}, 처리타입: {ProcessType}, 비용: {Cost}", 
+                    userInput, analysis.UserIntent, analysis.ProcessType, cost);
 
                 return analysis;
             }
@@ -55,7 +55,7 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
             {
                 _logger.LogError(ex, "사용자 입력 분석 중 오류 발생: '{Input}'", userInput);
                 // 오류 발생 시 기본값 반환
-                return UserInputAnalysis.CreateValid("일반적인 대화", "대화", UserInputAction.Chat, new List<string>());
+                return UserInputAnalysis.CreateValid("일반적인 대화", UserInputProcessType.Chat);
             }
         }
     }

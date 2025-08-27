@@ -98,7 +98,7 @@ namespace ProjectVG.Application.Services.Chat
         private async Task ProcessChatRequestInternalAsync(ChatProcessContext context)
         {
             try {
-                // 작업 처리 단계: LLM -> TTS -> 결과 전송 + 저장
+                // 
                 await _llmProcessor.ProcessAsync(context);
                 await _ttsProcessor.ProcessAsync(context);
                 
