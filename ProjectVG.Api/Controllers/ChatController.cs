@@ -28,12 +28,11 @@ namespace ProjectVG.Api.Controllers
                 throw new ValidationException(ErrorCode.AUTHENTICATION_FAILED);
             }
 
-            var command = new ChatRequestCommand
-            {
-                UserId = userGuid,
-                UserPrompt = request.Message,
-                CharacterId = request.CharacterId
-            };
+            var command = new ChatRequestCommand(
+                userGuid, 
+                request.CharacterId, 
+                request.Message, 
+                DateTime.UtcNow);
 
             var result = await _chatService.EnqueueChatRequestAsync(command);
             

@@ -19,16 +19,17 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
             _logger = logger;
         }
 
-        public async Task<List<string>> CollectMemoryContextAsync(string userId, string userMessage, UserInputAnalysis analysis)
+        public async Task<List<string>> CollectMemoryContextAsync(ChatRequestCommand command)
         {
             try {
-                var searchQuery = userMessage;
+                var searchQuery = command.UserPrompt;
+                var userId = command.UserId.ToString();
 
                 _logger.LogDebug("메모리 검색 쿼리: 원본='{Original}', 의도='{Intent}'",
-                    userMessage, analysis.UserIntent);
+                    command.UserPrompt, command.UserIntent);
 
                 // 간단한 메모리 타입 선택: 질문이나 회상 관련은 Episodic, 나머지는 Semantic
-                var memoryType = ChooseMemoryType(analysis.UserIntent);
+                var memoryType = ChooseMemoryType(command.UserIntent);
                 var searchResults = await _memoryClient.SearchAsync(memoryType, searchQuery, userId, 3);
                 return searchResults.Select(r => r.Text).ToList();
             }

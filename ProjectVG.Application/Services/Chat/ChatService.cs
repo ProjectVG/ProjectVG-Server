@@ -83,11 +83,12 @@ namespace ProjectVG.Application.Services.Chat
         {
             var characterDto = await _characterService.GetCharacterByIdAsync(command.CharacterId);
             var conversationHistory = await _conversationService.GetConversationHistoryAsync(command.UserId, command.CharacterId, 10);
-
-            var inputAnalysis = await _inputProcessor.ProcessAsync(command.UserPrompt, conversationHistory);
-            await _actionProcessor.ProcessAsync(command, inputAnalysis);
             
-            var memoryContext = await _memoryPreprocessor.CollectMemoryContextAsync(command.UserId.ToString(), command.UserPrompt, inputAnalysis);
+            command.SetConversationHistory(conversationHistory);
+            await _inputProcessor.ProcessAsync(command);
+            await _actionProcessor.ProcessAsync(command);
+            
+            var memoryContext = await _memoryPreprocessor.CollectMemoryContextAsync(command);
 
             return new ChatProcessContext(command, characterDto!, conversationHistory, memoryContext);
         }
