@@ -56,7 +56,6 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
             existingCharacter.Role = character.Role;
             existingCharacter.Personality = character.Personality;
             existingCharacter.Background = character.Background;
-            existingCharacter.Metadata = character.Metadata;
             existingCharacter.IsActive = character.IsActive;
             existingCharacter.Update();
 

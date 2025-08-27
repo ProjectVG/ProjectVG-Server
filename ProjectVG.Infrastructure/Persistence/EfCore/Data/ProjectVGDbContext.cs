@@ -48,13 +48,6 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 entity.Property(e => e.Role).IsRequired().HasMaxLength(500);
                 entity.Property(e => e.Personality).HasMaxLength(1000);
                 entity.Property(e => e.Background).HasMaxLength(2000);
-                
-                // Metadata를 JSON으로 저장
-                entity.Property(e => e.Metadata)
-                    .HasConversion(
-                        v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
-                        v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new Dictionary<string, string>()
-                    );
             });
 
             // ConversationHistorys 엔티티 설정
@@ -100,7 +93,6 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 Personality = p.Personality,
                 Background = "",
                 IsActive = p.IsActive,
-                Metadata = new Dictionary<string, string>(),
                 VoiceId = p.VoiceId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow

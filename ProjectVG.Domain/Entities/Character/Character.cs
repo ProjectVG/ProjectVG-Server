@@ -8,7 +8,6 @@ namespace ProjectVG.Domain.Entities.Characters
     /// 캐릭터 정보:
     /// - 기본 정보: 이름, 설명, 역할
     /// - 성격 설정: 성격, 말투, 배경
-    /// - 메타데이터: 유동적 속성 (나이, 키, 취미 등)
     /// </summary>
     public class Character : BaseEntity
     {
@@ -51,11 +50,6 @@ namespace ProjectVG.Domain.Entities.Characters
         /// 활성화 여부
         /// </summary>
         public bool IsActive { get; set; } = true;
-        
-        /// <summary>
-        /// 유동적 메타데이터 (나이, 키, 취미 등)
-        /// </summary>
-        public Dictionary<string, string> Metadata { get; set; } = new();
         
         /// <summary>
         /// 캐릭터 보이스 ID
