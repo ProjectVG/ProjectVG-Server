@@ -14,6 +14,7 @@ namespace ProjectVG.Application.Services.Chat
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<ChatService> _logger;
+        private readonly IChatMetricsService _metricsService;
 
         private readonly IConversationService _conversationService;
         private readonly ICharacterService _characterService;
@@ -26,10 +27,12 @@ namespace ProjectVG.Application.Services.Chat
         private readonly ICostTrackingDecorator<ChatLLMProcessor> _llmProcessor;
         private readonly ICostTrackingDecorator<ChatTTSProcessor> _ttsProcessor;
         private readonly ChatResultProcessor _resultProcessor;
-        private readonly IChatMetricsService _metricsService;
-        private readonly ChatFailureHandler _failureHandler;
+
+        private readonly ChatSuccessHandler _chatSuccessHandler;
+        private readonly ChatFailureHandler _chatFailureHandler;
 
         public ChatService(
+            IChatMetricsService metricsService,
             IServiceScopeFactory scopeFactory,
             ILogger<ChatService> logger,
             IConversationService conversationService,
@@ -41,23 +44,25 @@ namespace ProjectVG.Application.Services.Chat
             ICostTrackingDecorator<ChatLLMProcessor> llmProcessor,
             ICostTrackingDecorator<ChatTTSProcessor> ttsProcessor,
             ChatResultProcessor resultProcessor,
-            IChatMetricsService metricsService,
-            ChatFailureHandler failureHandler
+
+            ChatSuccessHandler chatSuccessHandler, 
+            ChatFailureHandler chatFailureHandler
         ) {
+            _metricsService = metricsService;
             _scopeFactory = scopeFactory;
             _logger = logger;
+
             _conversationService = conversationService;
             _characterService = characterService;
             _validator = validator;
             _memoryPreprocessor = memoryPreprocessor;
             _inputProcessor = inputProcessor;
             _actionProcessor = actionProcessor;
-
             _llmProcessor = llmProcessor;
             _ttsProcessor = ttsProcessor;
             _resultProcessor = resultProcessor;
-            _metricsService = metricsService;
-            _failureHandler = failureHandler;
+            _chatSuccessHandler = chatSuccessHandler;
+            _chatFailureHandler = chatFailureHandler;
         }
 
         public async Task<ChatRequestResult> EnqueueChatRequestAsync(ChatRequestCommand command)
@@ -81,16 +86,14 @@ namespace ProjectVG.Application.Services.Chat
         /// </summary>
         private async Task<ChatProcessContext> PrepareChatRequestAsync(ChatRequestCommand command)
         {
-            var characterDto = await _characterService.GetCharacterByIdAsync(command.CharacterId);
-            var conversationHistory = await _conversationService.GetConversationHistoryAsync(command.UserId, command.CharacterId, 10);
-            
-            command.SetConversationHistory(conversationHistory);
             await _inputProcessor.ProcessAsync(command);
             await _actionProcessor.ProcessAsync(command);
-            
+
+            var characterInfo = await _characterService.GetCharacterByIdAsync(command.CharacterId);
+            var conversationHistoryContext = await _conversationService.GetConversationHistoryAsync(command.UserId, command.CharacterId, 10);
             var memoryContext = await _memoryPreprocessor.CollectMemoryContextAsync(command);
 
-            return new ChatProcessContext(command, characterDto!, conversationHistory, memoryContext);
+            return new ChatProcessContext(command, characterInfo, conversationHistoryContext, memoryContext);
         }
 
         /// <summary>
@@ -99,17 +102,17 @@ namespace ProjectVG.Application.Services.Chat
         private async Task ProcessChatRequestInternalAsync(ChatProcessContext context)
         {
             try {
-                // 
                 await _llmProcessor.ProcessAsync(context);
                 await _ttsProcessor.ProcessAsync(context);
-                
+
+                await _chatSuccessHandler.HandleAsync(context);
+
                 using var scope = _scopeFactory.CreateScope();
                 var resultProcessor = scope.ServiceProvider.GetRequiredService<ChatResultProcessor>();
-                await resultProcessor.SendResultsAsync(context);
                 await resultProcessor.PersistResultsAsync(context);
             }
-            catch (Exception ex) {
-                await _failureHandler.HandleFailureAsync(context, ex);
+            catch (Exception) {
+                await _chatFailureHandler.HandleAsync(context);
             }
             finally {
                 _metricsService.EndChatMetrics();

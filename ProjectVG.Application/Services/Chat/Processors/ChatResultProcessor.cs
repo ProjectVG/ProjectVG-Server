@@ -97,28 +97,5 @@ namespace ProjectVG.Application.Services.Chat.Processors
                 _logger.LogWarning(ex, "메모리 삽입 실패: 사용자={UserId}, 캐릭터={CharacterId}", context.UserId, context.CharacterId);
             }
         }
-
-        public async Task SendResultsAsync(ChatProcessContext context)
-        {
-            foreach (var segment in context.Segments.OrderBy(s => s.Order)) {
-                if (segment.IsEmpty) continue;
-
-                var integratedMessage = new IntegratedChatMessage {
-                    SessionId = context.SessionId,
-                    Text = segment.Text,
-                    AudioFormat = segment.AudioContentType ?? "wav",
-                    AudioLength = segment.AudioLength,
-                    Timestamp = DateTime.UtcNow
-                };
-
-                integratedMessage.SetAudioData(segment.AudioData);
-
-                var wsMessage = new WebSocketMessage("chat", integratedMessage);
-                await _webSocketService.SendAsync(context.UserId.ToString(), wsMessage);
-            }
-
-            _logger.LogDebug("채팅 결과 전송 완료: 세션 {UserId}, 세그먼트 {SegmentCount}개",
-                context.SessionId, context.Segments.Count(s => !s.IsEmpty));
-        }
     }
 }

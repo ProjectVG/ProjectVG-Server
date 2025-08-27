@@ -48,8 +48,9 @@ namespace ProjectVG.Application
             services.AddScoped<ChatLLMProcessor>();
             services.AddScoped<ChatTTSProcessor>();
             services.AddScoped<ChatResultProcessor>();
-            
+
             // Chat Services - Handlers
+            services.AddScoped<ChatSuccessHandler>();
             services.AddScoped<ChatFailureHandler>();
             
             // Chat Services - Cost Tracking Decorators
