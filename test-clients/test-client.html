@@ -187,6 +187,13 @@
 
     <div id="chat-log"></div>
 
+    <div id="audio-option-row" style="display: flex; align-items: center; gap: 1em; margin-bottom: 0.5em;">
+      <label style="display: flex; align-items: center; gap: 0.5em; cursor: pointer; color: #37474f;">
+        <input id="include-audio" type="checkbox" checked style="cursor: pointer;" />
+        <span>음성 포함</span>
+      </label>
+    </div>
+
     <div id="input-row">
       <input id="user-input" type="text" placeholder="메시지를 입력하세요" autocomplete="off" />
       <button id="send-btn">전송</button>
@@ -233,6 +240,7 @@
     const guestIdInput = document.getElementById('guest-id');
     const loginBtn = document.getElementById('login-btn');
     const loginSection = document.getElementById('login-section');
+    const includeAudioCheckbox = document.getElementById('include-audio');
 
     const audioQueue = [];
     let isPlayingAudio = false;
@@ -272,8 +280,7 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(guestId) // 문자열로 직접 전송
-          // body: JSON.stringify({ guestId: guestId }) // JSON 객체로 전송 (Controller 수정 시)
+          body: JSON.stringify(guestId)
         });
 
         if (response.ok) {
@@ -321,16 +328,9 @@
         const messageType = dataView.getUint8(offset);
         offset += 1;
 
-        if (messageType !== 0x03) { // MESSAGE_TYPE_INTEGRATED
-          return null; // 지원하지 않는 메시지 타입
+        if (messageType !== 0x03) {
+          return null; 
         }
-
-        // 세션 ID 읽기
-        const sessionIdLength = dataView.getUint32(offset, true); // little-endian
-        offset += 4;
-        const sessionIdBytes = new Uint8Array(arrayBuffer, offset, sessionIdLength);
-        const sessionId = new TextDecoder().decode(sessionIdBytes);
-        offset += sessionIdLength;
 
         // 텍스트 읽기
         const textLength = dataView.getUint32(offset, true);
@@ -668,12 +668,13 @@
       userInput.value = "";
 
       const payload = {
-        actor: "web_user",
         message: msg,
         action: "chat",
         character_id: characterSelect.value,
-        user_id: userId || "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+        use_tts: includeAudioCheckbox.checked
       };
+
+      console.log(includeAudioCheckbox.checked)
 
       const headers = { "Content-Type": "application/json" };
       if (authToken) {
@@ -691,9 +692,6 @@
             console.error("HTTP 오류", res);
           }
           return res.json();
-        })
-        .then(data => {
-          // sessionId 로직 제거 - 응답 처리는 WebSocket을 통해
         })
         .catch(err => {
           appendLog(`<span style='color:red'>[HTTP 오류] ${err}</span>`);

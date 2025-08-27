@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Models.API.Request;
 using ProjectVG.Application.Services.Chat;
@@ -31,8 +30,9 @@ namespace ProjectVG.Api.Controllers
             var command = new ChatRequestCommand(
                 userGuid, 
                 request.CharacterId, 
-                request.Message, 
-                DateTime.UtcNow);
+                request.Message,
+                DateTime.UtcNow,
+                request.UseTTS);
 
             var result = await _chatService.EnqueueChatRequestAsync(command);
             

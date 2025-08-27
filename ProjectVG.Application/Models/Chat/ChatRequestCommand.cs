@@ -30,7 +30,7 @@ namespace ProjectVG.Application.Models.Chat
             ProcessAt = DateTime.UtcNow;
         }
 
-        public ChatRequestCommand(Guid userId, Guid characterId, string userPrompt, DateTime requestedAt)
+        public ChatRequestCommand(Guid userId, Guid characterId, string userPrompt, DateTime requestedAt, bool useTTS)
         {
             Id = Guid.NewGuid();
             UserId = userId;
@@ -38,6 +38,7 @@ namespace ProjectVG.Application.Models.Chat
             UserPrompt = userPrompt;
             UserRequestAt = requestedAt;
             ProcessAt = DateTime.UtcNow;
+            UseTTS = useTTS;
         }
 
         public void SetConversationHistory(IEnumerable<ConversationHistory> histories)

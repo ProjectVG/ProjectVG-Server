@@ -5,9 +5,6 @@ namespace ProjectVG.Application.Models.API.Request
 {
     public class ChatRequest
     {
-        [JsonPropertyName("session_id")]
-        public string SessionId { get; set; } = string.Empty;
-
         [JsonPropertyName("message")]
         public string Message { get; set; } = string.Empty;
 
