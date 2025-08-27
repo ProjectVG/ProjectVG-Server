@@ -19,22 +19,22 @@ namespace ProjectVG.Application.Services.Chat.Validators
         public Task ProcessAsync(ChatRequestCommand command)
         {
             switch (command.ProcessType) {
-                case UserInputProcessType.Ignore:
+                case UserIntentType.Ignore:
                     // 무시: 즉시 프로세스 종료, HTTP 반환
                     _logger.LogInformation("입력 무시: {UserPrompt}", command.UserPrompt);
                     throw new ValidationException(ErrorCode.INVALID_INPUT, "잘못된 입력입니다.");
 
-                case UserInputProcessType.Reject:
+                case UserIntentType.Reject:
                     // 거절: 캐시된 대화 사용, 대화 내용 저장 후 종료
                     _logger.LogInformation("입력 거절: {UserPrompt}, 의도: {Intent}", command.UserPrompt, command.UserIntent);
                     throw new ValidationException(ErrorCode.INAPPROPRIATE_REQUEST, "부적절한 요청입니다.");
 
-                case UserInputProcessType.Chat:
+                case UserIntentType.Chat:
                     // 대화: 정상적인 처리 계속
                     _logger.LogDebug("정상 대화 처리: {UserPrompt}", command.UserPrompt);
                     break;
 
-                case UserInputProcessType.Undefined:
+                case UserIntentType.Undefined:
                     // 미정: 현재는 대화로 처리 (향후 확장 가능)
                     _logger.LogInformation("미정 액션을 대화로 처리: {UserPrompt}", command.UserPrompt);
                     break;

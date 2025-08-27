@@ -22,32 +22,32 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
         public async Task ProcessAsync(ChatRequestCommand request)
         {
             var format = LLMFormatFactory.CreateUserInputAnalysisFormat();
-            var userInput = request.UserPrompt;
-            var history = request.ConversationHistory?.Take(5).Select(c => $"{c.Role}: {c.Content}").ToList();
+            var systemPrompt = format.GetSystemMessage(null);
+            var Instructions = format.GetInstructions(null);
+            var userPrompt = request.UserPrompt;
 
             try {
                 var llmResponse = await _llmClient.CreateTextResponseAsync(
-                    format.GetSystemMessage(userInput),
-                    userInput,
-                    format.GetInstructions(userInput),
-                    history,
+                    systemPrompt,
+                    userPrompt,
+                    Instructions,
+                    null,
                     model: format.Model,
                     maxTokens: format.MaxTokens,
                     temperature: format.Temperature
                 );
 
                 var cost = format.CalculateCost(llmResponse.InputTokens, llmResponse.OutputTokens);
-                var (processType, intent) = format.Parse(llmResponse.Response, userInput);
+                var (processType, intent) = format.Parse(llmResponse.Response, userPrompt);
 
                 request.AddCost(cost);
                 request.SetAnalysisResult(processType, intent);
 
-                Console.WriteLine($"[USER_INPUT_ANALYSIS_DEBUG] ID: {llmResponse.Id}, 입력 토큰: {llmResponse.InputTokens}, 출력 토큰: {llmResponse.OutputTokens}, 총 토큰: {llmResponse.TokensUsed}, 계산된 비용: {cost:F0} Cost");
                 _logger.LogDebug("사용자 입력 분석 완료: '{Input}' -> 의도: {Intent}, 처리타입: {ProcessType}, 비용: {Cost}",
-                    userInput, intent, processType, cost);
+                    userPrompt, intent, processType, cost);
             }
             catch (Exception ex) {
-                _logger.LogError(ex, "사용자 입력 분석 중 오류 발생: '{Input}'", userInput);
+                _logger.LogError(ex, "사용자 입력 분석 중 오류 발생: '{Input}'", userPrompt);
             }
         }
     }

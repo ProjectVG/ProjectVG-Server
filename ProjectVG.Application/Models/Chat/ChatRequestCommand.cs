@@ -21,7 +21,7 @@ namespace ProjectVG.Application.Models.Chat
         /// == 내부 처리 정보 ===
         public IEnumerable<ConversationHistory>? ConversationHistory { get; private set; } = new List<ConversationHistory>();
         public string UserIntent { get; private set; } = string.Empty;
-        public UserInputProcessType ProcessType { get; private set; } = UserInputProcessType.Undefined;
+        public UserIntentType ProcessType { get; private set; } = UserIntentType.Undefined;
         public double Cost { get; private set; }
 
         public ChatRequestCommand()
@@ -45,7 +45,7 @@ namespace ProjectVG.Application.Models.Chat
             ConversationHistory = histories;
         }
 
-        public void SetAnalysisResult(UserInputProcessType processType, string userIntent)
+        public void SetAnalysisResult(UserIntentType processType, string userIntent)
         {
             ProcessType = processType;
             UserIntent = userIntent;
