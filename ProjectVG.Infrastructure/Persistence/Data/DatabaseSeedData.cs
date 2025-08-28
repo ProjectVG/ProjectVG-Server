@@ -1,14 +1,9 @@
-namespace ProjectVG.Common.Constants
+using ProjectVG.Domain.Entities.Users;
+
+namespace ProjectVG.Infrastructure.Persistence.Data
 {
-    public static class AppConstants
+    public static class DatabaseSeedData
     {
-        public static class Validation
-        {
-            public const int MaxNameLength = 50;
-            public const int MaxDescriptionLength = 500;
-            public const int MaxMessageLength = 10000;
-            public const int MinNameLength = 1;
-        }
 
         public class CharacterProfile
         {
@@ -25,12 +20,12 @@ namespace ProjectVG.Common.Constants
         public class UserProfile
         {
             public Guid Id { get; set; }
+            public string UID { get; set; } = string.Empty;
             public string Username { get; set; } = string.Empty;
-            public string Name { get; set; } = string.Empty;
             public string Email { get; set; } = string.Empty;
             public string Provider { get; set; } = "test";
             public string ProviderId { get; set; } = "test";
-            public bool IsActive { get; set; } = true;
+            public AccountStatus Status { get; set; } = AccountStatus.Active;
         }
 
         /// <summary>
@@ -87,23 +82,22 @@ namespace ProjectVG.Common.Constants
         {
             new UserProfile {
                 Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                UID = "TESTUSER001",
                 Username = "testuser",
-                Name = "Test User",
                 Email = "test@test.com",
                 Provider = "test",
                 ProviderId = "test",
-                IsActive = true
+                Status = AccountStatus.Active
             },
             new UserProfile {
                 Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                UID = "ZEROUSER001",
                 Username = "zerouser",
-                Name = "Zero User",
                 Email = "zero@test.com",
                 Provider = "test",
                 ProviderId = "zero",
-                IsActive = true
+                Status = AccountStatus.Active
             }
         };
-
     }
-} 
+}

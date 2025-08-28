@@ -22,127 +22,58 @@ namespace ProjectVG.Application.Services.WebSocket
             _sessionStorage = sessionStorage;
         }
 
-        public async Task<string> ConnectAsync(string? sessionId = null)
+        public async Task<string> ConnectAsync(string userId)
         {
-            var actualSessionId = string.IsNullOrWhiteSpace(sessionId) ? GenerateSessionId() : sessionId;
-
-            _logger.LogInformation("새 WebSocket 세션 생성: {SessionId}", actualSessionId);
+            _logger.LogInformation("새 WebSocket 세션 생성: {UserId}", userId);
 
             await _sessionStorage.CreateAsync(new SessionInfo {
-                SessionId = actualSessionId,
-                UserId = null,
+                SessionId = userId,
+                UserId = userId,
                 ConnectedAt = DateTime.UtcNow
             });
 
-            var sessionData = new WebSocketMessage("session", new { session_id = actualSessionId });
-            await SendAsync(actualSessionId, sessionData);
-
-            return actualSessionId;
+            return userId;
         }
 
-        public async Task SendAsync(string sessionId, WebSocketMessage message)
+        public async Task SendAsync(string userId, WebSocketMessage message)
         {
             var json = JsonSerializer.Serialize(message);
-            await SendTextAsync(sessionId, json);
-            _logger.LogDebug("WebSocket 메시지 전송: {SessionId}, 타입: {MessageType}", sessionId, message.Type);
+            await SendTextAsync(userId, json);
+            _logger.LogDebug("WebSocket 메시지 전송: {UserId}, 타입: {MessageType}", userId, message.Type);
         }
 
-        public async Task SendTextAsync(string sessionId, string text)
+        public async Task SendTextAsync(string userId, string text)
         {
-            if (_connectionRegistry.TryGet(sessionId, out var connection) && connection != null) {
+            if (_connectionRegistry.TryGet(userId, out var connection) && connection != null) {
                 await connection.SendTextAsync(text);
-                _logger.LogDebug("WebSocket 텍스트 전송: {SessionId}", sessionId);
+                _logger.LogDebug("WebSocket 텍스트 전송: {UserId}", userId);
             }
             else {
-                _logger.LogWarning("세션을 찾을 수 없음: {SessionId}", sessionId);
+                _logger.LogWarning("사용자를 찾을 수 없음: {UserId}", userId);
             }
         }
 
-        public async Task SendBinaryAsync(string sessionId, byte[] data)
+        public async Task SendBinaryAsync(string userId, byte[] data)
         {
-            if (_connectionRegistry.TryGet(sessionId, out var connection) && connection != null) {
+            if (_connectionRegistry.TryGet(userId, out var connection) && connection != null) {
                 await connection.SendBinaryAsync(data);
-                _logger.LogDebug("WebSocket 바이너리 전송: {SessionId}, {Length} bytes", sessionId, data?.Length ?? 0);
+                _logger.LogDebug("WebSocket 바이너리 전송: {UserId}, {Length} bytes", userId, data?.Length ?? 0);
             }
             else {
-                _logger.LogWarning("세션을 찾을 수 없음: {SessionId}", sessionId);
+                _logger.LogWarning("사용자를 찾을 수 없음: {UserId}", userId);
             }
         }
 
-        public Task DisconnectAsync(string sessionId)
+        public Task DisconnectAsync(string userId)
         {
-            _connectionRegistry.Unregister(sessionId);
-            _logger.LogInformation("WebSocket 세션 해제: {SessionId}", sessionId);
+            _connectionRegistry.Unregister(userId);
+            _logger.LogInformation("WebSocket 세션 해제: {UserId}", userId);
             return Task.CompletedTask;
         }
 
-        public bool IsSessionActive(string sessionId)
+        public bool IsSessionActive(string userId)
         {
-            return _connectionRegistry.IsConnected(sessionId);
-        }
-
-        public async Task HandleMessageAsync(string sessionId, string message)
-        {
-            try {
-                _logger.LogDebug("WebSocket 메시지 처리: {SessionId} - {Message}", sessionId, message);
-
-                var webSocketMessage = JsonSerializer.Deserialize<WebSocketMessage>(message);
-                if (webSocketMessage == null) {
-                    _logger.LogWarning("잘못된 WebSocket 메시지 형식: {SessionId}", sessionId);
-                    return;
-                }
-
-                await ProcessMessageAsync(sessionId, webSocketMessage);
-            }
-            catch (JsonException ex) {
-                _logger.LogError(ex, "WebSocket 메시지 JSON 파싱 오류: {SessionId}", sessionId);
-            }
-            catch (Exception ex) {
-                _logger.LogError(ex, "WebSocket 메시지 처리 오류: {SessionId}", sessionId);
-            }
-        }
-
-        public Task HandleBinaryMessageAsync(string sessionId, byte[] data)
-        {
-            _logger.LogDebug("WebSocket 바이너리 메시지 처리: {SessionId}, {Length} bytes", sessionId, data?.Length ?? 0);
-
-            // 바이너리 메시지 처리 로직 구현
-            // 예: 오디오 데이터, 파일 업로드 등
-            return Task.CompletedTask;
-        }
-
-        private async Task ProcessMessageAsync(string sessionId, WebSocketMessage message)
-        {
-            switch (message.Type?.ToLower()) {
-                case "ping":
-                    await HandlePingAsync(sessionId);
-                    break;
-                case "chat":
-                    await HandleChatMessageAsync(sessionId, message);
-                    break;
-                default:
-                    _logger.LogWarning("알 수 없는 메시지 타입: {SessionId}, {MessageType}", sessionId, message.Type);
-                    break;
-            }
-        }
-
-        private async Task HandlePingAsync(string sessionId)
-        {
-            var pongMessage = new WebSocketMessage("pong", new { timestamp = DateTime.UtcNow });
-            await SendAsync(sessionId, pongMessage);
-        }
-
-        private Task HandleChatMessageAsync(string sessionId, WebSocketMessage message)
-        {
-            // 채팅 메시지 처리 로직
-            // ChatService와 연동하여 처리
-            _logger.LogInformation("채팅 메시지 수신: {SessionId}", sessionId);
-            return Task.CompletedTask;
-        }
-
-        private string GenerateSessionId()
-        {
-            return $"session_{DateTime.UtcNow.Ticks}_{Guid.NewGuid().ToString("N")[..8]}";
+            return _connectionRegistry.IsConnected(userId);
         }
     }
 }

@@ -123,6 +123,15 @@ publish/
 # VS auto-generated
 Generated_Code/
 
+# Claude AI related files
+CLAUDE.md
+claude.md
+*CLAUDE.md
+*claude.md
+.claude/
+claude-*
+*claude*
+
 # Secrets (if using secrets.json for config)
 secrets.json
 

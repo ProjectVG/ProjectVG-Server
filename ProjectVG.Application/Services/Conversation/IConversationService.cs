@@ -1,5 +1,4 @@
 using ProjectVG.Domain.Entities.ConversationHistorys;
-using ProjectVG.Domain.Enums;
 
 namespace ProjectVG.Application.Services.Conversation
 {

@@ -9,8 +9,9 @@ using ProjectVG.Infrastructure.Persistence.Repositories.Characters;
 using ProjectVG.Infrastructure.Persistence.Repositories.Conversation;
 using ProjectVG.Infrastructure.Persistence.Repositories.Users;
 using ProjectVG.Infrastructure.Persistence.Session;
-
-
+using ProjectVG.Infrastructure.Auth;
+using ProjectVG.Common.Configuration;
+using StackExchange.Redis;
 using Microsoft.EntityFrameworkCore;
 
 namespace ProjectVG.Infrastructure
@@ -25,6 +26,9 @@ namespace ProjectVG.Infrastructure
             AddDatabaseServices(services, configuration);
             AddExternalApiClients(services, configuration);
             AddPersistenceServices(services);
+            AddAuthServices(services, configuration);
+            AddRedisServices(services, configuration);
+            AddOAuth2Services(services, configuration);
 
             return services;
         }
@@ -89,6 +93,83 @@ namespace ProjectVG.Infrastructure
             services.AddScoped<IConversationRepository, SqlServerConversationRepository>();
             services.AddScoped<IUserRepository, SqlServerUserRepository>();
             services.AddSingleton<ISessionStorage, InMemorySessionStorage>();
+        }
+
+        /// <summary>
+        /// 인증 서비스
+        /// </summary>
+        private static void AddAuthServices(IServiceCollection services, IConfiguration configuration)
+        {
+            // JWT 키를 여러 소스에서 찾기
+            var jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? 
+                        configuration["JWT_SECRET_KEY"] ?? 
+                        configuration["JWT:SecretKey"] ??
+                        Environment.GetEnvironmentVariable("JWT_KEY") ?? 
+                        "your-super-secret-jwt-key-here-minimum-32-characters";
+            
+            // 환경변수 치환 문자열이 그대로 남아있는 경우 처리
+            if (jwtKey.StartsWith("${") && jwtKey.EndsWith("}"))
+            {
+                var envVarName = jwtKey.Substring(2, jwtKey.Length - 3);
+                jwtKey = Environment.GetEnvironmentVariable(envVarName) ?? 
+                        "your-super-secret-jwt-key-here-minimum-32-characters";
+            }
+            
+            var jwtSettings = configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings
+            {
+                Key = jwtKey,
+                Issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "ProjectVG",
+                Audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "ProjectVG",
+                AccessTokenExpirationMinutes = configuration.GetValue<int>("Jwt:AccessTokenExpirationMinutes", 15),
+                RefreshTokenExpirationMinutes = configuration.GetValue<int>("Jwt:RefreshTokenExpirationMinutes", 1440)
+            };
+
+            services.AddSingleton(jwtSettings);
+            services.AddScoped<IJwtProvider, JwtProvider>(sp => 
+                new JwtProvider(jwtKey, jwtSettings.Issuer, jwtSettings.Audience, jwtSettings.AccessTokenExpirationMinutes, jwtSettings.RefreshTokenExpirationMinutes));
+            
+            services.AddScoped<ITokenService, TokenService>();
+
+            // OAuth2 JWT 서비스 추가 (동일한 jwtKey 사용)
+            services.AddSingleton(new JwtService(jwtKey));
+        }
+
+        /// <summary>
+        /// OAuth2 서비스
+        /// </summary>
+        private static void AddOAuth2Services(IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<OAuth2ProviderSettings>(configuration.GetSection("OAuth2"));
+        }
+
+        /// <summary>
+        /// Redis 서비스 (개발 환경에서는 In-Memory 사용)
+        /// </summary>
+        private static void AddRedisServices(IServiceCollection services, IConfiguration configuration)
+        {
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+            
+            if (environment.Equals("Production", StringComparison.OrdinalIgnoreCase))
+            {
+                // 프로덕션에서는 Redis 사용
+                var redisConnectionString = configuration.GetConnectionString("Redis") ?? Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING") ?? "localhost:6379";
+                
+                services.AddSingleton<IConnectionMultiplexer>(sp => 
+                {
+                    var options = ConfigurationOptions.Parse(redisConnectionString);
+                    options.AbortOnConnectFail = false;
+                    options.ConnectRetry = 5;
+                    options.ReconnectRetryPolicy = new ExponentialRetry(5000);
+                    return ConnectionMultiplexer.Connect(options);
+                });
+                
+                services.AddScoped<IRefreshTokenStorage, RedisRefreshTokenStorage>();
+            }
+            else
+            {
+                // 개발 환경에서는 In-Memory 사용
+                services.AddScoped<IRefreshTokenStorage, InMemoryRefreshTokenStorage>();
+            }
         }
     }
 }

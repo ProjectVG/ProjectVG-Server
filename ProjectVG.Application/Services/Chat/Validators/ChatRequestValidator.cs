@@ -1,5 +1,5 @@
 using ProjectVG.Infrastructure.Persistence.Session;
-using ProjectVG.Application.Services.User;
+using ProjectVG.Application.Services.Users;
 using ProjectVG.Application.Services.Character;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Chat;
@@ -30,12 +30,12 @@ namespace ProjectVG.Application.Services.Chat.Validators
             if (!string.IsNullOrEmpty(command.SessionId)) {
                 var sessionExists = await _sessionStorage.ExistsAsync(command.SessionId);
                 if (!sessionExists) {
-                    _logger.LogWarning("세션 ID 검증 실패: {SessionId}", command.SessionId);
+                    _logger.LogWarning("세션 ID 검증 실패: {UserId}", command.SessionId);
                     throw new ValidationException(ErrorCode.INVALID_SESSION_ID, command.SessionId);
                 }
             }
 
-            var userExists = await _userService.UserExistsAsync(command.UserId);
+            var userExists = await _userService.ExistsByIdAsync(command.UserId);
             if (!userExists) {
                 _logger.LogWarning("사용자 ID 검증 실패: {UserId}", command.UserId);
                 throw new NotFoundException(ErrorCode.USER_NOT_FOUND, command.UserId);

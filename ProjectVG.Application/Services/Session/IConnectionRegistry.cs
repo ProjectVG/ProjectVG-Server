@@ -8,27 +8,22 @@ namespace ProjectVG.Application.Services.Session
 		/// <summary>
 		/// 연결을 등록합니다
 		/// </summary>
-		void Register(string sessionId, IClientConnection connection);
+		void Register(string userId, IClientConnection connection);
 
 		/// <summary>
 		/// 연결을 해제합니다
 		/// </summary>
-		void Unregister(string sessionId);
+		void Unregister(string userId);
 
 		/// <summary>
 		/// 연결을 조회합니다
 		/// </summary>
-		bool TryGet(string sessionId, out IClientConnection? connection);
+		bool TryGet(string userId, out IClientConnection? connection);
 
 		/// <summary>
 		/// 연결 상태를 확인합니다
 		/// </summary>
-		bool IsConnected(string sessionId);
-
-		/// <summary>
-		/// 사용자 ID로 세션 ID 목록을 조회합니다
-		/// </summary>
-		IEnumerable<string> GetSessionIdsByUserId(string userId);
+		bool IsConnected(string userId);
 
 		/// <summary>
 		/// 활성 연결 수를 반환합니다

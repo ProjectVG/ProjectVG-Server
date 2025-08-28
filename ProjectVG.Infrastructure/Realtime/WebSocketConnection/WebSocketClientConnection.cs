@@ -1,5 +1,6 @@
 using ProjectVG.Common.Models.Session;
 using System.Text;
+using System.Net.WebSockets;
 
 namespace ProjectVG.Infrastructure.Realtime.WebSocketConnection
 {
@@ -8,16 +9,14 @@ namespace ProjectVG.Infrastructure.Realtime.WebSocketConnection
 	/// </summary>
 	public class WebSocketClientConnection : IClientConnection
 	{
-		public string SessionId { get; set; } = string.Empty;
-		public string? UserId { get; set; }
+		public string UserId { get; set; } = string.Empty;
 		public DateTime ConnectedAt { get; set; } = DateTime.UtcNow;
 		public System.Net.WebSockets.WebSocket WebSocket { get; set; } = null!;
 
-		public WebSocketClientConnection(string sessionId, System.Net.WebSockets.WebSocket socket, string? userId = null)
+		public WebSocketClientConnection(string userId, WebSocket socket)
 		{
-			SessionId = sessionId;
-			WebSocket = socket;
 			UserId = userId;
+			WebSocket = socket;
 			ConnectedAt = DateTime.UtcNow;
 		}
 

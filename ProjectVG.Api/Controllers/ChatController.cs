@@ -1,41 +1,43 @@
-using ProjectVG.Application.Models.API.Request;
-using ProjectVG.Application.Services.Chat;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using ProjectVG.Application.Models.Chat;
+using ProjectVG.Application.Models.API.Request;
+using ProjectVG.Application.Services.Chat;
+using System.Security.Claims;
 
 namespace ProjectVG.Api.Controllers
 {
     [ApiController]
     [Route("api/v1/chat")]
-    [AllowAnonymous]
     public class ChatController : ControllerBase
     {
         private readonly IChatService _chatService;
-        private readonly IServiceScopeFactory _scopeFactory;
-        private readonly ILogger<ChatController> _logger;
 
-        public ChatController(IChatService chatService, IServiceScopeFactory scopeFactory, ILogger<ChatController> logger)
+        public ChatController(IChatService chatService)
         {
             _chatService = chatService;
-            _scopeFactory = scopeFactory;
-            _logger = logger;
         }
 
         [HttpPost]
+        [JwtAuthentication]
         public async Task<IActionResult> ProcessChat([FromBody] ChatRequest request)
         {
-            var command = request.ToProcessChatCommand();
-            var requestResponse = await _chatService.EnqueueChatRequestAsync(command);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
+            {
+                throw new ValidationException(ErrorCode.AUTHENTICATION_FAILED);
+            }
 
-            return Ok(new { 
-                success = true, 
-                status = requestResponse.Status,
-                message = requestResponse.Message,
-                sessionId = requestResponse.SessionId,
-                userId = requestResponse.UserId,
-                characterId = requestResponse.CharacterId,
-                requestedAt = requestResponse.RequestedAt
-            });
+            var command = new ProcessChatCommand
+            {
+                UserId = userGuid,
+                Message = request.Message,
+                CharacterId = request.CharacterId
+            };
+
+            var result = await _chatService.EnqueueChatRequestAsync(command);
+            
+            return Ok(result);
         }
     }
 } 

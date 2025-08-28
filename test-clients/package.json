@@ -1,0 +1,22 @@
+{
+  "name": "oauth2-test-client",
+  "version": "1.0.0",
+  "description": "OAuth2 Test Client for ProjectVG",
+  "main": "start-oauth2-client.js",
+  "scripts": {
+    "start": "node start-oauth2-client.js",
+    "dev": "node start-oauth2-client.js",
+    "serve": "node start-oauth2-client.js"
+  },
+  "keywords": [
+    "oauth2",
+    "test",
+    "client",
+    "projectvg"
+  ],
+  "author": "ProjectVG Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

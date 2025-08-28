@@ -5,13 +5,13 @@ using System.Text.RegularExpressions;
 
 namespace ProjectVG.Application.Services.Chat.Factories
 {
-    public class ChatLLMFormat : ILLMFormat<ChatPreprocessContext, ChatOutputFormatResult>
+    public class ChatLLMFormat : ILLMFormat<ChatProcessContext, List<ChatMessageSegment>>
     {
         public ChatLLMFormat()
         {
         }
 
-        public string GetSystemMessage(ChatPreprocessContext input)
+        public string GetSystemMessage(ChatProcessContext input)
         {
             var character = input.Character ?? throw new InvalidOperationException("캐릭터 정보가 로드되지 않았습니다.");
             
@@ -25,11 +25,10 @@ namespace ProjectVG.Application.Services.Chat.Factories
             return sb.ToString();
         }
 
-        public string GetInstructions(ChatPreprocessContext input)
+        public string GetInstructions(ChatProcessContext input)
         {
             var sb = new StringBuilder();
             
-            // 메모리 컨텍스트 추가
             if (input.MemoryContext?.Any() == true)
             {
                 sb.AppendLine("관련 기억:");
@@ -40,7 +39,6 @@ namespace ProjectVG.Application.Services.Chat.Factories
                 sb.AppendLine();
             }
             
-            // 대화 기록 추가
             var conversationHistory = input.ParseConversationHistory(5);
             if (conversationHistory.Any())
             {
@@ -52,7 +50,6 @@ namespace ProjectVG.Application.Services.Chat.Factories
                 sb.AppendLine();
             }
             
-            // 출력 포맷 지침 추가
             sb.AppendLine(GetFormatInstructions());
             
             return sb.ToString();
@@ -62,18 +59,14 @@ namespace ProjectVG.Application.Services.Chat.Factories
         public float Temperature => 0.7f;
         public int MaxTokens => 1000;
 
-        public ChatOutputFormatResult Parse(string llmResponse, ChatPreprocessContext input)
+        public List<ChatMessageSegment> Parse(string llmResponse, ChatProcessContext input)
         {
-            return ParseChatResponse(llmResponse, input.VoiceName);
+            return ParseChatResponseToSegments(llmResponse, input.Character?.VoiceId);
         }
 
-        public double CalculateCost(int tokensUsed)
+        public double CalculateCost(int promptTokens, int completionTokens)
         {
-            var inputCost = LLMModelInfo.GetInputCost(Model);
-            var outputCost = LLMModelInfo.GetOutputCost(Model);
-            
-            // 토큰 수를 백만 단위로 변환하여 비용 계산
-            return (tokensUsed / 1_000_000.0) * (inputCost + outputCost);
+            return LLMModelInfo.CalculateCost(Model, promptTokens, completionTokens);
         }
 
         private string GetFormatInstructions()
@@ -89,54 +82,63 @@ Emotion must be one of: {emotionList}
 ";
         }
 
-        private ChatOutputFormatResult ParseChatResponse(string llmText, string? voiceName = null)
+        private List<ChatMessageSegment> ParseChatResponseToSegments(string llmText, string? voiceId = null)
         {
             if (string.IsNullOrWhiteSpace(llmText))
-                return new ChatOutputFormatResult();
+                return new List<ChatMessageSegment>();
 
             string response = llmText.Trim();
-            var emotions = new List<string>();
-            var texts = new List<string>();
+            var segments = new List<ChatMessageSegment>();
+            var seenTexts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            // [감정] 답변 패턴 추출
             var matches = Regex.Matches(response, @"\[(.*?)\]\s*([^\[]+)");
-            
-            // 보이스별 감정 매핑
-            Dictionary<string, string>? emotionMap = null;
-            if (!string.IsNullOrWhiteSpace(voiceName))
-            {
-                var profile = VoiceCatalog.GetProfile(voiceName);
-                if (profile != null && profile.EmotionMap != null)
-                    emotionMap = profile.EmotionMap;
-            }
+            var emotionMap = GetEmotionMap(voiceId);
 
             if (matches.Count > 0)
             {
-                foreach (Match match in matches)
-                {
-                    if (match.Groups.Count >= 3)
-                    {
-                        var originalEmotion = match.Groups[1].Value.Trim();
-                        var mappedEmotion = emotionMap != null && emotionMap.ContainsKey(originalEmotion)
-                            ? emotionMap[originalEmotion]
-                            : originalEmotion;
-                        emotions.Add(mappedEmotion);
-                        texts.Add(match.Groups[2].Value.Trim());
-                    }
-                }
+                ProcessMatches(matches, emotionMap, segments, seenTexts);
             }
             else
             {
-                emotions.Add("neutral");
-                texts.Add(response);
+                var segment = ChatMessageSegment.CreateTextOnly(response, 0);
+                segment.Emotion = "neutral";
+                segments.Add(segment);
             }
 
-            return new ChatOutputFormatResult
+            return segments;
+        }
+
+        private Dictionary<string, string>? GetEmotionMap(string? voiceId)
+        {
+            if (string.IsNullOrWhiteSpace(voiceId))
+                return null;
+
+            var profile = VoiceCatalog.GetProfileById(voiceId);
+            return profile?.EmotionMap;
+        }
+
+        private void ProcessMatches(MatchCollection matches, Dictionary<string, string>? emotionMap, List<ChatMessageSegment> segments, HashSet<string> seenTexts)
+        {
+            for (int i = 0; i < matches.Count; i++)
             {
-                Response = response,
-                Emotion = emotions,
-                Text = texts
-            };
+                var match = matches[i];
+                if (match.Groups.Count >= 3)
+                {
+                    var originalEmotion = match.Groups[1].Value.Trim();
+                    var mappedEmotion = emotionMap != null && emotionMap.ContainsKey(originalEmotion)
+                        ? emotionMap[originalEmotion]
+                        : originalEmotion;
+                    var text = match.Groups[2].Value.Trim();
+                    
+                    if (!seenTexts.Contains(text))
+                    {
+                        seenTexts.Add(text);
+                        var segment = ChatMessageSegment.CreateTextOnly(text, segments.Count);
+                        segment.Emotion = mappedEmotion;
+                        segments.Add(segment);
+                    }
+                }
+            }
         }
     }
 }

@@ -2,31 +2,58 @@ using ProjectVG.Domain.Common;
 
 namespace ProjectVG.Domain.Entities.Characters
 {
-
     /// <summary>
-    /// 캐릭터
+    /// AI 캐릭터 엔티티
+    /// 
+    /// 캐릭터 정보:
+    /// - 기본 정보: 이름, 설명, 역할
+    /// - 성격 설정: 성격, 말투, 배경
     /// </summary>
     public class Character : BaseEntity
     {
-        // 캐릭터 고유 ID
+        /// <summary>
+        /// 캐릭터 고유 ID
+        /// </summary>
         public Guid Id { get; set; }
-        // 캐릭터 이름
+        
+        /// <summary>
+        /// 캐릭터 이름
+        /// </summary>
         public string Name { get; set; } = string.Empty;
-        // 캐릭터 설명
+        
+        /// <summary>
+        /// 캐릭터 설명
+        /// </summary>
         public string Description { get; set; } = string.Empty;
-        // 캐릭터 역할/타입
+        
+        /// <summary>
+        /// 캐릭터 역할/타입
+        /// </summary>
         public string Role { get; set; } = string.Empty;
-        // 캐릭터 성격
+        
+        /// <summary>
+        /// 캐릭터 성격
+        /// </summary>
         public string Personality { get; set; } = string.Empty;
-        // 캐릭터 말투 화법
+        
+        /// <summary>
+        /// 캐릭터 말투/화법
+        /// </summary>
         public string SpeechStyle { get; set; } = string.Empty;
-        // 캐릭터 배경
+        
+        /// <summary>
+        /// 캐릭터 배경
+        /// </summary>
         public string Background { get; set; } = string.Empty;
-        // 활성화 여부
+        
+        /// <summary>
+        /// 활성화 여부
+        /// </summary>
         public bool IsActive { get; set; } = true;
-        // 유동적 메타데이터 (나이, 키, 취미 등)
-        public Dictionary<string, string> Metadata { get; set; } = new();
-        // 캐릭터 보이스 ID
+        
+        /// <summary>
+        /// 캐릭터 보이스 ID
+        /// </summary>
         public string VoiceId { get; set; } = string.Empty;
     }
 } 

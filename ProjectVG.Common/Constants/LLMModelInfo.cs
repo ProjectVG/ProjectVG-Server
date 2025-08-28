@@ -2,6 +2,9 @@ namespace ProjectVG.Common.Constants
 {
     public static class LLMModelInfo
     {
+        private const double TOKENS_PER_MILLION = 1_000_000.0;
+        private const double MILLICENTS_PER_DOLLAR = 100_000.0;
+        private const double COST_CALCULATION_FACTOR = TOKENS_PER_MILLION / MILLICENTS_PER_DOLLAR;
         public static class GPT5
         {
             public const string Name = "gpt-5";
@@ -246,7 +249,7 @@ namespace ProjectVG.Common.Constants
                 O3.Name => O3.Price.Input,
                 GPT35Turbo.Name => GPT35Turbo.Price.Input,
                 GPT4.Name => GPT4.Price.Input,
-                _ => GPT4oMini.Price.Input // 기본값
+                _ => GPT4oMini.Price.Input
             };
         }
 
@@ -274,8 +277,18 @@ namespace ProjectVG.Common.Constants
                 O3.Name => O3.Price.Output,
                 GPT35Turbo.Name => GPT35Turbo.Price.Output,
                 GPT4.Name => GPT4.Price.Output,
-                _ => GPT4oMini.Price.Output // 기본값
+                _ => GPT4oMini.Price.Output
             };
+        }
+
+        public static double GetInputCostPerToken(string model)
+        {
+            return GetInputCost(model) / COST_CALCULATION_FACTOR;
+        }
+
+        public static double GetOutputCostPerToken(string model)
+        {
+            return GetOutputCost(model) / COST_CALCULATION_FACTOR;
         }
 
         public static double GetCachedInputCost(string model)
@@ -295,8 +308,19 @@ namespace ProjectVG.Common.Constants
                 GPT4oMiniRealtimePreview.Name => GPT4oMiniRealtimePreview.Price.CachedInput,
                 O1.Name => O1.Price.CachedInput,
                 O3.Name => O3.Price.CachedInput,
-                _ => GetInputCost(model) * 0.1 // 기본적으로 입력 비용의 10%
+                _ => GetInputCost(model) * 0.1
             };
+        }
+
+        public static double CalculateCost(string model, int promptTokens, int completionTokens)
+        {
+            var inputCostPerToken = GetInputCostPerToken(model);
+            var outputCostPerToken = GetOutputCostPerToken(model);
+            
+            var inputCostTotal = Math.Ceiling(promptTokens * inputCostPerToken);
+            var outputCostTotal = Math.Ceiling(completionTokens * outputCostPerToken);
+            
+            return inputCostTotal + outputCostTotal;
         }
     }
 }

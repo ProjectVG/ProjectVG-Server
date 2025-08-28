@@ -8,6 +8,6 @@ namespace ProjectVG.Application.Services.Chat.Factories
         float Temperature { get; }
         int MaxTokens { get; }
         TOutput Parse(string llmResponse, TInput input);
-        double CalculateCost(int tokensUsed);
+        double CalculateCost(int promptTokens, int completionTokens);
     }
 }

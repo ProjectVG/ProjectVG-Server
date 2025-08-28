@@ -7,7 +7,6 @@ namespace ProjectVG.Application.Services.Session
 	{
 		private readonly ILogger<ConnectionRegistry> _logger;
 		private readonly ConcurrentDictionary<string, IClientConnection> _connections = new();
-		private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> _userIdToSessionIds = new();
 
 		public ConnectionRegistry(ILogger<ConnectionRegistry> logger)
 		{
@@ -17,41 +16,33 @@ namespace ProjectVG.Application.Services.Session
 		/// <summary>
 		/// 연결을 등록합니다
 		/// </summary>
-		public void Register(string sessionId, IClientConnection connection)
+		public void Register(string userId, IClientConnection connection)
 		{
-			_connections[sessionId] = connection;
-
-			if (!string.IsNullOrEmpty(connection.UserId))
-			{
-				var set = _userIdToSessionIds.GetOrAdd(connection.UserId!, _ => new ConcurrentDictionary<string, byte>());
-				set[sessionId] = 1;
-			}
-
-			_logger.LogDebug("연결 등록: {SessionId}, 사용자: {UserId}", sessionId, connection.UserId);
+			_connections[userId] = connection;
+			_logger.LogDebug("연결 등록: {UserId}", userId);
 		}
 
 		/// <summary>
 		/// 연결을 해제합니다
 		/// </summary>
-		public void Unregister(string sessionId)
+		public void Unregister(string userId)
 		{
-			if (_connections.TryRemove(sessionId, out var removed))
+			if (_connections.TryRemove(userId, out var removed))
 			{
-				RemoveFromUserMapping(removed.UserId, sessionId);
-				_logger.LogDebug("연결 해제: {SessionId}", sessionId);
+				_logger.LogDebug("연결 해제: {UserId}", userId);
 			}
 			else
 			{
-				_logger.LogWarning("해제 대상 세션을 찾을 수 없음: {SessionId}", sessionId);
+				_logger.LogWarning("해제 대상 세션을 찾을 수 없음: {UserId}", userId);
 			}
 		}
 
 		/// <summary>
 		/// 연결을 조회합니다
 		/// </summary>
-		public bool TryGet(string sessionId, out IClientConnection? connection)
+		public bool TryGet(string userId, out IClientConnection? connection)
 		{
-			var ok = _connections.TryGetValue(sessionId, out var conn);
+			var ok = _connections.TryGetValue(userId, out var conn);
 			connection = conn;
 			return ok;
 		}
@@ -65,46 +56,11 @@ namespace ProjectVG.Application.Services.Session
 		}
 
 		/// <summary>
-		/// 사용자 ID로 세션 ID 목록을 조회합니다
-		/// </summary>
-		public IEnumerable<string> GetSessionIdsByUserId(string userId)
-		{
-			if (_userIdToSessionIds.TryGetValue(userId, out var set))
-			{
-				return set.Keys;
-			}
-			return Enumerable.Empty<string>();
-		}
-
-		/// <summary>
 		/// 활성 연결 수를 반환합니다
 		/// </summary>
 		public int GetActiveConnectionCount()
 		{
 			return _connections.Count;
-		}
-
-		private void RemoveFromUserMapping(string? userId, string sessionId)
-		{
-			if (!string.IsNullOrEmpty(userId) && _userIdToSessionIds.TryGetValue(userId!, out var set))
-			{
-				set.TryRemove(sessionId, out _);
-				if (set.IsEmpty)
-				{
-					_userIdToSessionIds.TryRemove(userId!, out _);
-				}
-			}
-		}
-
-		private bool TryGetConnection(string sessionId, out IClientConnection? connection)
-		{
-			if (_connections.TryGetValue(sessionId, out connection))
-			{
-				return true;
-			}
-
-			_logger.LogWarning("세션을 찾을 수 없음: {SessionId}", sessionId);
-			return false;
 		}
 	}
 }

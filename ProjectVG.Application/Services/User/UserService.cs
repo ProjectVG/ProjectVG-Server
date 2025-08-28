@@ -1,9 +1,9 @@
-using ProjectVG.Infrastructure.Persistence.Repositories.Users;
 using ProjectVG.Application.Models.User;
-using ProjectVG.Common.Exceptions;
-using ProjectVG.Common.Constants;
+using ProjectVG.Common.Utils;
+using ProjectVG.Domain.Entities.Users;
+using ProjectVG.Infrastructure.Persistence.Repositories.Users;
 
-namespace ProjectVG.Application.Services.User
+namespace ProjectVG.Application.Services.Users
 {
     public class UserService : IUserService
     {
@@ -16,93 +16,90 @@ namespace ProjectVG.Application.Services.User
             _logger = logger;
         }
 
-        public async Task<UserDto> GetUserByUsernameAsync(string username)
+        public async Task<UserDto> CreateUserAsync(UserCreateCommand command)
         {
-            var user = await _userRepository.GetByUsernameAsync(username);
-            if (user == null) {
-                throw new NotFoundException(ErrorCode.USER_NOT_FOUND, username);
-            }
+            if (await ExistsByEmailAsync(command.Email))
+                throw new ValidationException(ErrorCode.EMAIL_ALREADY_EXISTS, command.Email);
 
-            return new UserDto(user);
-        }
+            if (await ExistsByUsernameAsync(command.Username))
+                throw new ValidationException(ErrorCode.USERNAME_ALREADY_EXISTS, command.Username);
 
-        public async Task<UserDto> GetUserByEmailAsync(string email)
-        {
-            var user = await _userRepository.GetByEmailAsync(email);
-            if (user == null) {
-                throw new NotFoundException(ErrorCode.USER_NOT_FOUND, email);
-            }
+            var user = new User {
+                Id = Guid.NewGuid(),
+                UID = await GenerateUniqueUIDAsync(),
+                Username = command.Username,
+                Email = command.Email,
+                Provider = command.Provider,
+                ProviderId = command.ProviderId,
+                Status = AccountStatus.Active
+            };
 
-            return new UserDto(user);
-        }
+            var created = await _userRepository.CreateAsync(user);
 
-        public async Task<UserDto> CreateUserAsync(UserDto userDto)
-        {
-            await ValidateUserUniqueness(userDto);
+            _logger.LogInformation("사용자 생성 완료: ID {UserId}, UID {UID}, 사용자명 {Username}",
+                created.Id, created.UID, created.Username);
 
-            var user = userDto.ToEntity();
-            var createdUser = await _userRepository.CreateAsync(user);
-
-            _logger.LogInformation("사용자 생성 완료: ID {UserId}, 사용자명 {Username}", createdUser.Id, createdUser.Username);
-
-            return new UserDto(createdUser);
-        }
-
-        public async Task<bool> EmailExistsAsync(string email)
-        {
-            var user = await _userRepository.GetByEmailAsync(email);
-            return user != null;
-        }
-
-        public async Task<bool> UsernameExistsAsync(string username)
-        {
-            var user = await _userRepository.GetByUsernameAsync(username);
-            return user != null;
-        }
-
-        public async Task<bool> UserExistsAsync(Guid userId)
-        {
-            var user = await _userRepository.GetByIdAsync(userId);
-            return user != null;
-        }
-
-        public async Task<UserDto> UpdateUserAsync(Guid userId, UserDto userDto)
-        {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null) {
-                throw new NotFoundException(ErrorCode.USER_NOT_FOUND, userId);
-            }
-
-            user.Name = userDto.Name;
-            user.Username = userDto.Username;
-            user.Email = userDto.Email;
-            user.IsActive = userDto.IsActive;
-
-            var updatedUser = await _userRepository.UpdateAsync(user);
-            return new UserDto(updatedUser);
+            return new UserDto(created);
         }
 
         public async Task<bool> DeleteUserAsync(Guid userId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null) {
+            if (user == null)
                 throw new NotFoundException(ErrorCode.USER_NOT_FOUND, userId);
-            }
 
-            await _userRepository.DeleteAsync(userId);
+            user.Status = AccountStatus.Deleted;
+            await _userRepository.UpdateAsync(user);
+
             _logger.LogInformation("사용자 삭제 완료: ID {UserId}, 사용자명 {Username}", userId, user.Username);
             return true;
         }
 
-        private async Task ValidateUserUniqueness(UserDto userDto)
+        public async Task<UserDto?> TryGetByIdAsync(Guid userId)
         {
-            if (await EmailExistsAsync(userDto.Email)) {
-                throw new ValidationException(ErrorCode.EMAIL_ALREADY_EXISTS, userDto.Email);
-            }
+            var user = await _userRepository.GetByIdAsync(userId);
+            return user is null ? null : new UserDto(user);
+        }
 
-            if (await UsernameExistsAsync(userDto.Username)) {
-                throw new ValidationException(ErrorCode.USERNAME_ALREADY_EXISTS, userDto.Username);
-            }
+        public async Task<UserDto?> TryGetByUidAsync(string uid)
+        {
+            var user = await _userRepository.GetByUIDAsync(uid);
+            return user is null ? null : new UserDto(user);
+        }
+
+        public async Task<UserDto?> TryGetByUsernameAsync(string username)
+        {
+            var user = await _userRepository.GetByUsernameAsync(username);
+            return user is null ? null : new UserDto(user);
+        }
+
+        public async Task<UserDto?> TryGetByProviderAsync(string provider, string providerId)
+        {
+            var users = await _userRepository.GetAllAsync();
+            var user = users.FirstOrDefault(u => u.Provider == provider && u.ProviderId == providerId);
+            return user is null ? null : new UserDto(user);
+        }
+
+        public Task<bool> ExistsByEmailAsync(string email) => ExistsAsync(() => _userRepository.GetByEmailAsync(email));
+        public Task<bool> ExistsByUsernameAsync(string username) => ExistsAsync(() => _userRepository.GetByUsernameAsync(username));
+        public Task<bool> ExistsByIdAsync(Guid userId) => ExistsAsync(() => _userRepository.GetByIdAsync(userId));
+        public Task<bool> ExistsByUidAsync(string uid) => ExistsAsync(() => _userRepository.GetByUIDAsync(uid));
+
+        private static async Task<bool> ExistsAsync<T>(Func<Task<T?>> getter) where T : class
+            => await getter() is not null;
+
+        private async Task<string> GenerateUniqueUIDAsync()
+        {
+            string uid;
+            int attempts = 0;
+            const int maxAttempts = 10;
+            do {
+                uid = UidGenerator.GenerateRandomUID(); attempts++; 
+                if (attempts > maxAttempts) { 
+                    throw new InvalidOperationException("UID 생성 시도 횟수 초과"); 
+                }
+            } while (await ExistsByUidAsync(uid)); return uid;
         }
     }
+
 }

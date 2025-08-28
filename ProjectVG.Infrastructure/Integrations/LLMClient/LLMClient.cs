@@ -79,8 +79,11 @@ namespace ProjectVG.Infrastructure.Integrations.LLMClient
                 return new LLMResponse
                 {
                     Success = true,
+                    Id = "mock-chatcmpl-" + Guid.NewGuid().ToString("N")[..8],
                     Response = "안녕하세요! 저는 현재 Mock 모드로 동작하고 있습니다. 실제 LLM 서비스가 연결되지 않았습니다.",
                     TokensUsed = 50,
+                    InputTokens = 30,
+                    OutputTokens = 20,
                     ResponseTime = 100
                 };
             }

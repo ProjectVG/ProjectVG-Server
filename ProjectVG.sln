@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectVG.Infrastructure", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectVG.Common", "ProjectVG.Common\ProjectVG.Common.csproj", "{7940FCC6-DDA8-4FB7-B5BA-265A51D55A9C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectVG.Tests", "ProjectVG.Tests\ProjectVG.Tests.csproj", "{9A8B7C6D-5E4F-3210-9876-543210987654}"
+EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{81DDED9D-158B-E303-5F62-77A2896D2A5A}"
 EndProject
 Global
@@ -41,6 +43,10 @@ Global
 		{7940FCC6-DDA8-4FB7-B5BA-265A51D55A9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7940FCC6-DDA8-4FB7-B5BA-265A51D55A9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7940FCC6-DDA8-4FB7-B5BA-265A51D55A9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9A8B7C6D-5E4F-3210-9876-543210987654}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A8B7C6D-5E4F-3210-9876-543210987654}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A8B7C6D-5E4F-3210-9876-543210987654}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A8B7C6D-5E4F-3210-9876-543210987654}.Release|Any CPU.Build.0 = Release|Any CPU
 		{81DDED9D-158B-E303-5F62-77A2896D2A5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{81DDED9D-158B-E303-5F62-77A2896D2A5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{81DDED9D-158B-E303-5F62-77A2896D2A5A}.Release|Any CPU.ActiveCfg = Release|Any CPU

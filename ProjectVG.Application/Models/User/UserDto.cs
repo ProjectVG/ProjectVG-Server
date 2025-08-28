@@ -5,12 +5,12 @@ namespace ProjectVG.Application.Models.User
     public class UserDto
     {
         public Guid Id { get; set; }
+        public string UID { get; set; } = string.Empty;
         public string Username { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string ProviderId { get; set; } = string.Empty;
         public string Provider { get; set; } = string.Empty;
-        public bool IsActive { get; set; }
+        public AccountStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
@@ -21,24 +21,24 @@ namespace ProjectVG.Application.Models.User
         public UserDto(Domain.Entities.Users.User user)
         {
             Id = user.Id;
+            UID = user.UID;
             Username = user.Username;
-            Name = user.Name;
             Email = user.Email;
             ProviderId = user.ProviderId;
             Provider = user.Provider;
-            IsActive = user.IsActive;
+            Status = user.Status;
         }
 
         public Domain.Entities.Users.User ToEntity()
         {
             return new Domain.Entities.Users.User {
                 Id = Id,
+                UID = UID,
                 Username = Username,
-                Name = Name,
                 Email = Email,
                 ProviderId = ProviderId,
                 Provider = Provider,
-                IsActive = IsActive,
+                Status = Status,
             };
         }
     }
