@@ -1,12 +1,13 @@
+using Microsoft.Extensions.DependencyInjection;
+using ProjectVG.Application.Models.Chat;
+using ProjectVG.Application.Services.Character;
+using ProjectVG.Application.Services.Chat.CostTracking;
+using ProjectVG.Application.Services.Chat.Handlers;
 using ProjectVG.Application.Services.Chat.Preprocessors;
 using ProjectVG.Application.Services.Chat.Processors;
 using ProjectVG.Application.Services.Chat.Validators;
-using ProjectVG.Application.Services.Chat.CostTracking;
-using ProjectVG.Application.Services.Chat.Handlers;
 using ProjectVG.Application.Services.Conversation;
-using ProjectVG.Application.Services.Character;
-using Microsoft.Extensions.DependencyInjection;
-using ProjectVG.Application.Models.Chat;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace ProjectVG.Application.Services.Chat
 {
@@ -73,6 +74,8 @@ namespace ProjectVG.Application.Services.Chat
 
             var preprocessContext = await PrepareChatRequestAsync(command);
 
+            LogChatRequestCommand(command);
+
             _ = Task.Run(async () => {
                 await ProcessChatRequestInternalAsync(preprocessContext);
             });
@@ -122,9 +125,20 @@ namespace ProjectVG.Application.Services.Chat
                 await _chatFailureHandler.HandleAsync(context);
             }
             finally {
+                LogChatProcessContext(context);
                 _metricsService.EndChatMetrics();
                 _metricsService.LogChatMetrics();
             }
+        }
+
+        private void LogChatRequestCommand(ChatRequestCommand command)
+        {
+            _logger.LogInformation("Starting chat process: {CommandInfo}", command.ToDebugString());
+        }
+
+        private void LogChatProcessContext(ChatProcessContext context)
+        {
+            _logger.LogInformation("Chat process completed: {ContextInfo}", context.ToDebugString());
         }
     }
 }

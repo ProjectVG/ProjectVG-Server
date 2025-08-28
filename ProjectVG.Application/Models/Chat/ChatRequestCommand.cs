@@ -1,6 +1,3 @@
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using ProjectVG.Application.Models.Character;
-using ProjectVG.Common.Configuration;
 using ProjectVG.Domain.Entities.ConversationHistorys;
 
 namespace ProjectVG.Application.Models.Chat
@@ -56,6 +53,12 @@ namespace ProjectVG.Application.Models.Chat
         {
             Cost += value;
         }
-
+        public string ToDebugString()
+        {
+            return $"[ChatRequestCommand] Id={Id}, UserId={UserId}, CharacterId={CharacterId}, " +
+                   $"UserPrompt=\"{UserPrompt}\", UseTTS={UseTTS}, UserRequestAt={UserRequestAt:yyyy-MM-dd HH:mm:ss}, " +
+                   $"ProcessAt={ProcessAt:yyyy-MM-dd HH:mm:ss}, ProcessType={ProcessType}, UserIntent=\"{UserIntent}\", Cost={Cost:F4}";
+        }
     }
 }
+
