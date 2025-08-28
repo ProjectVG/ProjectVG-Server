@@ -198,12 +198,24 @@ CONTEXT_TIME: 2025-07-24 15:00:00";
             return null;
         }
 
+        /// <summary>
+        /// LLM 파싱 실패나 예외 발생 시 사용할 기본 유효 응답을 생성합니다.
+        /// </summary>
+        /// <returns>
+        /// "일반적인 대화" 문맥과 "대화" 의도를 가진 UserInputAnalysis 인스턴스(액션: Chat, 키워드 없음).
+        /// </returns>
         private UserInputAnalysis CreateDefaultValidResponse()
         {
             _logger?.LogInformation("기본 유효 응답 생성");
             return UserInputAnalysis.CreateValid("일반적인 대화", "대화", UserInputAction.Chat, new List<string>());
         }
 
+        /// <summary>
+        /// 지정된 프롬프트 토큰 수와 응답 토큰 수에 대해 해당 모델의 비용을 계산합니다.
+        /// </summary>
+        /// <param name="promptTokens">프롬프트(입력)에서 사용된 토큰 수.</param>
+        /// <param name="completionTokens">LLM이 생성한 응답(출력)에서 사용된 토큰 수.</param>
+        /// <returns>모델별 요금 기준으로 계산된 비용(통화 단위).</returns>
         public double CalculateCost(int promptTokens, int completionTokens)
         {
             return LLMModelInfo.CalculateCost(Model, promptTokens, completionTokens);

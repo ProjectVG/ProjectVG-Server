@@ -16,6 +16,16 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
         public DbSet<Character> Characters { get; set; }
         public DbSet<ConversationHistory> ConversationHistories { get; set; }
 
+        /// <summary>
+        /// EF Core 모델을 구성합니다.
+        /// </summary>
+        /// <remarks>
+        /// 엔티티별 스키마 및 제약을 구성합니다:
+        /// - User: 기본 키(Id), UID(필수, 최대 16), Email(필수, 최대 255), Username(필수, 최대 50), ProviderId(필수, 최대 255), Provider(필수, 최대 50), Status(필수) 및 UID/Email에 대한 고유 인덱스와 ProviderId 인덱스.
+        /// - Character: 기본 키(Id), Name(필수, 최대 100), Description(최대 1000), Role(필수, 최대 500), Personality(최대 1000), Background(최대 2000).
+        /// - ConversationHistory: 기본 키(Id), Content(필수, 최대 4000), MetadataJson(최대 4000), User 및 Character에 대한 필수 외래키(삭제 시 Cascade), 그리고 UserId+CharacterId+Timestamp 복합 인덱스 및 개별 인덱스들.
+        /// 메서드 마지막에 SeedData(modelBuilder)를 호출하여 초기 데이터를 주입합니다.
+        /// </remarks>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -82,6 +92,15 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
             SeedData(modelBuilder);
         }
 
+        /// <summary>
+        /// 데이터베이스 모델에 초기 시드 데이터를 추가합니다.
+        /// </summary>
+        /// <param name="modelBuilder">엔터티 구성을 위한 ModelBuilder. DatabaseSeedData의 기본 캐릭터 풀과 사용자 풀을 사용하여 Character와 User 엔터티에 초기 데이터를 등록합니다.</param>
+        /// <remarks>
+        /// - Character 엔터티: DatabaseSeedData.DefaultCharacterPool에서 복사하여 Background는 빈 문자열로 설정하고 CreatedAt/UpdatedAt는 UTC 현재 시각으로 설정합니다.
+        /// - User 엔터티: DatabaseSeedData.DefaultUserPool에서 복사하여 UID, Status 등을 포함하고 CreatedAt/UpdatedAt는 UTC 현재 시각으로 설정합니다.
+        /// - ConversationHistory에 대한 시드 데이터는 추가하지 않습니다.
+        /// </remarks>
         private void SeedData(ModelBuilder modelBuilder)
         {
             var defaultCharacters = DatabaseSeedData.DefaultCharacterPool.Select(p => new Character
