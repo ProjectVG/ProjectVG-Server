@@ -42,6 +42,12 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
             return character;
         }
 
+        /// <summary>
+        /// 주어진 <paramref name="character"/>의 변경 내용을 데이터베이스의 활성 캐릭터 엔티티에 적용하고 저장합니다.
+        /// </summary>
+        /// <param name="character">업데이트할 값이 들어있는 캐릭터 엔티티(식별자(Id) 포함).</param>
+        /// <returns>저장된 후의 기존 캐릭터 엔티티(데이터베이스에 있는 인스턴스).</returns>
+        /// <exception cref="NotFoundException">지정한 Id의 활성 캐릭터를 찾을 수 없을 경우 발생합니다.</exception>
         public async Task<Character> UpdateAsync(Character character)
         {
             var existingCharacter = await _context.Characters

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -8,7 +8,14 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
     /// <inheritdoc />
     public partial class AddUIDToUser : Migration
     {
-        /// <inheritdoc />
+        /// <summary>
+        /// 데이터베이스 스키마와 시드 데이터를 적용한다.
+        /// </summary>
+        /// <remarks>
+        /// - Users 테이블에 non-null string 열 `UID`(기본값: 빈 문자열)를 추가합니다.
+        /// - Characters 테이블의 네 개 행(Ids: 11111111-..., 22222222-..., 33333333-..., 44444444-...)에 대해 CreatedAt 및 UpdatedAt 타임스탬프를 갱신합니다.
+        /// - Users 테이블의 두 행(Ids: aaaaaaaa-..., bbbbbbbb-...)에 대해 CreatedAt, UpdatedAt, Name을 갱신하고 `UID`를 빈 문자열로 설정합니다.
+        /// </remarks>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<string>(
@@ -61,7 +68,14 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 values: new object[] { new DateTime(2025, 8, 25, 2, 36, 22, 883, DateTimeKind.Utc).AddTicks(5786), "Zero User", "", new DateTime(2025, 8, 25, 2, 36, 22, 883, DateTimeKind.Utc).AddTicks(5786) });
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// 마이그레이션을 롤백합니다: Users 테이블에서 'UID' 열을 제거하고 변경된 시드 데이터를 이전 상태로 복원합니다.
+        /// </summary>
+        /// <remarks>
+        /// 다음 변경을 되돌립니다:
+        /// - Users 테이블: 'UID' 열 삭제 및 두 사용자 레코드(IDs aaaaaaaa-... 및 bbbbbbbb-...)의 Name·CreatedAt·UpdatedAt 값을 이전 값으로 복원.
+        /// - Characters 테이블: 네 개의 특정 행(IDs 1111..., 2222..., 3333..., 4444...)에 대한 CreatedAt·UpdatedAt 값을 이전 타임스탬프로 복원.
+        /// </remarks>
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
