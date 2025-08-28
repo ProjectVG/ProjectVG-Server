@@ -25,6 +25,17 @@ namespace ProjectVG.Application.Services.Chat.Validators
             _logger = logger;
         }
 
+        /// <summary>
+        /// 지정된 채팅 명령의 식별자들을 검증합니다.
+        /// </summary>
+        /// <remarks>
+        /// - command.SessionId가 null 또는 빈 문자열이 아니면 세션 존재 여부를 확인합니다.
+        /// - command.UserId와 command.CharacterId의 존재 여부를 확인합니다.
+        /// 검증에 실패하면 적절한 예외를 던집니다.
+        /// </remarks>
+        /// <param name="command">검증할 채팅 명령; 사용되는 필드: <c>SessionId</c> (선택적), <c>UserId</c>, <c>CharacterId</c>.</param>
+        /// <exception cref="ProjectVG.Common.Exceptions.ValidationException">제공된 세션 ID가 유효하지 않을 때 (ErrorCode.INVALID_SESSION_ID).</exception>
+        /// <exception cref="ProjectVG.Common.Exceptions.NotFoundException">사용자 또는 캐릭터가 존재하지 않을 때 각각 (ErrorCode.USER_NOT_FOUND, ErrorCode.CHARACTER_NOT_FOUND).</exception>
         public async Task ValidateAsync(ProcessChatCommand command)
         {
             if (!string.IsNullOrEmpty(command.SessionId)) {

@@ -19,6 +19,12 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
             _logger = logger;
         }
 
+        /// <summary>
+        /// 주어진 사용자 입력과 최근 대화 맥락을 바탕으로 LLM에 질의하여 입력의 의도·액션·대화 맥락 등을 분석한 결과를 비동기로 반환합니다.
+        /// </summary>
+        /// <param name="userInput">분석할 원문 사용자 입력 문자열.</param>
+        /// <param name="conversationHistory">최근 대화 맥락으로 사용할 대화 이력 컬렉션(내부에서 최대 5건만 사용).</param>
+        /// <returns>분석 결과를 담은 <see cref="UserInputAnalysis"/>를 반환하는 <see cref="Task"/>. 오류 발생 시 기본 유효 분석 객체를 반환합니다.</returns>
         public async Task<UserInputAnalysis> ProcessAsync(string userInput, IEnumerable<ConversationHistory> conversationHistory)
         {
             try

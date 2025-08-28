@@ -16,6 +16,14 @@ namespace ProjectVG.Application
 {
     public static class ApplicationServiceCollectionExtensions
     {
+        /// <summary>
+        /// 애플리케이션의 핵심 서비스들을 의존성 주입 컨테이너에 등록합니다.
+        /// </summary>
+        /// <remarks>
+        /// 등록 항목: 인증(Auth), 사용자 및 캐릭터 서비스, 채팅(코어/검증/전처리/프로세서/핸들러/비용 추적 데코레이터), 대화 및 세션(연결 레지스트리), WebSocket 관리 등.
+        /// 각 서비스는 코드에서 지정한 수명(scope/singleton)에 따라 등록됩니다.
+        /// </remarks>
+        /// <returns>구성된 <see cref="IServiceCollection"/> 객체를 반환합니다.</returns>
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
             // Auth Services
