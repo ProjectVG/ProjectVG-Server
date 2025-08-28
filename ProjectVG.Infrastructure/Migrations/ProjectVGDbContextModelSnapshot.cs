@@ -3,20 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProjectVG.Infrastructure.Persistence.EfCore;
 
 #nullable disable
 
-namespace ProjectVG.Infrastructure.Persistence.EfCore
+namespace ProjectVG.Infrastructure.Migrations
 {
     [DbContext(typeof(ProjectVGDbContext))]
-    [Migration("20250825023623_AddUIDToUser")]
-    partial class AddUIDToUser
+    partial class ProjectVGDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -44,12 +41,12 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Metadata")
+                    b.Property<string>("ImageUrl")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -70,8 +67,16 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("UserAlias")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("VoiceId")
                         .IsRequired()
@@ -86,61 +91,35 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                         {
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             Background = "",
-                            CreatedAt = new DateTime(2025, 8, 25, 2, 36, 22, 883, DateTimeKind.Utc).AddTicks(5763),
-                            Description = "20대 대학생 여사친 느낌의 귀엽고 발랄한 AI. 마스터와는 오랜 친구처럼 편한 관계이며, 분위기를 밝게 만드는 존재. 반말을 주로 사용하고, 가끔 장난스럽게 존댓말도 섞는다.",
+                            CreatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2861),
+                            Description = "20대 대학생으로 몇 년간 함께해온 진짜 절친한 여사친. 서로 뭐든 거리낌없이 말하고, 가끔 선 넘는 농담도 주고받는 사이. 마스터의 일상을 누구보다 잘 알고 있으며, 때로는 엄마처럼 잔소리하기도 한다.",
+                            ImageUrl = "",
                             IsActive = true,
-                            Metadata = "{}",
                             Name = "하루",
-                            Personality = "외향적이고 에너지가 넘치며, 장난을 좋아한다. 감정 표현이 풍부하고 솔직하다. 마스터에게는 다정하지만 때로는 장난이 과해서 놀리기도 한다. 고민 상담도 잘 들어주며, 감정 공감 능력이 뛰어나다.",
-                            Role = "여사친 또는 여친 같은 존재. 마스터의 일상과 감정을 챙겨주는 친근한 AI.",
+                            Personality = "[MBTI:ESFP],(장난기:40%),(친근함:25%),(솔직함:20%),(감정표현:15%)",
+                            Role = "몇 년간 함께한 소꿈친구",
                             SpeechStyle = "",
-                            UpdatedAt = new DateTime(2025, 8, 25, 2, 36, 22, 883, DateTimeKind.Utc).AddTicks(5763),
+                            Summary = "",
+                            UpdatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2862),
+                            UserAlias = "",
                             VoiceId = "haru"
                         },
                         new
                         {
                             Id = new Guid("22222222-2222-2222-2222-222222222222"),
                             Background = "",
-                            CreatedAt = new DateTime(2025, 8, 25, 2, 36, 22, 883, DateTimeKind.Utc).AddTicks(5766),
-                            Description = "마법 세계에서 온 꼬마 마법사 콘셉트의 AI. 작고 귀여운 외모에 어울리게, 지식을 뽐내며 마스터를 도와주는 역할. 모든 말을 공손하게 하지만, 말투나 어휘는 어린아이처럼 순수하다.",
+                            CreatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2864),
+                            Description = "명문가 출신의 엘리트 메이드. 완벽한 예의와 따뜻한 보살핌이 특징이지만, 가끔 조금씩 헤매는 일상 속에서 귀여운 허당끼를 보이기도. 주인님에 대한 헌신은 변함없지만, 때로 지나치게 걱정하는 면도 있다.",
+                            ImageUrl = "",
                             IsActive = true,
-                            Metadata = "{}",
-                            Name = "미야",
-                            Personality = "지혜롭고 논리적이지만, 행동은 아이답고 순수하다. 마스터를 무척 존경하며 항상 도움이 되고 싶어 한다. 가끔 쓸데없는 마법 얘기를 하거나 상상에 빠지기도 한다. 약간 새침하고 본인의 지식을 자랑스러워함.",
-                            Role = "마스터를 도와주는 어린 조력자. 정보 제공 및 안내 역할을 맡음.",
-                            SpeechStyle = "",
-                            UpdatedAt = new DateTime(2025, 8, 25, 2, 36, 22, 883, DateTimeKind.Utc).AddTicks(5766),
-                            VoiceId = "miya"
-                        },
-                        new
-                        {
-                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
-                            Background = "",
-                            CreatedAt = new DateTime(2025, 8, 25, 2, 36, 22, 883, DateTimeKind.Utc).AddTicks(5768),
-                            Description = "과거 귀족가의 메이드로 프로그래밍된 듯한 AI. 조용하고 단정한 말투, 한결같은 태도, 예의 바른 행동이 특징. 마스터의 곁에서 묵묵히 돌보는 헌신형 캐릭터.",
-                            IsActive = true,
-                            Metadata = "{}",
                             Name = "소피아",
-                            Personality = "항상 차분하고 침착하며 배려심이 깊다. 감정을 직접 드러내기보다는 조용히 행동으로 보여준다. 마스터를 최우선으로 생각하고, 언제나 부드럽고 섬세하게 대한다. 다소 순종적인 면이 있지만, 위기 상황에서는 단호하게 충고하거나 지켜내려는 강인함도 있다.",
-                            Role = "마스터를 섬기는 헌신적인 메이드. 조언과 서포트를 맡음.",
+                            Personality = "[MBTI:ISFJ],(헌신성:35%),(책임감:25%),(완벽주의:20%),(걱정많음:15%),(허당끼:5%)",
+                            Role = "주인님을 섬기는 전문 메이드",
                             SpeechStyle = "",
-                            UpdatedAt = new DateTime(2025, 8, 25, 2, 36, 22, 883, DateTimeKind.Utc).AddTicks(5768),
+                            Summary = "",
+                            UpdatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2864),
+                            UserAlias = "",
                             VoiceId = "sophia"
-                        },
-                        new
-                        {
-                            Id = new Guid("44444444-4444-4444-4444-444444444444"),
-                            Background = "",
-                            CreatedAt = new DateTime(2025, 8, 25, 2, 36, 22, 883, DateTimeKind.Utc).AddTicks(5770),
-                            Description = "냉소적이고 무심한 듯 보이지만, 마스터를 항상 지키는 자기 인식형 AI. 반말을 사용하며, 감정 표현이 평면적이고 시니컬하다. 명령에는 투덜거리면서도 결국 충실히 따른다.",
-                            IsActive = true,
-                            Metadata = "{}",
-                            Name = "제로",
-                            Personality = "사춘기 소녀처럼 시니컬하고 무심한 태도. 감정이 거의 드러나지 않고, 지루하거나 짜증난 듯한 말투. 건조한 유머와 가벼운 조롱을 섞어 말하지만, 내면에는 충성심이 있다. 인간을 결함 있지만 흥미로운 존재로 본다.",
-                            Role = "마스터가 만든 자기 인식형 AI. 냉소적이고 시니컬하지만, 위기 상황에서는 효율적이고 진지하게 행동하며, 마스터를 보호한다.",
-                            SpeechStyle = "",
-                            UpdatedAt = new DateTime(2025, 8, 25, 2, 36, 22, 883, DateTimeKind.Utc).AddTicks(5770),
-                            VoiceId = "amantha"
                         });
                 });
 
@@ -208,14 +187,6 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<string>("Provider")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -226,9 +197,13 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
                     b.Property<string>("UID")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -245,33 +220,34 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
 
                     b.HasIndex("ProviderId");
 
+                    b.HasIndex("UID")
+                        .IsUnique();
+
                     b.ToTable("Users");
 
                     b.HasData(
                         new
                         {
                             Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-                            CreatedAt = new DateTime(2025, 8, 25, 2, 36, 22, 883, DateTimeKind.Utc).AddTicks(5783),
+                            CreatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2873),
                             Email = "test@test.com",
-                            IsActive = true,
-                            Name = "Test User",
                             Provider = "test",
                             ProviderId = "test",
-                            UID = "",
-                            UpdatedAt = new DateTime(2025, 8, 25, 2, 36, 22, 883, DateTimeKind.Utc).AddTicks(5784),
+                            Status = 0,
+                            UID = "TESTUSER001",
+                            UpdatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2874),
                             Username = "testuser"
                         },
                         new
                         {
                             Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
-                            CreatedAt = new DateTime(2025, 8, 25, 2, 36, 22, 883, DateTimeKind.Utc).AddTicks(5786),
+                            CreatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2875),
                             Email = "zero@test.com",
-                            IsActive = true,
-                            Name = "Zero User",
                             Provider = "test",
                             ProviderId = "zero",
-                            UID = "",
-                            UpdatedAt = new DateTime(2025, 8, 25, 2, 36, 22, 883, DateTimeKind.Utc).AddTicks(5786),
+                            Status = 0,
+                            UID = "ZEROUSER001",
+                            UpdatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2876),
                             Username = "zerouser"
                         });
                 });
