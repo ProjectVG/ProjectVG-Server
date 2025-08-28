@@ -28,18 +28,17 @@ namespace ProjectVG.Application.Services.Chat.Processors
                     context.UserMessage,
                     format.GetInstructions(context),
                     context.ParseConversationHistory().ToList(),
-                    context.MemoryContext?.ToList(),
                     model: format.Model,
                     maxTokens: format.MaxTokens,
                     temperature: format.Temperature
                 );
 
-            var segments = format.Parse(llmResponse.Response, context);
+            var segments = format.Parse(llmResponse.OutputText, context);
             var cost = format.CalculateCost(llmResponse.InputTokens, llmResponse.OutputTokens);
-            context.SetResponse(llmResponse.Response, segments, cost);
+            context.SetResponse(llmResponse.OutputText, segments, cost);
 
             _logger.LogInformation("채팅 처리 결과: {Response}\n 세그먼트 생성 개수: {SementCount}\n 입력 토큰: {InputTokens}\n 출력 토큰: {OutputTokens}\n 비용: {Cost}",
-                llmResponse.Response, segments.Count, llmResponse.InputTokens, llmResponse.OutputTokens, cost);
+                llmResponse.OutputText, segments.Count, llmResponse.InputTokens, llmResponse.OutputTokens, cost);
         }
     }
 }

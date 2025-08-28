@@ -38,7 +38,7 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
                 );
 
                 var cost = format.CalculateCost(llmResponse.InputTokens, llmResponse.OutputTokens);
-                var (processType, intent) = format.Parse(llmResponse.Response, userPrompt);
+                var (processType, intent) = format.Parse(llmResponse.OutputText, userPrompt);
 
                 request.AddCost(cost);
                 request.SetAnalysisResult(processType, intent);
