@@ -1,6 +1,4 @@
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
-using Moq;
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Services.Chat.Factories;
 using Xunit;
@@ -10,12 +8,10 @@ namespace ProjectVG.Tests.Services.Chat.Factories
     public class UserInputAnalysisLLMFormatTests
     {
         private readonly UserInputAnalysisLLMFormat _format;
-        private readonly Mock<ILogger<UserInputAnalysisLLMFormat>> _mockLogger;
 
         public UserInputAnalysisLLMFormatTests()
         {
-            _mockLogger = new Mock<ILogger<UserInputAnalysisLLMFormat>>();
-            _format = new UserInputAnalysisLLMFormat(_mockLogger.Object);
+            _format = new UserInputAnalysisLLMFormat();
         }
 
         [Fact]
@@ -243,30 +239,6 @@ INTENT: 정상 의도
             // Assert
             result.ProcessType.Should().Be(UserIntentType.Chat);
             result.Intent.Should().Be("정상 의도");
-        }
-
-        [Fact]
-        public void Parse_Exception_ShouldReturnDefaultAndLog()
-        {
-            // Arrange
-            var illegalResponse = null as string;
-
-            // Act
-            var result = _format.Parse(illegalResponse!, "test input");
-
-            // Assert
-            result.ProcessType.Should().Be(UserIntentType.Chat);
-            result.Intent.Should().Be("일반적인 대화");
-
-            // Verify logging occurred
-            _mockLogger.Verify(
-                x => x.Log(
-                    LogLevel.Error,
-                    It.IsAny<EventId>(),
-                    It.IsAny<It.IsAnyType>(),
-                    It.IsAny<Exception>(),
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                Times.Once);
         }
 
         [Theory]

@@ -34,11 +34,11 @@ namespace ProjectVG.Application.Services.Chat.Processors
             var ttsTasks = new List<Task<(int idx, TextToSpeechResponse)>>();
             for (int i = 0; i < context.Segments?.Count; i++) {
                 var segment = context.Segments[i];
-                if (!segment.HasText && segment.IsActionSegment) continue;
+                if (!segment.HasContent || segment.IsActionSegment) continue;
 
                 var emotion = NormalizeEmotion(segment.Emotion, profile);
                 int idx = i;
-                ttsTasks.Add(Task.Run(async () => (idx, await GenerateTTSAsync(profile, segment.Text!, emotion))));
+                ttsTasks.Add(Task.Run(async () => (idx, await GenerateTTSAsync(profile, segment.Content!, emotion))));
             }
 
             var ttsResults = await Task.WhenAll(ttsTasks);
@@ -47,7 +47,9 @@ namespace ProjectVG.Application.Services.Chat.Processors
             foreach (var (idx, ttsResult) in ttsResults.OrderBy(x => x.idx)) {
                 if (ttsResult.Success == true && ttsResult.AudioData != null) {
                     var segment = context.Segments?[idx];
-                    segment?.SetAudioData(ttsResult.AudioData, ttsResult.ContentType, ttsResult.AudioLength);
+                    if (segment != null && context.Segments != null) {
+                        context.Segments[idx] = segment.WithAudioData(ttsResult.AudioData, ttsResult.ContentType!, ttsResult.AudioLength ?? 0f);
+                    }
                     
                     if (ttsResult.AudioLength.HasValue) {
                         var ttsCost = TTSCostInfo.CalculateTTSCost(ttsResult.AudioLength.Value);

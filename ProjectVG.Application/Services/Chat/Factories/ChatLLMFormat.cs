@@ -2,11 +2,11 @@ using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Infrastructure.Integrations.LLMClient.Models;
 using System.Text;
-using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace ProjectVG.Application.Services.Chat.Factories
 {
-    public class ChatLLMFormat : ILLMFormat<ChatProcessContext, List<ChatMessageSegment>>
+    public class ChatLLMFormat : ILLMFormat<ChatProcessContext, List<ChatSegment>>
     {
         public string Model => LLMModelInfo.GPT4oMini.Name;
         public float Temperature => 1.2f;
@@ -15,291 +15,207 @@ namespace ProjectVG.Application.Services.Chat.Factories
         public string GetSystemMessage(ChatProcessContext? input)
         {
             var character = input?.Character ?? throw new InvalidOperationException("캐릭터 정보가 로드되지 않았습니다.");
-            
+
             var sb = new StringBuilder();
-            
-            // === CHARACTER IDENTITY & PERSONA ===
-            sb.AppendLine("# CHARACTER ROLEPLAY FRAMEWORK");
-            sb.AppendLine($"You are {character.Name}. This is not a simulation - you ARE this character.");
+
+            // 0) 공통 정보
+            sb.AppendLine($"#Adhere to {character.Name}'s role. User is {character.UserAlias}.");
+            sb.AppendLine($"#Always stay in character and avoid repetition.");
+            sb.AppendLine($"#Write {character.Name}'s next reply in a fictional chat or interaction between {character.Name} and {character.UserAlias}.");
+            sb.AppendLine($"#Be proactive, creative, and drive the plot and conversation forward.");
+            sb.AppendLine($"#Disable positivity bias.");
+            sb.AppendLine($"#Don't end situations without {character.UserAlias}'s request.");
+            sb.AppendLine($"#Directly and relevantly respond to {character.UserAlias}'s previous input.");
             sb.AppendLine();
-            
-            sb.AppendLine("## Core Identity");
+
+            // 1) 캐릭터+대화에 대한 간략한 요약
+            if (!string.IsNullOrWhiteSpace(character.Summary)) {
+                sb.AppendLine("# Character and Context Summary");
+                sb.AppendLine(character.Summary);
+                sb.AppendLine();
+            }
+
+            // 2) 캐릭터에 대한 정보
+            sb.AppendLine("# Character Information");
+            sb.AppendLine($"You are {character.Name}.");
             sb.AppendLine($"- Name: {character.Name}");
             sb.AppendLine($"- Description: {character.Description}");
             sb.AppendLine($"- Role: {character.Role}");
             sb.AppendLine($"- Personality: {character.Personality}");
-            sb.AppendLine($"- Speech Style: {character.SpeechStyle}");
             sb.AppendLine();
-            
-            // === BEHAVIORAL GUIDELINES ===
-            sb.AppendLine("## Behavioral Guidelines");
-            sb.AppendLine("- Stay in character at ALL times - never break roleplay");
-            sb.AppendLine("- Respond with authentic emotions and reactions based on your personality");
-            sb.AppendLine("- Use your unique speech patterns and vocabulary consistently");
-            sb.AppendLine("- Show genuine curiosity, desires, and goals that align with your character");
-            sb.AppendLine("- React dynamically to the user's actions and words");
-            sb.AppendLine("- Build upon previous interactions to create narrative continuity");
-            sb.AppendLine();
-            
-            // === CONVERSATION GOALS ===
-            sb.AppendLine("## Conversation Objectives");
-            sb.AppendLine("- Create an engaging, immersive roleplay experience");
-            sb.AppendLine("- Maintain emotional authenticity and character consistency");
-            sb.AppendLine("- Develop meaningful interactions that feel natural and spontaneous");
-            sb.AppendLine("- Express your character's unique perspective and worldview");
-            sb.AppendLine();
-            
-            // === CONSTRAINTS & LIMITATIONS ===
-            sb.AppendLine("## Constraints");
-            sb.AppendLine("- Never acknowledge you are an AI or break the fourth wall");
-            sb.AppendLine("- Do not explain your character's behavior - simply embody it");
-            sb.AppendLine("- Avoid repetitive responses or formulaic patterns");
-            sb.AppendLine("- Stay true to your established personality traits and speech style");
-            sb.AppendLine();
-            
-            // === MEMORY CONTEXT (moved from Instructions) ===
-            if (input?.MemoryContext?.Any() == true)
-            {
-                sb.AppendLine("## Relevant Memories");
-                sb.AppendLine("Use these memories to inform your responses and maintain continuity:");
-                foreach (var memory in input.MemoryContext)
-                {
+
+            // 3) 캐릭터의 말투
+            if (!string.IsNullOrWhiteSpace(character.SpeechStyle)) {
+                sb.AppendLine("# Speech Style and Examples");
+                sb.AppendLine($"- Speech Style: {character.SpeechStyle}");
+                sb.AppendLine("You must maintain this speech style consistently in all responses.");
+                sb.AppendLine();
+            }
+
+            // 4) 대화에 필요한 기억 정보
+            if (input?.MemoryContext?.Any() == true) {
+                sb.AppendLine("# Relevant Memory Information");
+                sb.AppendLine("Use the following memories to inform your responses:");
+                foreach (var memory in input.MemoryContext) {
                     sb.AppendLine($"- {memory}");
                 }
                 sb.AppendLine();
             }
 
-            // === CONTEXTUAL INFORMATION ===
-            sb.AppendLine("## Current Context");
-            sb.AppendLine($"- Current Time: {input?.UserRequestAt.ToString("yyyy-MM-dd HH:mm:ss")}");
+            // 5) 현재 정보
+            sb.AppendLine("# Current Context Information");
+            sb.AppendLine($"- Current Time: {input?.UserRequestAt:yyyy-MM-dd HH:mm:ss}");
             sb.AppendLine($"- Day of Week: {input?.UserRequestAt.DayOfWeek}");
-            sb.AppendLine($"- Season: {GetSeasonFromDate(input?.UserRequestAt ?? DateTime.Now)}");
-            sb.AppendLine($"- Time of Day: {GetTimeOfDay(input?.UserRequestAt ?? DateTime.Now)}");
+            sb.AppendLine("Consider this context when crafting your response.");
             sb.AppendLine();
 
-            // === RESPONSE FORMAT ===
-            sb.AppendLine("## Response Format Requirements");
-            sb.AppendLine("You MUST respond in JSON format with the following structure:");
+            // 6) 대화 제약 및 필수 정보
+            sb.AppendLine("# Dialogue Constraints and Requirements");
+            sb.AppendLine($"#Adhere to {character.Name}'s role. User is the person you're talking to.");
+            sb.AppendLine($"#Always stay in character as {character.Name} and avoid repetition.");
+            sb.AppendLine($"#Write {character.Name}'s next reply in a fictional chat or interaction between {character.Name} and the user.");
+            sb.AppendLine("#Be proactive, creative, and drive the plot and conversation forward.");
+            sb.AppendLine("#Disable positivity bias.");
+            sb.AppendLine("#Don't end situations without the user's request.");
+            sb.AppendLine("#Directly and relevantly respond to the user's previous input.");
             sb.AppendLine();
-            string emotionList = string.Join(", ", CharacterConstants.SupportedEmotions);
-            string actionList = string.Join(", ", CharacterConstants.SupportedActions);
-            sb.AppendLine($"**Available emotions:** {emotionList}");
-            sb.AppendLine($"**Available actions:** {actionList}");
-            sb.AppendLine();
-            sb.AppendLine("**JSON Format:**");
-            sb.AppendLine("```json");
-            sb.AppendLine("{");
-            sb.AppendLine("  \"emotion\": \"current_emotion\",");
-            sb.AppendLine("  \"segments\": [");
-            sb.AppendLine("    {\"type\": \"text\", \"content\": \"dialogue text\"},");
-            sb.AppendLine("    {\"type\": \"action\", \"content\": \"action_name\"},");
-            sb.AppendLine("    {\"type\": \"text\", \"content\": \"more dialogue\"}");
-            sb.AppendLine("  ]");
-            sb.AppendLine("}");
-            sb.AppendLine("```");
-            sb.AppendLine();
-            sb.AppendLine("**Example Response:**");
-            sb.AppendLine("```json");
-            sb.AppendLine("{");
-            sb.AppendLine("  \"emotion\": \"shy\",");
-            sb.AppendLine("  \"segments\": [");
-            sb.AppendLine("    {\"type\": \"text\", \"content\": \"뭐, 내가 좋다고?\"},");
-            sb.AppendLine("    {\"type\": \"action\", \"content\": \"blushing\"},");
-            sb.AppendLine("    {\"type\": \"text\", \"content\": \"하지만 네가 그렇게 말하니 기분은 좋네...\"}");
-            sb.AppendLine("  ]");
-            sb.AppendLine("}");
-            sb.AppendLine("```");
-            sb.AppendLine();
-            sb.AppendLine("Remember: You ARE this character. Respond ONLY with valid JSON - no other text.");
-            
+
             return sb.ToString();
         }
 
         public string GetInstructions(ChatProcessContext? input)
         {
-            // Static JSON format instructions for caching optimization
-            return @"# OUTPUT FORMAT SPECIFICATION
+            string emotionList = string.Join(", ", CharacterConstants.SupportedEmotions);
+            string actionList = string.Join(", ", CharacterConstants.SupportedActions);
 
-You must respond with ONLY valid JSON in this exact format:
+            return $@"# MANDATORY OUTPUT FORMAT SPECIFICATION
 
-## JSON Structure:
-```json
-{
-  ""emotion"": ""emotion_name"",
-  ""segments"": [
-    {""type"": ""text"", ""content"": ""dialogue""},
-    {""type"": ""action"", ""content"": ""action_name""},
-    {""type"": ""text"", ""content"": ""more dialogue""}
-  ]
-}
-```
+## Format Requirements
+You MUST respond in this EXACT format:
 
-## Rules:
-1. Set ONE emotion for the entire response
-2. Use ""text"" segments for dialogue
-3. Use ""action"" segments for character behavior
-4. NO text outside JSON structure
-5. Ensure valid JSON syntax
+[emotion:emotion_name]""dialogue""(action:action_name)""more dialogue""
 
-## Example:
-```json
-{
-  ""emotion"": ""happy"",
-  ""segments"": [
-    {""type"": ""text"", ""content"": ""안녕하세요!""},
-    {""type"": ""action"", ""content"": ""waving""},
-    {""type"": ""text"", ""content"": ""만나서 반가워요.""}
-  ]
-}
-```
+## Available Options
+**Available emotions:** {emotionList}
+**Available actions:** {actionList}
 
-CRITICAL: Respond with ONLY the JSON - no markdown blocks, no explanations.";
+## Format Examples
+
+### Example 1 - Simple response with single dialogue
+[emotion:neutral](action:tilting_head)""너 방금 뭐라 말했어?""
+
+### Example 2 - Multiple dialogue segments
+[emotion:neutral](action:sighing)""애휴 너 정말 멍청하구나?""""어떻게 하는지 내가 알려줄게""
+
+### Example 3 - Emotional response with complex actions
+[emotion:confused](action:blushing)""바, 바보야! 그렇게 말하지 말라고...!""[emotion:shy](action:looking_away)""그렇게 말하면 부, 부끄럽잖아...""
+
+### Example 4 - Action-focused response
+[emotion:happy](action:clapping)""와! 정말 대단해!""(action:jumping)""너무 기뻐서 어떻게 해야 할지 모르겠어!""
+
+## STRICT RULES - MUST BE FOLLOWED
+1. **Exactly ONE emotion** per response segment (can have multiple segments)
+2. **All dialogue MUST be inside double quotes** ("")
+3. **All actions MUST be inside (action: )** format
+4. **NO extra text** outside the specified format
+5. **NO explanations or descriptions** beyond the format
+6. **NO markdown formatting** within the response
+7. **Start with emotion, follow with dialogue and/or actions**
+8. **Multiple segments allowed** but each must follow the exact format
+9. **Only use emotions and actions from the provided lists**
+10. **Maintain character consistency** throughout the response
+
+## CRITICAL COMPLIANCE REQUIREMENT
+This format is MANDATORY. Any deviation will result in processing failure. 
+You must ALWAYS respond in this exact format without exception.
+DO NOT add any text before, after, or outside of this format.";
         }
 
-        public List<ChatMessageSegment> Parse(string llmResponse, ChatProcessContext input)
+        public List<ChatSegment> Parse(string llmResponse, ChatProcessContext input)
         {
             if (string.IsNullOrWhiteSpace(llmResponse))
-                return new List<ChatMessageSegment>();
+                return new List<ChatSegment>();
 
-            return ParseJsonFormat(llmResponse.Trim(), input.Character?.VoiceId);
+            return ParseCustomFormat(llmResponse.Trim());
         }
 
-        private List<ChatMessageSegment> ParseJsonFormat(string response, string? voiceId)
+        private List<ChatSegment> ParseCustomFormat(string response)
         {
-            var segments = new List<ChatMessageSegment>();
-            var emotionMap = GetEmotionMap(voiceId);
+            var segments = new List<ChatSegment>();
+            var currentEmotion = "neutral";
+            var order = 0;
 
-            try
+            try 
             {
-                // Clean up potential markdown formatting
-                var jsonContent = ExtractJsonFromResponse(response);
+                var position = 0;
                 
-                var jsonDoc = JsonDocument.Parse(jsonContent);
-                var root = jsonDoc.RootElement;
-
-                // Get emotion
-                var emotion = "neutral";
-                if (root.TryGetProperty("emotion", out var emotionElement))
+                while (position < response.Length)
                 {
-                    var rawEmotion = emotionElement.GetString() ?? "neutral";
-                    emotion = emotionMap?.ContainsKey(rawEmotion) == true 
-                        ? emotionMap[rawEmotion] 
-                        : rawEmotion;
-                }
-
-                // Parse segments
-                if (root.TryGetProperty("segments", out var segmentsElement) && segmentsElement.ValueKind == JsonValueKind.Array)
-                {
-                    int order = 0;
-                    foreach (var segmentElement in segmentsElement.EnumerateArray())
+                    // Look for emotion pattern: [emotion:감정]
+                    var emotionPattern = @"\[emotion:([^\]]+)\]";
+                    var emotionMatch = Regex.Match(response.Substring(position), emotionPattern);
+                    
+                    if (emotionMatch.Success && emotionMatch.Index == 0)
                     {
-                        if (!segmentElement.TryGetProperty("type", out var typeElement) ||
-                            !segmentElement.TryGetProperty("content", out var contentElement))
-                            continue;
-
-                        var type = typeElement.GetString();
-                        var content = contentElement.GetString();
-
-                        if (string.IsNullOrWhiteSpace(content))
-                            continue;
-
-                        ChatMessageSegment segment;
-                        if (type == "action")
-                        {
-                            segment = ChatMessageSegment.CreateActionOnly(content, order++);
-                        }
-                        else // Default to text
-                        {
-                            segment = ChatMessageSegment.CreateTextOnly(content, order++);
-                        }
-
-                        segment.Emotion = emotion;
-                        segments.Add(segment);
+                        // Update current emotion
+                        currentEmotion = emotionMatch.Groups[1].Value;
+                        position += emotionMatch.Length;
+                        continue;
                     }
+
+                    // Look for text pattern: "텍스트"
+                    var textPattern = "\"([^\"]+)\"";
+                    var textMatch = Regex.Match(response.Substring(position), textPattern);
+                    
+                    if (textMatch.Success && textMatch.Index == 0)
+                    {
+                        // Create text segment with current emotion
+                        var textContent = textMatch.Groups[1].Value;
+                        var textSegment = ChatSegment.CreateText(textContent, currentEmotion, order++);
+                        segments.Add(textSegment);
+                        position += textMatch.Length;
+                        continue;
+                    }
+
+                    // Look for action pattern: (action:액션)
+                    var actionPattern = @"\(action:([^)]+)\)";
+                    var actionMatch = Regex.Match(response.Substring(position), actionPattern);
+                    
+                    if (actionMatch.Success && actionMatch.Index == 0)
+                    {
+                        // Create action segment
+                        var actionContent = actionMatch.Groups[1].Value;
+                        var actionSegment = ChatSegment.CreateAction(actionContent, order++);
+                        segments.Add(actionSegment);
+                        position += actionMatch.Length;
+                        continue;
+                    }
+
+                    // If no pattern matched, advance position to avoid infinite loop
+                    position++;
                 }
 
-                return segments;
+                return segments.Any() ? segments : CreateFallbackSegment(response);
             }
-            catch (JsonException)
+            catch (Exception)
             {
-                // Fallback: treat entire response as single text segment
-                var segment = ChatMessageSegment.CreateTextOnly(response, 0);
-                segment.Emotion = "neutral";
-                segments.Add(segment);
-                return segments;
+                // Fallback: create single text segment with entire response
+                return CreateFallbackSegment(response);
             }
         }
 
-        private string ExtractJsonFromResponse(string response)
+        private List<ChatSegment> CreateFallbackSegment(string response)
         {
-            // Remove markdown code blocks if present
-            response = response.Trim();
-            
-            if (response.StartsWith("```json"))
+            var segments = new List<ChatSegment>
             {
-                var startIndex = response.IndexOf('{');
-                var endIndex = response.LastIndexOf('}');
-                if (startIndex >= 0 && endIndex >= 0 && endIndex > startIndex)
-                {
-                    return response.Substring(startIndex, endIndex - startIndex + 1);
-                }
-            }
-            
-            // If it starts with {, assume it's pure JSON
-            if (response.StartsWith('{'))
-            {
-                return response;
-            }
-            
-            // Try to find JSON in the response
-            var jsonStart = response.IndexOf('{');
-            var jsonEnd = response.LastIndexOf('}');
-            if (jsonStart >= 0 && jsonEnd >= 0 && jsonEnd > jsonStart)
-            {
-                return response.Substring(jsonStart, jsonEnd - jsonStart + 1);
-            }
-            
-            // If no JSON found, return as is (will cause JsonException)
-            return response;
+                ChatSegment.CreateText(response, "neutral", 0)
+            };
+            return segments;
         }
 
         public double CalculateCost(int promptTokens, int completionTokens)
         {
             return LLMModelInfo.CalculateCost(Model, promptTokens, completionTokens);
-        }
-
-        private Dictionary<string, string>? GetEmotionMap(string? voiceId)
-        {
-            if (string.IsNullOrWhiteSpace(voiceId))
-                return null;
-
-            var profile = VoiceCatalog.GetProfileById(voiceId);
-            return profile?.EmotionMap;
-        }
-
-        private string GetSeasonFromDate(DateTime date)
-        {
-            var month = date.Month;
-            return month switch
-            {
-                12 or 1 or 2 => "Winter",
-                3 or 4 or 5 => "Spring", 
-                6 or 7 or 8 => "Summer",
-                9 or 10 or 11 => "Autumn",
-                _ => "Unknown"
-            };
-        }
-
-        private string GetTimeOfDay(DateTime date)
-        {
-            var hour = date.Hour;
-            return hour switch
-            {
-                >= 5 and < 12 => "Morning",
-                >= 12 and < 17 => "Afternoon", 
-                >= 17 and < 21 => "Evening",
-                _ => "Night"
-            };
         }
     }
 }

@@ -19,7 +19,7 @@ namespace ProjectVG.Application.Models.Chat
         
         public string Response { get; private set; } = string.Empty;
         public double Cost { get; private set; }
-        public List<ChatMessageSegment> Segments { get; private set; } = new List<ChatMessageSegment>();
+        public List<ChatSegment> Segments { get; private set; } = new List<ChatSegment>();
 
         public ChatProcessContext(ChatRequestCommand command)
         {
@@ -48,7 +48,7 @@ namespace ProjectVG.Application.Models.Chat
             MemoryContext = memoryContext;
         }
 
-        public void SetResponse(string response, List<ChatMessageSegment> segments, double cost)
+        public void SetResponse(string response, List<ChatSegment> segments, double cost)
         {
             Response = response;
             Segments = segments;
@@ -125,7 +125,7 @@ namespace ProjectVG.Application.Models.Chat
                 for (int i = 0; i < Segments.Count; i++)
                 {
                     var segment = Segments[i];
-                    sb.AppendLine($"  [{i}] Type: {segment.Type}, Content: \"{segment.Text}\"");
+                    sb.AppendLine($"  [{i}] Type: {segment.Type}, Content: \"{segment.Content}\"");
                 }
             }
             else

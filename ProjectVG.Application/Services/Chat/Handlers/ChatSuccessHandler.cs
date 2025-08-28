@@ -25,7 +25,7 @@ namespace ProjectVG.Application.Services.Chat.Handlers
 
                 var integratedMessage = new IntegratedChatMessage {
                     SessionId = context.SessionId,
-                    Text = segment.Text,
+                    Text = segment.Content,
                     AudioFormat = segment.AudioContentType ?? "wav",
                     AudioLength = segment.AudioLength,
                     Timestamp = DateTime.UtcNow
