@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <title>AI 채팅 + 음성 데모</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="chat-container">
+    <div id="status">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 1em;">
+          <span>로그인: <span id="login-status">대기 중</span></span>
+          <span style="color: #6c757d; font-size: 0.85em;">| WebSocket: <span id="ws-status">대기 중</span></span>
+          <span style="color: #6c757d; font-size: 0.85em;">| 세션: <span id="session-id">없음</span></span>
+        </div>
+        <span style="color: #6c757d; font-size: 0.85em;">서버: <span id="server-info"></span></span>
+      </div>
+    </div>
+
+    <div id="login-section">
+      <div style="display: flex; align-items: center; gap: 1em; margin-bottom: 1em;">
+        <input id="guest-id" type="text" placeholder="게스트 ID를 입력하세요" value="test-guest-123" 
+               style="flex: 1; padding: 0.75em; border-radius: 8px; border: 1px solid #c8e6c9; font-size: 1em;" />
+        <button id="login-btn" style="background: #2196f3; color: white; border: none; padding: 0.75em 1.5em; border-radius: 8px; font-size: 1em; cursor: pointer; font-weight: 500;">
+          게스트 로그인
+        </button>
+      </div>
+    </div>
+
+    <div class="top-row">
+      <select id="character-select">
+        <option value="44444444-4444-4444-4444-444444444444">제로</option>
+        <option value="11111111-1111-1111-1111-111111111111">하루</option>
+        <option value="22222222-2222-2222-2222-222222222222">미야</option>
+        <option value="33333333-3333-3333-3333-333333333333">소피아</option>
+      </select>
+    </div>
+
+    <div id="chat-log"></div>
+
+    <div id="audio-option-row" style="display: flex; align-items: center; gap: 1em; margin-bottom: 0.5em;">
+      <label style="display: flex; align-items: center; gap: 0.5em; cursor: pointer; color: #37474f;">
+        <input id="include-audio" type="checkbox" checked style="cursor: pointer;" />
+        <span>음성 포함</span>
+      </label>
+    </div>
+
+    <div id="input-row">
+      <input id="user-input" type="text" placeholder="메시지를 입력하세요" autocomplete="off" />
+      <button id="send-btn">전송</button>
+    </div>
+
+    <div id="audio-section" style="display: none;">
+      <div style="display: flex; align-items: center; gap: 0.5em; margin-bottom: 0.5em;">
+        <span style="color: #4caf50; font-weight: 500;">🔊</span>
+        <span style="color: #37474f; font-size: 0.9em;">음성 재생 중...</span>
+      </div>
+      <audio id="audio-player" controls style="width: 100%;"></audio>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
