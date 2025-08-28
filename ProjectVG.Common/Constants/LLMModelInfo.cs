@@ -225,6 +225,11 @@ namespace ProjectVG.Common.Constants
             public const float DefaultTemperature = 0.7f;
         }
 
+        /// <summary>
+        /// 지정한 모델 이름에 대응하는 입력 비용 상수(Input)를 반환합니다.
+        /// </summary>
+        /// <param name="model">비용을 조회할 모델의 이름(예: 클래스에 정의된 각 모델의 Name 값).</param>
+        /// <returns>해당 모델의 입력 비용 상수 값을 반환합니다. 지정한 이름과 일치하는 모델이 없으면 기본값(GPT4oMini)의 입력 비용을 반환합니다.</returns>
         public static double GetInputCost(string model)
         {
             return model switch
@@ -253,6 +258,11 @@ namespace ProjectVG.Common.Constants
             };
         }
 
+        /// <summary>
+        /// 지정한 모델의 출력(output) 비용(총 비용 단위)을 반환합니다.
+        /// </summary>
+        /// <param name="model">비용을 조회할 모델 이름(예: "gpt-4o-mini").</param>
+        /// <returns>해당 모델의 출력 비용(double). 알려지지 않은 모델 이름이 전달되면 기본값으로 GPT4oMini의 출력 비용을 반환합니다.</returns>
         public static double GetOutputCost(string model)
         {
             return model switch
@@ -281,16 +291,34 @@ namespace ProjectVG.Common.Constants
             };
         }
 
+        /// <summary>
+        /// 지정한 모델의 입력 토큰당 비용(달러 단위)을 반환합니다.
+        /// </summary>
+        /// <param name="model">비용을 조회할 모델의 식별자(예: "gpt-4o-mini").</param>
+        /// <returns>토큰 1개당 입력 비용(USD).</returns>
         public static double GetInputCostPerToken(string model)
         {
             return GetInputCost(model) / COST_CALCULATION_FACTOR;
         }
 
+        /// <summary>
+        /// 지정한 모델의 출력(output) 토큰당 비용을 반환합니다.
+        /// </summary>
+        /// <param name="model">비용을 조회할 모델 이름(예: "gpt-4o-mini").</param>
+        /// <returns>달러 기준 밀리센트 환산 후 토큰 하나당 비용을 나타내는 값.</returns>
         public static double GetOutputCostPerToken(string model)
         {
             return GetOutputCost(model) / COST_CALCULATION_FACTOR;
         }
 
+        /// <summary>
+        /// 지정한 모델의 캐시된 입력 비용을 반환합니다.
+        /// </summary>
+        /// <remarks>
+        /// 모델이 캐시된 입력 비용을 명시적으로 정의한 경우 해당 값을 반환하고, 정의되어 있지 않으면 해당 모델의 입력 비용의 10%를 반환합니다.
+        /// </remarks>
+        /// <param name="model">조회할 모델의 이름(예: 클래스에 정의된 모델 이름 상수).</param>
+        /// <returns>모델의 캐시된 입력 비용을 나타내는 값.</returns>
         public static double GetCachedInputCost(string model)
         {
             return model switch
@@ -312,6 +340,13 @@ namespace ProjectVG.Common.Constants
             };
         }
 
+        /// <summary>
+        /// 지정한 모델과 토큰 수에 따라 입력(프롬프트) 비용과 출력(완성) 비용을 계산하여 합산한 총 비용을 반환합니다.
+        /// </summary>
+        /// <param name="model">비용 계산에 사용할 모델 식별자(예: "gpt-4o-mini").</param>
+        /// <param name="promptTokens">프롬프트(입력)에 사용된 토큰 수.</param>
+        /// <param name="completionTokens">완성(출력)에 사용된 토큰 수.</param>
+        /// <returns>프롬프트와 출력에 대해 각각 소수점 올림(ceil)한 값을 합산한 총 비용(함수의 단위로 표시된 비용 값).</returns>
         public static double CalculateCost(string model, int promptTokens, int completionTokens)
         {
             var inputCostPerToken = GetInputCostPerToken(model);
