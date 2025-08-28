@@ -178,11 +178,6 @@ namespace ProjectVG.Common.Constants
             { ErrorCode.RESOURCE_QUOTA_EXCEEDED, "리소스 할당량을 초과했습니다" }
         };
 
-        /// <summary>
-        /// 주어진 ErrorCode에 해당하는 사용자용 한국어 메시지를 반환합니다.
-        /// </summary>
-        /// <param name="errorCode">메시지를 조회할 에러 코드.</param>
-        /// <returns>해당 코드에 매핑된 한국어 메시지. 매핑이 없으면 INTERNAL_SERVER_ERROR에 대한 메시지를 반환합니다.</returns>
         public static string GetMessage(this ErrorCode errorCode)
         {
             return _errorMessages.TryGetValue(errorCode, out var message) ? message : ErrorCode.INTERNAL_SERVER_ERROR.GetMessage();

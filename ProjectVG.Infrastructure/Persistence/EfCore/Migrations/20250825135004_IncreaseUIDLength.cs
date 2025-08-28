@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -8,13 +8,7 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
     /// <inheritdoc />
     public partial class IncreaseUIDLength : Migration
     {
-        /// <summary>
-        /// 사용자 테이블의 UID 열 길이를 12자에서 16자로 확장하고 관련 시드 데이터의 타임스탬프 및 일부 사용자 상태를 갱신하는 마이그레이션을 적용합니다.
-        /// </summary>
-        /// <remarks>
-        /// - 스키마 변경: Users 테이블의 `UID` 열을 `nvarchar(12)`(maxLength:12)에서 `nvarchar(16)`(maxLength:16, not null)로 변경합니다.
-        /// - 시드 데이터 변경: 특정 Characters 행들의 `CreatedAt` 및 `UpdatedAt` 값을 갱신하고, 두 Users 행의 `CreatedAt`, `UpdatedAt` 값을 갱신하며 해당 Users의 `Status`를 0으로 설정합니다.
-        /// </remarks>
+        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterColumn<string>(

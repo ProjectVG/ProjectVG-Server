@@ -32,18 +32,6 @@ namespace ProjectVG.Infrastructure.Integrations.LLMClient
             _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         }
 
-        /// <summary>
-        /// 지정된 LLM 요청을 원격 LLM 서비스로 전송하고 그 결과를 LLMResponse로 반환합니다.
-        /// </summary>
-        /// <param name="request">전송할 채팅 요청(시스템 메시지, 사용자 메시지, 모델, 토큰/온도 설정 등)을 포함하는 LLMRequest 객체.</param>
-        /// <returns>
-        /// 서비스의 응답을 파싱한 LLMResponse를 반환합니다.
-        /// - HTTP 응답이 실패일 경우: Success = false, ErrorMessage에 상태 코드가 설정된 응답을 반환합니다.
-        /// - 응답 파싱에 실패하면: Success = false, ErrorMessage = "응답을 파싱할 수 없습니다."를 반환합니다.
-        /// - 네트워크 연결 오류(HttpRequestException) 발생 시: 개발용 mock 성공 응답을 반환합니다 (Success = true, mock Id와 샘플 응답 포함).
-        /// - 요청 시간 초과(TaskCanceledException) 시: Success = false, ErrorMessage = "요청 시간이 초과되었습니다."를 반환합니다.
-        /// - 기타 예외 발생 시: Success = false, ErrorMessage = "요청 처리 중 오류가 발생했습니다."를 반환합니다.
-        /// </returns>
         public async Task<LLMResponse> SendRequestAsync(LLMRequest request)
         {
             try

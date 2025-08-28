@@ -46,14 +46,6 @@ namespace ProjectVG.Api.Middleware
             await context.Response.WriteAsync(jsonResponse);
         }
 
-        /// <summary>
-        /// 전달된 예외를 적절한 전용 핸들러로 매핑하여 표준화된 ErrorResponse를 생성합니다.
-        /// </summary>
-        /// <remarks>
-        /// ValidationException, NotFoundException, AuthenticationException, ProjectVGException, ExternalServiceException,
-        /// DbUpdateException 등 알려진 예외는 각 전용 처리 메서드로 위임되고, 해당하지 않는 예외는 HandleGenericException에서 처리됩니다.
-        /// 반환되는 ErrorResponse는 클라이언트에 직렬화되어 HTTP 응답 페이로드로 사용됩니다.
-        /// </remarks>
         private ErrorResponse CreateErrorResponse(Exception exception, HttpContext context)
         {
             if (exception is ValidationException validationEx) {
@@ -123,15 +115,6 @@ namespace ProjectVG.Api.Middleware
             };
         }
 
-        /// <summary>
-        /// NotFoundException을 ErrorResponse로 변환하여 반환합니다.
-        /// </summary>
-        /// <param name="exception">발생한 NotFoundException(내부에 ErrorCode, Message, StatusCode 포함).</param>
-        /// <param name="context">응답에 포함할 TraceIdentifier를 가져오기 위한 HttpContext.</param>
-        /// <returns>
-        /// 요청된 리소스를 찾을 수 없음을 나타내는 ErrorResponse:
-        /// ErrorCode, Message, StatusCode, UTC 타임스탬프, TraceId를 설정하여 반환합니다.
-        /// </returns>
         private ErrorResponse HandleNotFoundException(NotFoundException exception, HttpContext context)
         {
             _logger.LogWarning(exception, "리소스를 찾을 수 없음: {ErrorCode} - {UserPrompt}", exception.ErrorCode.ToString(), exception.Message);
@@ -145,12 +128,6 @@ namespace ProjectVG.Api.Middleware
             };
         }
 
-        /// <summary>
-        /// 인증 관련 예외(AuthenticationException)를 표준화된 ErrorResponse로 변환하고 경고를 기록합니다.
-        /// </summary>
-        /// <param name="exception">처리할 AuthenticationException 인스턴스.</param>
-        /// <param name="context">현재 HTTP 요청의 HttpContext; 응답에 포함할 TraceIdentifier를 제공합니다.</param>
-        /// <returns>예외 정보를 기반으로 생성된 ErrorResponse(에러 코드, 메시지, 상태 코드, 타임스탬프, TraceId 포함).</returns>
         private ErrorResponse HandleAuthenticationException(AuthenticationException exception, HttpContext context)
         {
             _logger.LogWarning(exception, "인증 실패: {ErrorCode} - {UserPrompt}", exception.ErrorCode.ToString(), exception.Message);
@@ -164,12 +141,6 @@ namespace ProjectVG.Api.Middleware
             };
         }
 
-        /// <summary>
-        /// ProjectVG 전용 예외를 표준 ErrorResponse로 변환하여 반환합니다.
-        /// </summary>
-        /// <param name="exception">ErrorCode, Message, StatusCode 등을 포함한 ProjectVG 예외; 응답의 주요 필드 값으로 사용됩니다.</param>
-        /// <param name="context">응답에 포함할 TraceId를 가져오기 위해 사용되는 HttpContext.</param>
-        /// <returns>예외 정보를 매핑한 ErrorResponse(UTC 타임스탬프와 TraceId 포함).</returns>
         private ErrorResponse HandleProjectVGException(ProjectVGException exception, HttpContext context)
         {
             _logger.LogWarning(exception, "ProjectVG 예외 발생: {ErrorCode} - {UserPrompt}", exception.ErrorCode.ToString(), exception.Message);

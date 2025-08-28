@@ -17,16 +17,6 @@ namespace ProjectVG.Application.Services.Auth.Providers
 
         public string[] DefaultScopes => new[] { "name", "email" };
 
-        /// <summary>
-        /// Apple OAuth2 승인(authorization) 엔드포인트로 리디렉션할 수 있는 인증 URL을 생성합니다.
-        /// </summary>
-        /// <param name="clientId">Apple에 등록된 클라이언트(앱) 식별자.</param>
-        /// <param name="redirectUri">인증 후 Apple이 결과를 전송할 리디렉션 URI.</param>
-        /// <param name="state">CSRF 보호 및 상태 전달용 임의 문자열.</param>
-        /// <param name="codeChallenge">PKCE 흐름의 코드 챌린지 값.</param>
-        /// <param name="codeChallengeMethod">코드 챌린지 방법(예: "S256").</param>
-        /// <param name="scopes">요청할 권한(예: "name", "email") 목록; 내부적으로 공백으로 결합되어 전송됩니다.</param>
-        /// <returns>모든 매개변수를 URL 인코딩하여 구성한 Apple 인증(authorization) URL.</returns>
         public string BuildAuthorizationUrl(string clientId, string redirectUri, string state, string codeChallenge, string codeChallengeMethod, string[] scopes)
         {
             var scopeString = string.Join(" ", scopes);
@@ -42,11 +32,6 @@ namespace ProjectVG.Application.Services.Auth.Providers
                    $"&response_mode=form_post";
         }
 
-        /// <summary>
-        /// JSON 응답을 파싱하여 OAuth2UserInfo 객체를 생성합니다.
-        /// </summary>
-        /// <param name="jsonResponse">Apple의 userinfo 또는 ID 토큰에서 디코딩한 JSON 문자열(최소한 "sub" 필드를 포함).</param>
-        /// <returns>파싱된 사용자 정보를 담은 OAuth2UserInfo 객체(Provider는 "apple").</returns>
         public OAuth2UserInfo ParseUserInfo(string jsonResponse)
         {
             var userData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonResponse);

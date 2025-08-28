@@ -13,10 +13,6 @@ namespace ProjectVG.Infrastructure.Realtime.WebSocketConnection
 		public DateTime ConnectedAt { get; set; } = DateTime.UtcNow;
 		public System.Net.WebSockets.WebSocket WebSocket { get; set; } = null!;
 
-		/// <summary>
-		/// 지정된 사용자 ID와 WebSocket을 사용하여 클라이언트 연결 인스턴스를 초기화하고 연결 시각을 UTC로 기록합니다.
-		/// </summary>
-		/// <param name="userId">연결에 연관된 사용자 식별자.</param>
 		public WebSocketClientConnection(string userId, WebSocket socket)
 		{
 			UserId = userId;

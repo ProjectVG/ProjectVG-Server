@@ -27,10 +27,6 @@ namespace ProjectVG.Application.Models.User
             UpdatedAt = DateTime.UtcNow;
         }
 
-        /// <summary>
-        /// 도메인 User 엔티티의 값을 사용해 UserDto를 초기화합니다.
-        /// </summary>
-        /// <param name="user">초기화에 사용할 도메인 User 엔티티(널이 아님). Id, UID, Username, Email, ProviderId, Provider, Status 값을 DTO에 복사합니다. CreatedAt/UpdatedAt는 복사하지 않습니다.</param>
         public UserDto(Domain.Entities.Users.User user)
         {
             Id = user.Id;
@@ -42,10 +38,6 @@ namespace ProjectVG.Application.Models.User
             Status = user.Status;
         }
 
-        /// <summary>
-        /// 현재 DTO를 기반으로 새로운 도메인 User 엔티티 인스턴스를 생성하여 반환합니다.
-        /// </summary>
-        /// <returns>Id, UID, Username, Email, ProviderId, Provider, Status 필드가 복사된 새 <see cref="Domain.Entities.Users.User"/> 인스턴스. CreatedAt 및 UpdatedAt 필드는 설정되지 않습니다.</returns>
         public Domain.Entities.Users.User ToEntity()
         {
             return new Domain.Entities.Users.User {
