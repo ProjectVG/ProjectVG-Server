@@ -15,7 +15,7 @@ namespace ProjectVG.Tests.Services.Chat.Factories
         {
             _format = new ChatLLMFormat();
             
-            var character = new CharacterDto
+            var characterEntity = new ProjectVG.Domain.Entities.Characters.Character
             {
                 Id = Guid.NewGuid(),
                 Name = "TestCharacter",
@@ -24,8 +24,12 @@ namespace ProjectVG.Tests.Services.Chat.Factories
                 Personality = "Friendly and helpful",
                 SpeechStyle = "Casual",
                 Summary = "Character summary for testing",
-                VoiceId = "test-voice"
+                VoiceId = "test-voice",
+                IsActive = true,
+                UserAlias = "TestUser"
             };
+            
+            var character = new CharacterDto(characterEntity);
 
             var command = new ChatRequestCommand(
                 Guid.NewGuid(), 

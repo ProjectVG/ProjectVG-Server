@@ -9,6 +9,7 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Users
         Task<User?> GetByUsernameAsync(string username);
         Task<User?> GetByEmailAsync(string email);
         Task<User?> GetByProviderIdAsync(string providerId);
+        Task<User?> GetByProviderAsync(string provider, string providerId);
         Task<User?> GetByUIDAsync(string uid);
         Task<User> CreateAsync(User user);
         Task<User> UpdateAsync(User user);

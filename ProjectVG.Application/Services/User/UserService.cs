@@ -73,10 +73,15 @@ namespace ProjectVG.Application.Services.Users
             return user is null ? null : new UserDto(user);
         }
 
+        public async Task<UserDto?> TryGetByEmailAsync(string email)
+        {
+            var user = await _userRepository.GetByEmailAsync(email);
+            return user is null ? null : new UserDto(user);
+        }
+
         public async Task<UserDto?> TryGetByProviderAsync(string provider, string providerId)
         {
-            var users = await _userRepository.GetAllAsync();
-            var user = users.FirstOrDefault(u => u.Provider == provider && u.ProviderId == providerId);
+            var user = await _userRepository.GetByProviderAsync(provider, providerId);
             return user is null ? null : new UserDto(user);
         }
 
