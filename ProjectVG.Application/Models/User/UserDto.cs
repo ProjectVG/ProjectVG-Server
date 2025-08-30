@@ -16,6 +16,15 @@ namespace ProjectVG.Application.Models.User
 
         public UserDto()
         {
+            Id = Guid.NewGuid();
+            UID = string.Empty;
+            Username = string.Empty;
+            Email = string.Empty;
+            ProviderId = string.Empty;
+            Provider = string.Empty;
+            Status = AccountStatus.Active;
+            CreatedAt = DateTime.UtcNow;
+            UpdatedAt = DateTime.UtcNow;
         }
 
         public UserDto(Domain.Entities.Users.User user)

@@ -76,33 +76,31 @@ namespace ProjectVG.Application.Services.Chat.CostTracking
 
 
 
-        public async Task<UserInputAnalysis> ProcessAsync(string userInput, IEnumerable<ConversationHistory> conversationHistory)
+        public async Task ProcessAsync(ChatRequestCommand request)
         {
             _metricsService.StartProcessMetrics(_processName);
             
             try
             {
                 // 리플렉션으로 ProcessAsync 메서드 호출
-                var method = typeof(T).GetMethod("ProcessAsync", new[] { typeof(string), typeof(IEnumerable<ConversationHistory>) });
+                var method = typeof(T).GetMethod("ProcessAsync", new[] { typeof(ChatRequestCommand) });
                 
                 if (method == null)
                     throw new InvalidOperationException($"ProcessAsync 메서드를 찾을 수 없습니다: {typeof(T).Name}");
 
-                var invokeResult = method.Invoke(_service, new object[] { userInput, conversationHistory });
+                var invokeResult = method.Invoke(_service, new object[] { request });
                 if (invokeResult == null)
                     throw new InvalidOperationException($"ProcessAsync 메서드 호출 결과가 null입니다: {typeof(T).Name}");
                 
-                if (invokeResult is not Task<UserInputAnalysis> taskResult)
+                if (invokeResult is not Task taskResult)
                     throw new InvalidOperationException($"ProcessAsync 메서드 반환 타입이 올바르지 않습니다: {typeof(T).Name}");
                 
-                var result = await taskResult!;
+                await taskResult;
                 
-                // Cost 값만 직접 추출
-                var cost = ExtractCost(result);
+                // Cost는 request 객체에서 직접 가져올 수 있음
+                var cost = request.Cost;
                 Console.WriteLine($"[COST_TRACKING] {_processName} - 추출된 비용: {cost:F0} Cost");
-                Console.WriteLine($"[COST_TRACKING] {_processName} - 원본 결과 타입: {result?.GetType().Name}, Cost 속성 값: {result?.GetType().GetProperty("Cost")?.GetValue(result)}");
-                _metricsService.EndProcessMetrics(_processName, cost);
-                return result;
+                _metricsService.EndProcessMetrics(_processName, (decimal)cost);
             }
             catch (Exception ex)
             {

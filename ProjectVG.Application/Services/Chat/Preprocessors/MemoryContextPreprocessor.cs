@@ -19,16 +19,18 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
             _logger = logger;
         }
 
-        public async Task<List<string>> CollectMemoryContextAsync(string collection, string userMessage, UserInputAnalysis analysis)
+        public async Task<List<string>> CollectMemoryContextAsync(ChatRequestCommand command)
         {
             try {
-                var searchQuery = DetermineSearchQuery(userMessage, analysis);
+                var searchQuery = command.UserPrompt;
+                var userId = command.UserId.ToString();
 
-                _logger.LogDebug("메모리 검색 쿼리: 원본='{Original}', 향상된='{Enhanced}', 키워드={Keywords}",
-                    userMessage, searchQuery, string.Join(",", analysis.Keywords));
+                _logger.LogDebug("메모리 검색 쿼리: 원본='{Original}', 의도='{Intent}'",
+                    command.UserPrompt, command.UserIntent);
 
-                var memoryType = ChooseMemoryType(analysis);
-                var searchResults = await _memoryClient.SearchAsync(memoryType, searchQuery, collection, 3);
+                // 간단한 메모리 타입 선택: 질문이나 회상 관련은 Episodic, 나머지는 Semantic
+                var memoryType = ChooseMemoryType(command.UserIntent);
+                var searchResults = await _memoryClient.SearchAsync(memoryType, searchQuery, userId, 3);
                 return searchResults.Select(r => r.Text).ToList();
             }
             catch (Exception ex) {
@@ -37,24 +39,16 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
             }
         }
 
-        private string DetermineSearchQuery(string originalMessage, UserInputAnalysis analysis)
+        private MemoryType ChooseMemoryType(string userIntent)
         {
-            if (!string.IsNullOrWhiteSpace(analysis.EnhancedQuery)) {
-                return analysis.EnhancedQuery;
-            }
-
-            if (analysis.Keywords?.Any() == true) {
-                return string.Join(" ", analysis.Keywords);
-            }
-
-            return originalMessage;
-        }
-
-        private MemoryType ChooseMemoryType(UserInputAnalysis analysis)
-        {
-            if (analysis.Emotions?.Any() == true || analysis.ContainsTemporalExpression.Equals(String.Empty)) {
+            // 질문, 회상, 기억 관련 의도는 Episodic 메모리에서 검색
+            var episodicKeywords = new[] { "질문", "회상", "기억", "과거", "경험", "언제", "어떻게", "무엇" };
+            
+            if (episodicKeywords.Any(keyword => userIntent.Contains(keyword)))
+            {
                 return MemoryType.Episodic;
             }
+            
             return MemoryType.Semantic;
         }
     }

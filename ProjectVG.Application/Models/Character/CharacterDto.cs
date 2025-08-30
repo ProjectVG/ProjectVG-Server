@@ -11,11 +11,10 @@ namespace ProjectVG.Application.Models.Character
         public bool IsActive { get; set; } = true;
         public string Personality { get; set; } = string.Empty;
         public string SpeechStyle { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string UserAlias { get; set; } = string.Empty;
         public string VoiceId { get; set; } = string.Empty;
 
-        public CharacterDto()
-        {
-        }
 
         public CharacterDto(Domain.Entities.Characters.Character character)
         {
@@ -26,6 +25,8 @@ namespace ProjectVG.Application.Models.Character
             IsActive = character.IsActive;
             Personality = character.Personality;
             SpeechStyle = character.SpeechStyle;
+            UserAlias = character.UserAlias;
+            Summary = character.Summary;
             VoiceId = character.VoiceId;
         }
     }

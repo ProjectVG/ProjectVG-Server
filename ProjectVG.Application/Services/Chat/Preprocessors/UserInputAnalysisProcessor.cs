@@ -19,43 +19,35 @@ namespace ProjectVG.Application.Services.Chat.Preprocessors
             _logger = logger;
         }
 
-        public async Task<UserInputAnalysis> ProcessAsync(string userInput, IEnumerable<ConversationHistory> conversationHistory)
+        public async Task ProcessAsync(ChatRequestCommand request)
         {
-            try
-            {
-                var format = LLMFormatFactory.CreateUserInputAnalysisFormat();
-                
-                // 최근 5개만 파싱
-                var recentContext = conversationHistory
-                    .Take(5)
-                    .Select(c => $"{c.Role}: {c.Content}")
-                    .ToList();
-                
+            var format = LLMFormatFactory.CreateUserInputAnalysisFormat();
+            var systemPrompt = format.GetSystemMessage(null);
+            var Instructions = format.GetInstructions(null);
+            var userPrompt = request.UserPrompt;
+
+            try {
                 var llmResponse = await _llmClient.CreateTextResponseAsync(
-                    format.GetSystemMessage(userInput),
-                    userInput,
-                    format.GetInstructions(userInput),
-                    recentContext,
+                    systemPrompt,
+                    userPrompt,
+                    Instructions,
+                    null,
                     model: format.Model,
                     maxTokens: format.MaxTokens,
                     temperature: format.Temperature
                 );
 
                 var cost = format.CalculateCost(llmResponse.InputTokens, llmResponse.OutputTokens);
-                var analysis = format.Parse(llmResponse.Response, userInput);
-                analysis.Cost = cost;
-                
-                Console.WriteLine($"[USER_INPUT_ANALYSIS_DEBUG] ID: {llmResponse.Id}, 입력 토큰: {llmResponse.InputTokens}, 출력 토큰: {llmResponse.OutputTokens}, 총 토큰: {llmResponse.TokensUsed}, 계산된 비용: {cost:F0} Cost");
-                _logger.LogDebug("사용자 입력 분석 완료: '{Input}' -> 맥락: {Context}, 의도: {Intent}, 액션: {Action}, 비용: {Cost}", 
-                    userInput, analysis.ConversationContext, analysis.UserIntent, analysis.Action, cost);
+                var (processType, intent) = format.Parse(llmResponse.OutputText, userPrompt);
 
-                return analysis;
+                request.AddCost(cost);
+                request.SetAnalysisResult(processType, intent);
+
+                _logger.LogDebug("사용자 입력 분석 완료: '{Input}' -> 의도: {Intent}, 처리타입: {ProcessType}, 비용: {Cost}",
+                    userPrompt, intent, processType, cost);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "사용자 입력 분석 중 오류 발생: '{Input}'", userInput);
-                // 오류 발생 시 기본값 반환
-                return UserInputAnalysis.CreateValid("일반적인 대화", "대화", UserInputAction.Chat, new List<string>());
+            catch (Exception ex) {
+                _logger.LogError(ex, "사용자 입력 분석 중 오류 발생: '{Input}'", userPrompt);
             }
         }
     }

@@ -7,6 +7,6 @@ namespace ProjectVG.Application.Services.Chat.CostTracking
     {
         T Service { get; }
         Task ProcessAsync(ChatProcessContext context);
-        Task<UserInputAnalysis> ProcessAsync(string userInput, IEnumerable<ConversationHistory> conversationHistory);
+        Task ProcessAsync(ChatRequestCommand request);
     }
 }

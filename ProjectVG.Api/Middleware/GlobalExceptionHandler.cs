@@ -101,7 +101,7 @@ namespace ProjectVG.Api.Middleware
 
         private ErrorResponse HandleValidationException(ValidationException exception, HttpContext context)
         {
-            _logger.LogWarning(exception, "유효성 검사 예외 발생: {ErrorCode} - {Message}", exception.ErrorCode.ToString(), exception.Message);
+            _logger.LogWarning(exception, "유효성 검사 예외 발생: {ErrorCode} - {UserPrompt}", exception.ErrorCode.ToString(), exception.Message);
 
             var details = exception.ValidationErrors?.Select(e => e.ErrorMessage ?? string.Empty).ToList();
 
@@ -117,7 +117,7 @@ namespace ProjectVG.Api.Middleware
 
         private ErrorResponse HandleNotFoundException(NotFoundException exception, HttpContext context)
         {
-            _logger.LogWarning(exception, "리소스를 찾을 수 없음: {ErrorCode} - {Message}", exception.ErrorCode.ToString(), exception.Message);
+            _logger.LogWarning(exception, "리소스를 찾을 수 없음: {ErrorCode} - {UserPrompt}", exception.ErrorCode.ToString(), exception.Message);
 
             return new ErrorResponse {
                 ErrorCode = exception.ErrorCode.ToString(),
@@ -130,7 +130,7 @@ namespace ProjectVG.Api.Middleware
 
         private ErrorResponse HandleAuthenticationException(AuthenticationException exception, HttpContext context)
         {
-            _logger.LogWarning(exception, "인증 실패: {ErrorCode} - {Message}", exception.ErrorCode.ToString(), exception.Message);
+            _logger.LogWarning(exception, "인증 실패: {ErrorCode} - {UserPrompt}", exception.ErrorCode.ToString(), exception.Message);
 
             return new ErrorResponse {
                 ErrorCode = exception.ErrorCode.ToString(),
@@ -143,7 +143,7 @@ namespace ProjectVG.Api.Middleware
 
         private ErrorResponse HandleProjectVGException(ProjectVGException exception, HttpContext context)
         {
-            _logger.LogWarning(exception, "ProjectVG 예외 발생: {ErrorCode} - {Message}", exception.ErrorCode.ToString(), exception.Message);
+            _logger.LogWarning(exception, "ProjectVG 예외 발생: {ErrorCode} - {UserPrompt}", exception.ErrorCode.ToString(), exception.Message);
 
             return new ErrorResponse {
                 ErrorCode = exception.ErrorCode.ToString(),
@@ -156,7 +156,7 @@ namespace ProjectVG.Api.Middleware
 
         private ErrorResponse HandleExternalServiceException(ExternalServiceException exception, HttpContext context)
         {
-            _logger.LogError(exception, "외부 서비스 오류 발생: {ServiceName} - {Endpoint} - {Message}",
+            _logger.LogError(exception, "외부 서비스 오류 발생: {ServiceName} - {Endpoint} - {UserPrompt}",
                 exception.ServiceName, exception.Endpoint, exception.Message);
 
             return new ErrorResponse {
@@ -206,7 +206,7 @@ namespace ProjectVG.Api.Middleware
 
         private ErrorResponse HandleKeyNotFoundException(KeyNotFoundException exception, HttpContext context)
         {
-            _logger.LogWarning(exception, "리소스를 찾을 수 없음: {Message}", exception.Message);
+            _logger.LogWarning(exception, "리소스를 찾을 수 없음: {UserPrompt}", exception.Message);
 
             return new ErrorResponse {
                 ErrorCode = "RESOURCE_NOT_FOUND",
@@ -219,7 +219,7 @@ namespace ProjectVG.Api.Middleware
 
         private ErrorResponse HandleArgumentException(ArgumentException exception, HttpContext context)
         {
-            _logger.LogWarning(exception, "잘못된 인수: {Message}", exception.Message);
+            _logger.LogWarning(exception, "잘못된 인수: {UserPrompt}", exception.Message);
 
             return new ErrorResponse {
                 ErrorCode = "INVALID_ARGUMENT",
@@ -233,7 +233,7 @@ namespace ProjectVG.Api.Middleware
 
         private ErrorResponse HandleInvalidOperationException(InvalidOperationException exception, HttpContext context)
         {
-            _logger.LogWarning(exception, "잘못된 작업: {Message}", exception.Message);
+            _logger.LogWarning(exception, "잘못된 작업: {UserPrompt}", exception.Message);
 
             return new ErrorResponse {
                 ErrorCode = "INVALID_OPERATION",
@@ -247,7 +247,7 @@ namespace ProjectVG.Api.Middleware
 
         private ErrorResponse HandleUnauthorizedAccessException(UnauthorizedAccessException exception, HttpContext context)
         {
-            _logger.LogWarning(exception, "권한 없음: {Message}", exception.Message);
+            _logger.LogWarning(exception, "권한 없음: {UserPrompt}", exception.Message);
 
             return new ErrorResponse {
                 ErrorCode = "UNAUTHORIZED",
@@ -260,7 +260,7 @@ namespace ProjectVG.Api.Middleware
 
         private ErrorResponse HandleTimeoutException(TimeoutException exception, HttpContext context)
         {
-            _logger.LogWarning(exception, "타임아웃 발생: {Message}", exception.Message);
+            _logger.LogWarning(exception, "타임아웃 발생: {UserPrompt}", exception.Message);
 
             return new ErrorResponse {
                 ErrorCode = "TIMEOUT",
@@ -273,7 +273,7 @@ namespace ProjectVG.Api.Middleware
 
         private ErrorResponse HandleHttpRequestException(HttpRequestException exception, HttpContext context)
         {
-            _logger.LogError(exception, "HTTP 요청 오류: {Message}", exception.Message);
+            _logger.LogError(exception, "HTTP 요청 오류: {UserPrompt}", exception.Message);
 
             return new ErrorResponse {
                 ErrorCode = "HTTP_REQUEST_ERROR",
@@ -289,7 +289,7 @@ namespace ProjectVG.Api.Middleware
             var exceptionType = exception.GetType().Name;
             var isDevelopment = _environment.IsDevelopment();
 
-            _logger.LogError(exception, "예상치 못한 예외 발생: {ExceptionType} - {Message}", exceptionType, exception.Message);
+            _logger.LogError(exception, "예상치 못한 예외 발생: {ExceptionType} - {UserPrompt}", exceptionType, exception.Message);
 
             return new ErrorResponse {
                 ErrorCode = "INTERNAL_SERVER_ERROR",

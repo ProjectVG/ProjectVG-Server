@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Models.API.Request;
 using ProjectVG.Application.Services.Chat;
@@ -28,12 +27,12 @@ namespace ProjectVG.Api.Controllers
                 throw new ValidationException(ErrorCode.AUTHENTICATION_FAILED);
             }
 
-            var command = new ProcessChatCommand
-            {
-                UserId = userGuid,
-                Message = request.Message,
-                CharacterId = request.CharacterId
-            };
+            var command = new ChatRequestCommand(
+                userGuid, 
+                request.CharacterId, 
+                request.Message,
+                request.RequestAt,
+                request.UseTTS);
 
             var result = await _chatService.EnqueueChatRequestAsync(command);
             

@@ -20,7 +20,7 @@ namespace ProjectVG.Application
         {
             // Auth Services
             services.AddScoped<IAuthService, AuthService>();
-            services.AddSingleton<IOAuth2Service, OAuth2Service>();
+            services.AddScoped<IOAuth2Service, OAuth2Service>();
             services.AddScoped<IOAuth2ProviderFactory, OAuth2ProviderFactory>();
 
             // User Services
@@ -48,8 +48,9 @@ namespace ProjectVG.Application
             services.AddScoped<ChatLLMProcessor>();
             services.AddScoped<ChatTTSProcessor>();
             services.AddScoped<ChatResultProcessor>();
-            
+
             // Chat Services - Handlers
+            services.AddScoped<ChatSuccessHandler>();
             services.AddScoped<ChatFailureHandler>();
             
             // Chat Services - Cost Tracking Decorators

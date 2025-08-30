@@ -38,44 +38,64 @@ namespace ProjectVG.Application.Services.Chat.Processors
 
         private async Task PersistMemoryAsync(ChatProcessContext context)
         {
-            var insert = new MemoryInsertRequest
+            var episodicRequest = new EpisodicInsertRequest
             {
                 Text = context.Response,
                 UserId = context.UserId.ToString(),
-                Speaker = "ai"
+                Speaker = "assistant",
+                Emotion = new EmotionInfo
+                {
+                    Valence = "neutral",
+                    Arousal = "medium",
+                    Labels = new List<string> { "helpful", "informative" },
+                    Intensity = 0.6
+                },
+                Context = new Dictionary<string, object>
+                {
+                    { "character_id", context.CharacterId },
+                    { "session_id", context.SessionId },
+                    { "conversation_turn", DateTime.UtcNow.Ticks },
+                    { "user_message", context.UserMessage },
+                    { "response_type", "chat_response" },
+                    { "processing_time", 0 }
+                },
+                ImportanceScore = 0.7
+            };
+
+            var userMemoryRequest = new EpisodicInsertRequest
+            {
+                Text = context.UserMessage,
+                UserId = context.UserId.ToString(),
+                Speaker = "user",
+                Emotion = new EmotionInfo
+                {
+                    Valence = "neutral",
+                    Arousal = "medium",
+                    Labels = new List<string> { "inquiry", "conversation" },
+                    Intensity = 0.5
+                },
+                Context = new Dictionary<string, object>
+                {
+                    { "character_id", context.CharacterId },
+                    { "session_id", context.SessionId },
+                    { "conversation_turn", DateTime.UtcNow.Ticks - 1 },
+                    { "message_type", "user_input" },
+                    { "timestamp", DateTime.UtcNow.ToString("o") }
+                },
+                ImportanceScore = 0.8
             };
 
             try
             {
-                await _memoryClient.InsertAutoAsync(insert);
+                await _memoryClient.InsertEpisodicAsync(userMemoryRequest);
+                await _memoryClient.InsertEpisodicAsync(episodicRequest);
+                
+                _logger.LogDebug("메모리 삽입 성공: 사용자={UserId}, 캐릭터={CharacterId}", context.UserId, context.CharacterId);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "메모리 삽입 실패");
+                _logger.LogWarning(ex, "메모리 삽입 실패: 사용자={UserId}, 캐릭터={CharacterId}", context.UserId, context.CharacterId);
             }
-        }
-
-        public async Task SendResultsAsync(ChatProcessContext context)
-        {
-            foreach (var segment in context.Segments.OrderBy(s => s.Order)) {
-                if (segment.IsEmpty) continue;
-
-                var integratedMessage = new IntegratedChatMessage {
-                    SessionId = context.SessionId,
-                    Text = segment.Text,
-                    AudioFormat = segment.AudioContentType ?? "wav",
-                    AudioLength = segment.AudioLength,
-                    Timestamp = DateTime.UtcNow
-                };
-
-                integratedMessage.SetAudioData(segment.AudioData);
-
-                var wsMessage = new WebSocketMessage("chat", integratedMessage);
-                await _webSocketService.SendAsync(context.UserId.ToString(), wsMessage);
-            }
-
-            _logger.LogDebug("채팅 결과 전송 완료: 세션 {UserId}, 세그먼트 {SegmentCount}개",
-                context.SessionId, context.Segments.Count(s => !s.IsEmpty));
         }
     }
 }

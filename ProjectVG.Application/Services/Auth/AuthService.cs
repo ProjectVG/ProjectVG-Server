@@ -40,9 +40,10 @@ namespace ProjectVG.Application.Services.Auth
                 if (user == null)
                 {
                     // 새로운 게스트 사용자 생성
+                    string uuid = GenerateGuestUuid(providerUserId);
                     var createCommand = new UserCreateCommand(
-                        Username: $"guest_{providerUserId.Substring(0, 20)}",
-                        Email: $"guest@guest{providerUserId.Substring(0,20)}.local",
+                        Username: $"guest_{uuid}",
+                        Email: $"guest@guest{uuid}.local",
                         ProviderId: providerUserId,
                         Provider: "guest"
                     );
@@ -137,6 +138,15 @@ namespace ProjectVG.Application.Services.Auth
                 _logger.LogInformation("Users {UserId} logged out successfully", userId);
             }
             return revoked;
+        }
+
+        private static string GenerateGuestUuid(string providerUserId)
+        {
+            // SHA256 해시를 사용하여 일관된 UUID 생성
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var hash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(providerUserId));
+            var hashString = Convert.ToHexString(hash);
+            return hashString.Substring(0, Math.Min(hashString.Length, 16)).ToLowerInvariant();
         }
     }
 }

@@ -10,36 +10,22 @@ namespace ProjectVG.Application.Services.Chat.Handlers
     {
         private readonly ILogger<ChatFailureHandler> _logger;
         private readonly IWebSocketManager _webSocketService;
-        private readonly IConversationService _conversationService;
-        private readonly IMemoryClient _memoryClient;
 
         public ChatFailureHandler(
             ILogger<ChatFailureHandler> logger,
-            IWebSocketManager webSocketService,
-            IConversationService conversationService,
-            IMemoryClient memoryClient)
+            IWebSocketManager webSocketService)
         {
             _logger = logger;
             _webSocketService = webSocketService;
-            _conversationService = conversationService;
-            _memoryClient = memoryClient;
         }
 
-        public Task HandleFailureAsync(ChatProcessContext context, Exception exception)
+        public async Task HandleAsync(ChatProcessContext context)
         {
-            _logger.LogError(exception, "채팅 처리 실패: 세션 {UserId}", context.SessionId);
-            return SendErrorMessageAsync(context, "요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-        }
-
-        private async Task SendErrorMessageAsync(ChatProcessContext context, string errorMessage)
-        {
-            try
-            {
-                var errorResponse = new WebSocketMessage("error", new { message = errorMessage });
+            try {
+                var errorResponse = new WebSocketMessage("fail", "");
                 await _webSocketService.SendAsync(context.UserId.ToString(), errorResponse);
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 _logger.LogError(ex, "오류 메시지 전송 실패: 세션 {UserId}", context.SessionId);
             }
         }

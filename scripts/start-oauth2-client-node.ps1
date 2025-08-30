@@ -13,7 +13,7 @@ Write-Host "================================================" -ForegroundColor C
 # Current Directory Check
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = Split-Path -Parent $ScriptDir
-$TestClientsDir = Join-Path $ProjectRoot "test-clients"
+$TestClientsDir = Join-Path $ProjectRoot "test-clients\oauth2-client"
 $NodeScript = Join-Path $TestClientsDir "start-oauth2-client.js"
 
 Write-Host "Project Root: $ProjectRoot" -ForegroundColor Yellow

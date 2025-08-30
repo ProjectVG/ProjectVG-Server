@@ -1,5 +1,5 @@
 # 0. 기존 DB 드롭
-dotnet ef database drop --project "./ProjectVG.Infrastructure" --startup-project "./ProjectVG.Api" --force --yes
+dotnet ef database drop --project "./ProjectVG.Infrastructure" --startup-project "./ProjectVG.Api" --force
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "DB 드롭 실패"

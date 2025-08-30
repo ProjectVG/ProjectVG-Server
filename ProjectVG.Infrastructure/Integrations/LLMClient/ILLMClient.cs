@@ -18,7 +18,6 @@ namespace ProjectVG.Infrastructure.Integrations.LLMClient
         /// <param name="userMessage">사용자 메시지</param>
         /// <param name="instructions">지시사항</param>
         /// <param name="conversationHistory">대화 기록</param>
-        /// <param name="memoryContext">메모리 컨텍스트</param>
         /// <param name="model">모델명</param>
         /// <param name="maxTokens">최대 토큰 수</param>
         /// <param name="temperature">온도</param>
@@ -28,7 +27,6 @@ namespace ProjectVG.Infrastructure.Integrations.LLMClient
             string userMessage,
             string? instructions = "",
             List<string>? conversationHistory = default,
-            List<string>? memoryContext = default,
             string? model = "gpt-4o-mini",
             int? maxTokens = 1000,
             float? temperature = 0.7f);

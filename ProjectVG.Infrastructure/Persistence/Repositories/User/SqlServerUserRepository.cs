@@ -46,6 +46,11 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Users
             return await _context.Users.FirstOrDefaultAsync(u => u.ProviderId == providerId && u.Status != AccountStatus.Deleted);
         }
 
+        public async Task<User?> GetByProviderAsync(string provider, string providerId)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.Provider == provider && u.ProviderId == providerId && u.Status != AccountStatus.Deleted);
+        }
+
         public async Task<User?> GetByUIDAsync(string uid)
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.UID == uid && u.Status != AccountStatus.Deleted);

@@ -25,15 +25,9 @@ namespace ProjectVG.Application.Services.Chat.Validators
             _logger = logger;
         }
 
-        public async Task ValidateAsync(ProcessChatCommand command)
+        public async Task ValidateAsync(ChatRequestCommand command)
         {
-            if (!string.IsNullOrEmpty(command.SessionId)) {
-                var sessionExists = await _sessionStorage.ExistsAsync(command.SessionId);
-                if (!sessionExists) {
-                    _logger.LogWarning("세션 ID 검증 실패: {UserId}", command.SessionId);
-                    throw new ValidationException(ErrorCode.INVALID_SESSION_ID, command.SessionId);
-                }
-            }
+            // TODO : 세션 검증
 
             var userExists = await _userService.ExistsByIdAsync(command.UserId);
             if (!userExists) {
