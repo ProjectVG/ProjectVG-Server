@@ -51,7 +51,11 @@ namespace ProjectVG.Infrastructure
         private static void AddDatabaseServices(IServiceCollection services, IConfiguration configuration)
         {
             services.AddDbContext<ProjectVGDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"), 
+                    sqlOptions => sqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 3,
+                        maxRetryDelay: TimeSpan.FromSeconds(10),
+                        errorNumbersToAdd: null)));
         }
 
         /// <summary>
