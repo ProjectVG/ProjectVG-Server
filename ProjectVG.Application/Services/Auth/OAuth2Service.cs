@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using ProjectVG.Common.Configuration;
 using ProjectVG.Application.Models.Auth;
@@ -19,21 +20,30 @@ namespace ProjectVG.Application.Services.Auth
         private readonly OAuth2ProviderSettings _settings;
         private readonly IAuthService _authService;
         private readonly IOAuth2ProviderFactory _providerFactory;
-        private readonly Dictionary<string, string> _oauth2Requests = new();
-        private readonly Dictionary<string, string> _tokenData = new();
+        private readonly IDistributedCache _cache;
+
+        // Redis 키 접두사
+        private const string OAuth2RequestPrefix = "oauth2:request:";
+        private const string TokenDataPrefix = "oauth2:token:";
+
+        // TTL 설정
+        private static readonly TimeSpan OAuth2RequestTTL = TimeSpan.FromMinutes(10);
+        private static readonly TimeSpan TokenDataTTL = TimeSpan.FromMinutes(5);
 
         public OAuth2Service(
             IHttpClientFactory httpClientFactory,
             ILogger<OAuth2Service> logger,
             IOptions<OAuth2ProviderSettings> settings,
             IAuthService authService,
-            IOAuth2ProviderFactory providerFactory)
+            IOAuth2ProviderFactory providerFactory,
+            IDistributedCache cache)
         {
             _httpClient = httpClientFactory.CreateClient();
             _logger = logger;
             _settings = settings.Value;
             _authService = authService;
             _providerFactory = providerFactory;
+            _cache = cache;
         }
 
         /// <summary>
@@ -205,8 +215,15 @@ namespace ProjectVG.Application.Services.Auth
         {
             try
             {
-                _oauth2Requests[state] = JsonSerializer.Serialize(request);
-                await Task.CompletedTask;
+                var key = OAuth2RequestPrefix + state;
+                var json = JsonSerializer.Serialize(request);
+                var options = new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = OAuth2RequestTTL
+                };
+                
+                await _cache.SetStringAsync(key, json, options);
+                _logger.LogDebug("OAuth2 요청 저장 완료: State={State}, TTL={TTL}분", state, OAuth2RequestTTL.TotalMinutes);
                 return request;
             }
             catch (Exception ex)
@@ -218,42 +235,99 @@ namespace ProjectVG.Application.Services.Auth
 
         public async Task<OAuth2AuthRequest?> GetOAuth2RequestAsync(string state)
         {            
-            if (_oauth2Requests.TryGetValue(state, out var json)) {
-                var request = JsonSerializer.Deserialize<OAuth2AuthRequest>(json);
-                await Task.CompletedTask;
-                return request;
+            try
+            {
+                var key = OAuth2RequestPrefix + state;
+                var json = await _cache.GetStringAsync(key);
+                
+                if (!string.IsNullOrEmpty(json))
+                {
+                    var request = JsonSerializer.Deserialize<OAuth2AuthRequest>(json);
+                    _logger.LogDebug("OAuth2 요청 조회 성공: State={State}", state);
+                    return request;
+                }
+                
+                _logger.LogWarning("OAuth2 요청을 찾을 수 없음: State={State}", state);
+                return null;
             }
-            
-            await Task.CompletedTask;
-            return null;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "OAuth2 요청 조회 실패: State={State}", state);
+                return null;
+            }
         }
 
         public async Task DeleteOAuth2RequestAsync(string state)
         {
-            _oauth2Requests.Remove(state);
-            await Task.CompletedTask;
+            try
+            {
+                var key = OAuth2RequestPrefix + state;
+                await _cache.RemoveAsync(key);
+                _logger.LogDebug("OAuth2 요청 삭제 완료: State={State}", state);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "OAuth2 요청 삭제 실패: State={State}", state);
+            }
         }
 
         public async Task StoreTokenDataAsync(string state, object tokenData)
         {
-            _tokenData[state] = JsonSerializer.Serialize(tokenData);
-            await Task.CompletedTask;
+            try
+            {
+                var key = TokenDataPrefix + state;
+                var json = JsonSerializer.Serialize(tokenData);
+                var options = new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TokenDataTTL
+                };
+                
+                await _cache.SetStringAsync(key, json, options);
+                _logger.LogDebug("토큰 데이터 저장 완료: State={State}, TTL={TTL}분", state, TokenDataTTL.TotalMinutes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "토큰 데이터 저장 실패: State={State}", state);
+                throw;
+            }
         }
 
         public async Task DeleteTokenDataAsync(string state)
         {
-            _tokenData.Remove(state);
-            await Task.CompletedTask;
+            try
+            {
+                var key = TokenDataPrefix + state;
+                await _cache.RemoveAsync(key);
+                _logger.LogDebug("토큰 데이터 삭제 완료: State={State}", state);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "토큰 데이터 삭제 실패: State={State}", state);
+            }
         }
 
         public async Task<OAuth2TokenData?> GetTokenDataAsync(string state)
         {
-            if (_tokenData.TryGetValue(state, out var json)) {
-                await Task.CompletedTask;
-                return JsonSerializer.Deserialize<OAuth2TokenData>(json);
+            try
+            {
+                var key = TokenDataPrefix + state;
+                var json = await _cache.GetStringAsync(key);
+                
+                if (!string.IsNullOrEmpty(json))
+                {
+                    var tokenData = JsonSerializer.Deserialize<OAuth2TokenData>(json);
+                    _logger.LogDebug("토큰 데이터 조회 성공: State={State}", state);
+                    return tokenData;
+                }
+                
+                _logger.LogWarning("토큰 데이터를 찾을 수 없음: State={State}", state);
+                return null;
             }
-            await Task.CompletedTask;
-            return null;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "토큰 데이터 조회 실패: State={State}", state);
+                return null;
+            }
         }
 
         private OAuth2Settings? GetProviderByClientId(string clientId)
