@@ -20,31 +20,65 @@ namespace ProjectVG.Application.Services.Chat.Handlers
 
         public async Task HandleAsync(ChatProcessContext context)
         {
-            foreach (var segment in context.Segments.OrderBy(s => s.Order)) {
-                if (segment.IsEmpty) continue;
+            try
+            {
+                var validSegments = context.Segments
+                    .Where(s => !s.IsEmpty)
+                    .OrderBy(s => s.Order)
+                    .ToList();
 
-                var integratedMessage = new ChatProcessResultMessage {
-                    Type = segment.Type == SegmentType.Text ? "chat" : "action",
-                    Text = segment.Content,
-                    Timestamp = DateTime.UtcNow
-                };
-
-                if (segment.Type == SegmentType.Text && segment.HasAudio)
+                if (!validSegments.Any())
                 {
-                    integratedMessage = integratedMessage with 
-                    { 
-                        AudioFormat = segment.AudioContentType ?? "wav",
-                        AudioLength = segment.AudioLength
-                    };
-                    integratedMessage = integratedMessage.WithAudioData(segment.AudioData);
+                    _logger.LogWarning("채팅 처리 결과에 유효한 세그먼트가 없습니다: 요청 {RequestId}", context.RequestId);
+                    return;
                 }
 
-                var wsMessage = new WebSocketMessage("chat", integratedMessage);
-                await _webSocketService.SendAsync(context.UserId.ToString(), wsMessage);
-            }
+                await ProcessSegmentsBatch(context.UserId, validSegments);
 
-            _logger.LogDebug("채팅 결과 전송 완료: 세션 {UserId}, 세그먼트 {SegmentCount}개",
-                context.RequestId, context.Segments.Count(s => !s.IsEmpty));
+                _logger.LogDebug("채팅 결과 전송 완료: 요청 {RequestId}, 세그먼트 {SegmentCount}개",
+                    context.RequestId, validSegments.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "채팅 결과 전송 중 오류 발생: 요청 {RequestId}", context.RequestId);
+                throw;
+            }
+        }
+
+        private async Task ProcessSegmentsBatch(Guid userId, List<ChatSegment> segments)
+        {
+            const int maxRetries = 3;
+            var tasks = segments.Select(segment => ProcessSegmentWithRetry(userId, segment, maxRetries));
+            
+            await Task.WhenAll(tasks);
+        }
+
+        private async Task ProcessSegmentWithRetry(Guid userId, ChatSegment segment, int maxRetries)
+        {
+            for (int attempt = 0; attempt < maxRetries; attempt++)
+            {
+                try
+                {
+                    var message = ChatProcessResultMessageBuilder.CreateFromSegment(segment);
+                    var wsMessage = new WebSocketMessage("chat", message);
+                    
+                    await _webSocketService.SendAsync(userId.ToString(), wsMessage);
+                    return;
+                }
+                catch (Exception ex) when (attempt < maxRetries - 1)
+                {
+                    _logger.LogWarning(ex, "세그먼트 전송 실패 (시도 {Attempt}/{MaxRetries}): 사용자 {UserId}, 세그먼트 순서 {Order}", 
+                        attempt + 1, maxRetries, userId, segment.Order);
+                    
+                    await Task.Delay(TimeSpan.FromMilliseconds(Math.Pow(2, attempt) * 100));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "세그먼트 전송 최종 실패: 사용자 {UserId}, 세그먼트 순서 {Order}", 
+                        userId, segment.Order);
+                    throw;
+                }
+            }
         }
     }
 }
