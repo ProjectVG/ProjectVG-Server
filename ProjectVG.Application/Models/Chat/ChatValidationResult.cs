@@ -1,10 +1,10 @@
 namespace ProjectVG.Application.Models.Chat
 {
-    public class ChatValidationResult
+    public record ChatValidationResult
     {
-        public bool IsValid { get; set; }
-        public string ErrorMessage { get; set; } = string.Empty;
-        public string ErrorCode { get; set; } = string.Empty;
+        public bool IsValid { get; init; }
+        public string ErrorMessage { get; init; } = string.Empty;
+        public string ErrorCode { get; init; } = string.Empty;
 
         public static ChatValidationResult Success()
         {

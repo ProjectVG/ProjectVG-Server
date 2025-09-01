@@ -2,41 +2,41 @@ using System.Text.Json.Serialization;
 
 namespace ProjectVG.Application.Models.Chat
 {
-    public class ChatProcessResultMessage
+    public record ChatProcessResultMessage
     {
         [JsonPropertyName("type")]
-        public string Type { get; set; } = "text";
+        public string Type { get; init; } = "chat";
         
         [JsonPropertyName("message_type")]
-        public string MessageType { get; set; } = "json";
+        public string MessageType { get; init; } = "json";
         
         [JsonPropertyName("text")]
-        public string? Text { get; set; }
+        public string? Text { get; init; }
         
         [JsonPropertyName("audio_data")]
-        public string? AudioData { get; set; }
+        public string? AudioData { get; init; }
         
         [JsonPropertyName("audio_format")]
-        public string? AudioFormat { get; set; } = "wav";
+        public string? AudioFormat { get; init; }
         
         [JsonPropertyName("audio_length")]
-        public float? AudioLength { get; set; }
+        public float? AudioLength { get; init; }
         
         [JsonPropertyName("timestamp")]
-        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        public DateTime Timestamp { get; init; } = DateTime.UtcNow;
         
         [JsonPropertyName("metadata")]
-        public Dictionary<string, object>? Metadata { get; set; }
+        public Dictionary<string, object>? Metadata { get; init; }
         
-        public void SetAudioData(byte[]? audioBytes)
+        public ChatProcessResultMessage WithAudioData(byte[]? audioBytes)
         {
             if (audioBytes != null && audioBytes.Length > 0)
             {
-                AudioData = Convert.ToBase64String(audioBytes);
+                return this with { AudioData = Convert.ToBase64String(audioBytes) };
             }
             else
             {
-                AudioData = null;
+                return this with { AudioData = null };
             }
         }
     }

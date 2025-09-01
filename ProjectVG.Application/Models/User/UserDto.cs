@@ -2,17 +2,17 @@ using ProjectVG.Domain.Entities.Users;
 
 namespace ProjectVG.Application.Models.User
 {
-    public class UserDto
+    public record UserDto
     {
-        public Guid Id { get; set; }
-        public string UID { get; set; } = string.Empty;
-        public string Username { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string ProviderId { get; set; } = string.Empty;
-        public string Provider { get; set; } = string.Empty;
-        public AccountStatus Status { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
+        public Guid Id { get; init; }
+        public string UID { get; init; } = string.Empty;
+        public string Username { get; init; } = string.Empty;
+        public string Email { get; init; } = string.Empty;
+        public string ProviderId { get; init; } = string.Empty;
+        public string Provider { get; init; } = string.Empty;
+        public AccountStatus Status { get; init; }
+        public DateTime CreatedAt { get; init; }
+        public DateTime UpdatedAt { get; init; }
 
         public UserDto()
         {

@@ -1,6 +1,6 @@
 namespace ProjectVG.Application.Models.Character
 {
-    public class CreateCharacterCommand : CharacterCommand
+    public record CreateCharacterCommand : CharacterCommand
     {
     }
 }

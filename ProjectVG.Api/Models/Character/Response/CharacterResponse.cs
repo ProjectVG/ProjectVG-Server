@@ -3,22 +3,22 @@ using System.Text.Json.Serialization;
 
 namespace ProjectVG.Api.Models.Character.Response
 {
-    public class CharacterResponse
+    public record CharacterResponse
     {
         [JsonPropertyName("id")]
-        public Guid Id { get; set; }
+        public Guid Id { get; init; }
 
         [JsonPropertyName("name")]
-        public string Name { get; set; } = string.Empty;
+        public string Name { get; init; } = string.Empty;
 
         [JsonPropertyName("description")]
-        public string Description { get; set; } = string.Empty;
+        public string Description { get; init; } = string.Empty;
 
         [JsonPropertyName("role")]
-        public string Role { get; set; } = string.Empty;
+        public string Role { get; init; } = string.Empty;
 
         [JsonPropertyName("is_active")]
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; init; } = true;
 
 
         public static CharacterResponse ToResponseDto(CharacterDto characterDto)

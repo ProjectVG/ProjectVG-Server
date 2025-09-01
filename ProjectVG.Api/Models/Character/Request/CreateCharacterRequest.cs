@@ -3,19 +3,19 @@ using ProjectVG.Application.Models.Character;
 
 namespace ProjectVG.Api.Models.Character.Request
 {
-    public class CreateCharacterRequest
+    public record CreateCharacterRequest
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; } = string.Empty;
+        public string Name { get; init; } = string.Empty;
 
         [JsonPropertyName("description")]
-        public string Description { get; set; } = string.Empty;
+        public string Description { get; init; } = string.Empty;
 
         [JsonPropertyName("role")]
-        public string Role { get; set; } = string.Empty;
+        public string Role { get; init; } = string.Empty;
 
         [JsonPropertyName("is_active")]
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; init; } = true;
 
         public CreateCharacterCommand ToCreateCharacterCommand()
         {

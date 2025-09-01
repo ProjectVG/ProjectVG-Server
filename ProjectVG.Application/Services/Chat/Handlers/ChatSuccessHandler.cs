@@ -24,16 +24,19 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                 if (segment.IsEmpty) continue;
 
                 var integratedMessage = new ChatProcessResultMessage {
-                    Type = segment.Type == SegmentType.Text ? "text" : "action",
+                    Type = segment.Type == SegmentType.Text ? "chat" : "action",
                     Text = segment.Content,
                     Timestamp = DateTime.UtcNow
                 };
 
                 if (segment.Type == SegmentType.Text && segment.HasAudio)
                 {
-                    integratedMessage.AudioFormat = segment.AudioContentType ?? "wav";
-                    integratedMessage.AudioLength = segment.AudioLength;
-                    integratedMessage.SetAudioData(segment.AudioData);
+                    integratedMessage = integratedMessage with 
+                    { 
+                        AudioFormat = segment.AudioContentType ?? "wav",
+                        AudioLength = segment.AudioLength
+                    };
+                    integratedMessage = integratedMessage.WithAudioData(segment.AudioData);
                 }
 
                 var wsMessage = new WebSocketMessage("chat", integratedMessage);

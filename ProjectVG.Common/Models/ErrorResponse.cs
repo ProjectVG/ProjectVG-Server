@@ -1,12 +1,12 @@
 namespace ProjectVG.Common.Models
 {
-    public class ErrorResponse
+    public record ErrorResponse
     {
-        public string ErrorCode { get; set; } = string.Empty;
-        public string Message { get; set; } = string.Empty;
-        public int StatusCode { get; set; }
-        public DateTime Timestamp { get; set; }
-        public string? TraceId { get; set; }
-        public List<string>? Details { get; set; }
+        public string ErrorCode { get; init; } = string.Empty;
+        public string Message { get; init; } = string.Empty;
+        public int StatusCode { get; init; }
+        public DateTime Timestamp { get; init; }
+        public string? TraceId { get; init; }
+        public List<string>? Details { get; init; }
     }
 }

@@ -86,8 +86,7 @@ namespace ProjectVG.Application.Services.Auth
             // OAuth2 사용자인 경우 Provider 정보를 포함하여 사용자 생성 (test와 guest는 이미 처리됨)
             if (provider != "test" && provider != "guest")
             {
-                user.Provider = provider;
-                user.ProviderId = providerUserId;
+                user = user with { Provider = provider, ProviderId = providerUserId };
             }
 
             var tokens = await _tokenService.GenerateTokensAsync(user.Id);

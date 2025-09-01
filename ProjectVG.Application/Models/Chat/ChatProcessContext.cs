@@ -4,7 +4,7 @@ using ProjectVG.Domain.Entities.ConversationHistorys;
 
 namespace ProjectVG.Application.Models.Chat
 {
-    public class ChatProcessContext
+    public record ChatProcessContext
     {
         public Guid RequestId { get; } = Guid.NewGuid();
         public Guid UserId { get; private set; }
