@@ -35,20 +35,38 @@ namespace ProjectVG.Api.Controllers
             return Ok(response);
         }
 
-        [HttpPost]
-        public async Task<ActionResult<CharacterResponse>> CreateCharacter([FromBody] CreateCharacterRequest request)
+        [HttpPost("individual")]
+        public async Task<ActionResult<CharacterResponse>> CreateCharacterWithFields([FromBody] CreateCharacterWithFieldsRequest request)
         {
-            var command = request.ToCreateCharacterCommand();
-            var characterDto = await _characterService.CreateCharacterAsync(command);
+            var command = request.ToCommand();
+            var characterDto = await _characterService.CreateCharacterWithFieldsAsync(command);
             var response = CharacterResponse.ToResponseDto(characterDto);
             return CreatedAtAction(nameof(GetCharacterById), new { id = response.Id }, response);
         }
 
-        [HttpPut("{id}")]
-        public async Task<ActionResult<CharacterResponse>> UpdateCharacter(Guid id, [FromBody] UpdateCharacterRequest request)
+        [HttpPost("systemprompt")]
+        public async Task<ActionResult<CharacterResponse>> CreateCharacterWithSystemPrompt([FromBody] CreateCharacterWithSystemPromptRequest request)
         {
-            var command = request.ToUpdateCharacterCommand();
-            var characterDto = await _characterService.UpdateCharacterAsync(id, command);
+            var command = request.ToCommand();
+            var characterDto = await _characterService.CreateCharacterWithSystemPromptAsync(command);
+            var response = CharacterResponse.ToResponseDto(characterDto);
+            return CreatedAtAction(nameof(GetCharacterById), new { id = response.Id }, response);
+        }
+
+        [HttpPut("{id}/individual")]
+        public async Task<ActionResult<CharacterResponse>> UpdateCharacterToIndividual(Guid id, [FromBody] UpdateCharacterToIndividualRequest request)
+        {
+            var command = request.ToCommand(id);
+            var characterDto = await _characterService.UpdateCharacterToIndividualAsync(command);
+            var response = CharacterResponse.ToResponseDto(characterDto);
+            return Ok(response);
+        }
+
+        [HttpPut("{id}/systemprompt")]
+        public async Task<ActionResult<CharacterResponse>> UpdateCharacterToSystemPrompt(Guid id, [FromBody] UpdateCharacterToSystemPromptRequest request)
+        {
+            var command = request.ToCommand(id);
+            var characterDto = await _characterService.UpdateCharacterToSystemPromptAsync(command);
             var response = CharacterResponse.ToResponseDto(characterDto);
             return Ok(response);
         }

@@ -7,27 +7,28 @@ namespace ProjectVG.Application.Models.Character
         public Guid Id { get; init; }
         public string Name { get; init; } = string.Empty;
         public string Description { get; init; } = string.Empty;
-        public string Role { get; init; } = string.Empty;
+        public string ImageUrl { get; init; } = string.Empty;
         public bool IsActive { get; init; } = true;
-        public string Personality { get; init; } = string.Empty;
-        public string SpeechStyle { get; init; } = string.Empty;
-        public string Summary { get; init; } = string.Empty;
-        public string UserAlias { get; init; } = string.Empty;
         public string VoiceId { get; init; } = string.Empty;
-
+        
+        public CharacterConfigMode ConfigMode { get; init; }
+        public IndividualConfig? IndividualConfig { get; init; }
+        public string? SystemPrompt { get; init; }
+        
+        public string EffectiveSystemPrompt { get; init; } = string.Empty;
 
         public CharacterDto(Domain.Entities.Characters.Character character)
         {
             Id = character.Id;
             Name = character.Name;
             Description = character.Description;
-            Role = character.Role;            
+            ImageUrl = character.ImageUrl;
             IsActive = character.IsActive;
-            Personality = character.Personality;
-            SpeechStyle = character.SpeechStyle;
-            UserAlias = character.UserAlias;
-            Summary = character.Summary;
             VoiceId = character.VoiceId;
+            ConfigMode = character.ConfigMode;
+            IndividualConfig = character.IndividualConfig;
+            SystemPrompt = character.SystemPrompt;
+            EffectiveSystemPrompt = character.GetEffectiveSystemPrompt();
         }
     }
 }

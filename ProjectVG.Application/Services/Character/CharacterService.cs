@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Character;
 using ProjectVG.Common.Exceptions;
 using ProjectVG.Common.Constants;
+using ProjectVG.Domain.Entities.Characters;
 
 namespace ProjectVG.Application.Services.Character
 {
@@ -36,37 +37,81 @@ namespace ProjectVG.Application.Services.Character
             return characterDto;
         }
 
-        public async Task<CharacterDto> CreateCharacterAsync(CreateCharacterCommand command)
+        public async Task<CharacterDto> CreateCharacterWithFieldsAsync(CreateCharacterWithFieldsCommand command)
         {
-            var character = new ProjectVG.Domain.Entities.Characters.Character {
+            var character = new ProjectVG.Domain.Entities.Characters.Character
+            {
                 Name = command.Name,
                 Description = command.Description,
-                Role = command.Role,
+                ImageUrl = command.ImageUrl,
+                VoiceId = command.VoiceId,
                 IsActive = command.IsActive
             };
+            
+            character.SetIndividualConfig(command.IndividualConfig);
 
             var createdCharacter = await _characterRepository.CreateAsync(character);
             var characterDto = new CharacterDto(createdCharacter);
 
-            _logger.LogInformation("캐릭터 생성 완료: {CharacterName} (ID: {CharacterId})", characterDto.Name, characterDto.Id);
+            _logger.LogInformation("개별 설정 캐릭터 생성 완료: {CharacterName} (ID: {CharacterId})", characterDto.Name, characterDto.Id);
             return characterDto;
         }
 
-        public async Task<CharacterDto> UpdateCharacterAsync(Guid id, UpdateCharacterCommand command)
+        public async Task<CharacterDto> CreateCharacterWithSystemPromptAsync(CreateCharacterWithSystemPromptCommand command)
         {
-            var existingCharacter = await _characterRepository.GetByIdAsync(id);
+            var character = new ProjectVG.Domain.Entities.Characters.Character
+            {
+                Name = command.Name,
+                Description = command.Description,
+                ImageUrl = command.ImageUrl,
+                VoiceId = command.VoiceId,
+                IsActive = command.IsActive
+            };
+            
+            character.SetSystemPrompt(command.SystemPrompt);
+
+            var createdCharacter = await _characterRepository.CreateAsync(character);
+            var characterDto = new CharacterDto(createdCharacter);
+
+            _logger.LogInformation("SystemPrompt 캐릭터 생성 완료: {CharacterName} (ID: {CharacterId})", characterDto.Name, characterDto.Id);
+            return characterDto;
+        }
+
+        public async Task<CharacterDto> UpdateCharacterToIndividualAsync(UpdateCharacterToIndividualCommand command)
+        {
+            var existingCharacter = await _characterRepository.GetByIdAsync(command.Id);
             if (existingCharacter == null) {
-                throw new NotFoundException(ErrorCode.CHARACTER_NOT_FOUND, id);
+                throw new NotFoundException(ErrorCode.CHARACTER_NOT_FOUND, command.Id);
             }
 
             existingCharacter.Name = command.Name;
             existingCharacter.Description = command.Description;
-            existingCharacter.Role = command.Role;
-            existingCharacter.IsActive = command.IsActive;
+            existingCharacter.ImageUrl = command.ImageUrl;
+            existingCharacter.VoiceId = command.VoiceId;
+            existingCharacter.SetIndividualConfig(command.IndividualConfig);
 
             var updatedCharacter = await _characterRepository.UpdateAsync(existingCharacter);
             var characterDto = new CharacterDto(updatedCharacter);
-            _logger.LogInformation("캐릭터 수정 완료: {CharacterName} (ID: {CharacterId})", characterDto.Name, characterDto.Id);
+            _logger.LogInformation("캐릭터 개별 설정 모드로 수정 완료: {CharacterName} (ID: {CharacterId})", characterDto.Name, characterDto.Id);
+            return characterDto;
+        }
+
+        public async Task<CharacterDto> UpdateCharacterToSystemPromptAsync(UpdateCharacterToSystemPromptCommand command)
+        {
+            var existingCharacter = await _characterRepository.GetByIdAsync(command.Id);
+            if (existingCharacter == null) {
+                throw new NotFoundException(ErrorCode.CHARACTER_NOT_FOUND, command.Id);
+            }
+
+            existingCharacter.Name = command.Name;
+            existingCharacter.Description = command.Description;
+            existingCharacter.ImageUrl = command.ImageUrl;
+            existingCharacter.VoiceId = command.VoiceId;
+            existingCharacter.SetSystemPrompt(command.SystemPrompt);
+
+            var updatedCharacter = await _characterRepository.UpdateAsync(existingCharacter);
+            var characterDto = new CharacterDto(updatedCharacter);
+            _logger.LogInformation("캐릭터 SystemPrompt 모드로 수정 완료: {CharacterName} (ID: {CharacterId})", characterDto.Name, characterDto.Id);
             return characterDto;
         }
 

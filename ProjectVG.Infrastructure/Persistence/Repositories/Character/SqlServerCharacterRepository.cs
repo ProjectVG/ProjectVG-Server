@@ -53,10 +53,12 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
 
             existingCharacter.Name = character.Name;
             existingCharacter.Description = character.Description;
-            existingCharacter.Role = character.Role;
-            existingCharacter.Personality = character.Personality;
-            existingCharacter.Background = character.Background;
+            existingCharacter.ImageUrl = character.ImageUrl;
+            existingCharacter.VoiceId = character.VoiceId;
             existingCharacter.IsActive = character.IsActive;
+            existingCharacter.ConfigMode = character.ConfigMode;
+            existingCharacter.IndividualConfigJson = character.IndividualConfigJson;
+            existingCharacter.SystemPrompt = character.SystemPrompt;
             existingCharacter.Update();
 
             await _context.SaveChangesAsync();

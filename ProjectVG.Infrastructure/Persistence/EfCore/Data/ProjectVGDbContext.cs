@@ -45,9 +45,33 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 entity.Property(e => e.Id).ValueGeneratedOnAdd();
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Description).HasMaxLength(1000);
-                entity.Property(e => e.Role).IsRequired().HasMaxLength(500);
-                entity.Property(e => e.Personality).HasMaxLength(1000);
-                entity.Property(e => e.Background).HasMaxLength(2000);
+                entity.Property(e => e.ImageUrl).HasMaxLength(500);
+                entity.Property(e => e.VoiceId).HasMaxLength(100);
+                entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+                
+                // 설정 모드
+                entity.Property(e => e.ConfigMode).IsRequired().HasDefaultValue(CharacterConfigMode.Individual);
+                
+                // JSON 설정 (개별 설정용)
+                entity.Property(e => e.IndividualConfigJson).HasColumnType("nvarchar(max)");
+                
+                // SystemPrompt (직접 입력용, 최대 5000자)
+                entity.Property(e => e.SystemPrompt).HasMaxLength(5000);
+                
+                // JSON 컬럼 변환 설정
+                entity.Property(e => e.IndividualConfig)
+                    .HasConversion(
+                        v => v == null ? null : System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                        v => v == null ? null : System.Text.Json.JsonSerializer.Deserialize<IndividualConfig>(v, (System.Text.Json.JsonSerializerOptions?)null))
+                    .HasColumnName("IndividualConfigJson");
+                
+                // 제약 조건
+                entity.ToTable(t => t.HasCheckConstraint("CK_Character_ConfigMode_Valid", "ConfigMode IN (0, 1)"));
+                
+                // 인덱스
+                entity.HasIndex(e => e.Name);
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.ConfigMode);
             });
 
             // ConversationHistorys 엔티티 설정
@@ -89,11 +113,18 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 Id = p.Id,
                 Name = p.Name,
                 Description = p.Description,
-                Role = p.Role,
-                Personality = p.Personality,
-                Background = "",
                 IsActive = p.IsActive,
                 VoiceId = p.VoiceId,
+                ConfigMode = CharacterConfigMode.Individual,
+                IndividualConfigJson = System.Text.Json.JsonSerializer.Serialize(new IndividualConfig
+                {
+                    Role = p.Role,
+                    Personality = p.Personality,
+                    SpeechStyle = p.SpeechStyle,
+                    UserAlias = p.UserAlias,
+                    Summary = p.Summary,
+                    Background = ""
+                }),
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             }).ToList();

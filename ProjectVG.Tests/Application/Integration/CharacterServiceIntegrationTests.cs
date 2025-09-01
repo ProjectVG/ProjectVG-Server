@@ -23,17 +23,17 @@ namespace ProjectVG.Tests.Application.Integration
         #region Create and Retrieve Integration Tests
 
         [Fact]
-        public async Task CreateAndGetCharacterAsync_ShouldPersistAndRetrieveCharacter()
+        public async Task CreateWithFieldsAndGetCharacterAsync_ShouldPersistAndRetrieveCharacter()
         {
             // Arrange
             await _fixture.ClearDatabaseAsync();
-            var createCommand = TestDataBuilder.CreateCreateCharacterCommand(
+            var createCommand = TestDataBuilder.CreateCreateCharacterWithFieldsCommand(
                 "Integration Test Character",
                 "A character for integration testing",
-                "Test Role");
+                role: "Test Role");
 
             // Act - Create
-            var createdCharacter = await _characterService.CreateCharacterAsync(createCommand);
+            var createdCharacter = await _characterService.CreateCharacterWithFieldsAsync(createCommand);
 
             // Act - Retrieve
             var retrievedCharacter = await _characterService.GetCharacterByIdAsync(createdCharacter.Id);
@@ -43,7 +43,6 @@ namespace ProjectVG.Tests.Application.Integration
             retrievedCharacter.Id.Should().Be(createdCharacter.Id);
             retrievedCharacter.Name.Should().Be(createCommand.Name);
             retrievedCharacter.Description.Should().Be(createCommand.Description);
-            retrievedCharacter.Role.Should().Be(createCommand.Role);
             retrievedCharacter.IsActive.Should().Be(createCommand.IsActive);
         }
 
@@ -52,20 +51,22 @@ namespace ProjectVG.Tests.Application.Integration
         {
             // Arrange
             await _fixture.ClearDatabaseAsync();
-            var commands = new[]
-            {
-                TestDataBuilder.CreateCreateCharacterCommand("Character 1", "Description 1", "Role 1"),
-                TestDataBuilder.CreateCreateCharacterCommand("Character 2", "Description 2", "Role 2"),
-                TestDataBuilder.CreateCreateCharacterCommand("Character 3", "Description 3", "Role 3")
-            };
+            // Create commands separately due to different types
+            var fieldsCommand1 = TestDataBuilder.CreateCreateCharacterWithFieldsCommand("Character 1", "Description 1", role: "Role 1");
+            var fieldsCommand2 = TestDataBuilder.CreateCreateCharacterWithFieldsCommand("Character 2", "Description 2", role: "Role 2");
+            var systemPromptCommand = TestDataBuilder.CreateCreateCharacterWithSystemPromptCommand("Character 3", "Description 3", systemPrompt: "You are Character 3");
 
-            // Act - Create characters
+            // Act - Create characters (mix of modes)
             var createdCharacters = new List<CharacterDto>();
-            foreach (var command in commands)
-            {
-                var created = await _characterService.CreateCharacterAsync(command);
-                createdCharacters.Add(created);
-            }
+            
+            // Create first two with fields mode
+            var created1 = await _characterService.CreateCharacterWithFieldsAsync(fieldsCommand1);
+            var created2 = await _characterService.CreateCharacterWithFieldsAsync(fieldsCommand2);
+            var created3 = await _characterService.CreateCharacterWithSystemPromptAsync(systemPromptCommand);
+            
+            createdCharacters.Add(created1);
+            createdCharacters.Add(created2);
+            createdCharacters.Add(created3);
 
             // Act - Get all
             var allCharacters = await _characterService.GetAllCharactersAsync();
@@ -84,17 +85,17 @@ namespace ProjectVG.Tests.Application.Integration
         {
             // Arrange
             await _fixture.ClearDatabaseAsync();
-            var createCommand = TestDataBuilder.CreateCreateCharacterCommand("Original Name");
-            var createdCharacter = await _characterService.CreateCharacterAsync(createCommand);
+            var createCommand = TestDataBuilder.CreateCreateCharacterWithFieldsCommand("Original Name");
+            var createdCharacter = await _characterService.CreateCharacterWithFieldsAsync(createCommand);
 
-            var updateCommand = TestDataBuilder.CreateUpdateCharacterCommand(
+            var updateCommand = TestDataBuilder.CreateUpdateCharacterToIndividualCommand(
+                createdCharacter.Id,
                 "Updated Name",
                 "Updated Description",
-                "Updated Role",
-                true); // Keep IsActive = true so character can be retrieved
+                role: "Updated Role");
 
             // Act - Update
-            var updatedCharacter = await _characterService.UpdateCharacterAsync(createdCharacter.Id, updateCommand);
+            var updatedCharacter = await _characterService.UpdateCharacterToIndividualAsync(updateCommand);
 
             // Act - Retrieve after update
             var retrievedCharacter = await _characterService.GetCharacterByIdAsync(createdCharacter.Id);
@@ -104,8 +105,8 @@ namespace ProjectVG.Tests.Application.Integration
             updatedCharacter.Id.Should().Be(createdCharacter.Id);
             updatedCharacter.Name.Should().Be(updateCommand.Name);
             updatedCharacter.Description.Should().Be(updateCommand.Description);
-            updatedCharacter.Role.Should().Be(updateCommand.Role);
-            updatedCharacter.IsActive.Should().Be(updateCommand.IsActive);
+            // Updated character should be in Individual mode with the correct configuration
+            updatedCharacter.ConfigMode.Should().Be(ProjectVG.Domain.Entities.Characters.CharacterConfigMode.Individual);
 
             retrievedCharacter.Should().BeEquivalentTo(updatedCharacter);
         }
@@ -116,11 +117,11 @@ namespace ProjectVG.Tests.Application.Integration
             // Arrange
             await _fixture.ClearDatabaseAsync();
             var nonExistentId = Guid.NewGuid();
-            var updateCommand = TestDataBuilder.CreateUpdateCharacterCommand();
+            var updateCommand = TestDataBuilder.CreateUpdateCharacterToIndividualCommand(nonExistentId);
 
             // Act & Assert
             await Assert.ThrowsAsync<NotFoundException>(
-                () => _characterService.UpdateCharacterAsync(nonExistentId, updateCommand));
+                () => _characterService.UpdateCharacterToIndividualAsync(updateCommand));
         }
 
         #endregion
@@ -132,8 +133,8 @@ namespace ProjectVG.Tests.Application.Integration
         {
             // Arrange
             await _fixture.ClearDatabaseAsync();
-            var createCommand = TestDataBuilder.CreateCreateCharacterCommand("To Be Deleted");
-            var createdCharacter = await _characterService.CreateCharacterAsync(createCommand);
+            var createCommand = TestDataBuilder.CreateCreateCharacterWithFieldsCommand("To Be Deleted");
+            var createdCharacter = await _characterService.CreateCharacterWithFieldsAsync(createCommand);
 
             // Verify character exists
             var existsBefore = await _characterService.CharacterExistsAsync(createdCharacter.Id);
@@ -168,12 +169,12 @@ namespace ProjectVG.Tests.Application.Integration
         {
             // Arrange
             await _fixture.ClearDatabaseAsync();
-            var character1 = await _characterService.CreateCharacterAsync(
-                TestDataBuilder.CreateCreateCharacterCommand("Character 1"));
-            var character2 = await _characterService.CreateCharacterAsync(
-                TestDataBuilder.CreateCreateCharacterCommand("Character 2"));
-            var character3 = await _characterService.CreateCharacterAsync(
-                TestDataBuilder.CreateCreateCharacterCommand("Character 3"));
+            var character1 = await _characterService.CreateCharacterWithFieldsAsync(
+                TestDataBuilder.CreateCreateCharacterWithFieldsCommand("Character 1"));
+            var character2 = await _characterService.CreateCharacterWithFieldsAsync(
+                TestDataBuilder.CreateCreateCharacterWithFieldsCommand("Character 2"));
+            var character3 = await _characterService.CreateCharacterWithFieldsAsync(
+                TestDataBuilder.CreateCreateCharacterWithFieldsCommand("Character 3"));
 
             // Act - Delete middle character
             await _characterService.DeleteCharacterAsync(character2.Id);
@@ -195,8 +196,8 @@ namespace ProjectVG.Tests.Application.Integration
         {
             // Arrange
             await _fixture.ClearDatabaseAsync();
-            var createCommand = TestDataBuilder.CreateCreateCharacterCommand("Existing Character");
-            var createdCharacter = await _characterService.CreateCharacterAsync(createCommand);
+            var createCommand = TestDataBuilder.CreateCreateCharacterWithFieldsCommand("Existing Character");
+            var createdCharacter = await _characterService.CreateCharacterWithFieldsAsync(createCommand);
 
             // Act
             var exists = await _characterService.CharacterExistsAsync(createdCharacter.Id);
@@ -230,8 +231,8 @@ namespace ProjectVG.Tests.Application.Integration
             await _fixture.ClearDatabaseAsync();
 
             // Create
-            var createCommand = TestDataBuilder.CreateCreateCharacterCommand("Lifecycle Character");
-            var createdCharacter = await _characterService.CreateCharacterAsync(createCommand);
+            var createCommand = TestDataBuilder.CreateCreateCharacterWithFieldsCommand("Lifecycle Character");
+            var createdCharacter = await _characterService.CreateCharacterWithFieldsAsync(createCommand);
             
             createdCharacter.Should().NotBeNull();
             createdCharacter.Name.Should().Be("Lifecycle Character");
@@ -241,8 +242,10 @@ namespace ProjectVG.Tests.Application.Integration
             existsAfterCreate.Should().BeTrue();
 
             // Update
-            var updateCommand = TestDataBuilder.CreateUpdateCharacterCommand("Updated Lifecycle Character");
-            var updatedCharacter = await _characterService.UpdateCharacterAsync(createdCharacter.Id, updateCommand);
+            var updateCommand = TestDataBuilder.CreateUpdateCharacterToIndividualCommand(
+                createdCharacter.Id,
+                "Updated Lifecycle Character");
+            var updatedCharacter = await _characterService.UpdateCharacterToIndividualAsync(updateCommand);
             
             updatedCharacter.Name.Should().Be("Updated Lifecycle Character");
             updatedCharacter.Id.Should().Be(createdCharacter.Id);
@@ -271,10 +274,10 @@ namespace ProjectVG.Tests.Application.Integration
             var sameName = "Duplicate Name Character";
 
             // Act - Create multiple characters with the same name
-            var character1 = await _characterService.CreateCharacterAsync(
-                TestDataBuilder.CreateCreateCharacterCommand(sameName, "Description 1"));
-            var character2 = await _characterService.CreateCharacterAsync(
-                TestDataBuilder.CreateCreateCharacterCommand(sameName, "Description 2"));
+            var character1 = await _characterService.CreateCharacterWithFieldsAsync(
+                TestDataBuilder.CreateCreateCharacterWithFieldsCommand(sameName, "Description 1"));
+            var character2 = await _characterService.CreateCharacterWithFieldsAsync(
+                TestDataBuilder.CreateCreateCharacterWithFieldsCommand(sameName, "Description 2"));
 
             // Assert
             character1.Should().NotBeNull();
@@ -316,13 +319,13 @@ namespace ProjectVG.Tests.Application.Integration
             var specialName = "特殊文字キャラクター!@#$%^&*()_+-=[]{}|;':\",./<>?";
             var specialDescription = "Éñgłīšh àñd 中文 ànd العربية ànd עברית ànd русский";
 
-            var createCommand = TestDataBuilder.CreateCreateCharacterCommand(
+            var createCommand = TestDataBuilder.CreateCreateCharacterWithFieldsCommand(
                 specialName,
                 specialDescription,
-                "Special Role");
+                role: "Special Role");
 
             // Act
-            var createdCharacter = await _characterService.CreateCharacterAsync(createCommand);
+            var createdCharacter = await _characterService.CreateCharacterWithFieldsAsync(createCommand);
             var retrievedCharacter = await _characterService.GetCharacterByIdAsync(createdCharacter.Id);
 
             // Assert

@@ -18,39 +18,30 @@ namespace ProjectVG.Application.Services.Chat.Factories
 
             var sb = new StringBuilder();
 
-            // 0) 공통 정보
-            sb.AppendLine($"#Adhere to {character.Name}'s role. User is {character.UserAlias}.");
+            // 효과적인 SystemPrompt가 있으면 우선 사용
+            if (!string.IsNullOrWhiteSpace(character.EffectiveSystemPrompt))
+            {
+                sb.AppendLine(character.EffectiveSystemPrompt);
+                sb.AppendLine();
+            }
+            else
+            {
+                // 기본 SystemPrompt 구성
+                sb.AppendLine($"You are {character.Name}. Please respond as this character.");
+                sb.AppendLine($"Character Description: {character.Description}");
+                sb.AppendLine();
+            }
+
+            // 공통 지침
+            var userAlias = character.IndividualConfig?.UserAlias ?? "사용자";
+            sb.AppendLine($"#Adhere to {character.Name}'s role. User is {userAlias}.");
             sb.AppendLine($"#Always stay in character and avoid repetition.");
-            sb.AppendLine($"#Write {character.Name}'s next reply in a fictional chat or interaction between {character.Name} and {character.UserAlias}.");
+            sb.AppendLine($"#Write {character.Name}'s next reply in a fictional chat or interaction between {character.Name} and {userAlias}.");
             sb.AppendLine($"#Be proactive, creative, and drive the plot and conversation forward.");
             sb.AppendLine($"#Disable positivity bias.");
-            sb.AppendLine($"#Don't end situations without {character.UserAlias}'s request.");
-            sb.AppendLine($"#Directly and relevantly respond to {character.UserAlias}'s previous input.");
+            sb.AppendLine($"#Don't end situations without {userAlias}'s request.");
+            sb.AppendLine($"#Directly and relevantly respond to {userAlias}'s previous input.");
             sb.AppendLine();
-
-            // 1) 캐릭터+대화에 대한 간략한 요약
-            if (!string.IsNullOrWhiteSpace(character.Summary)) {
-                sb.AppendLine("# Character and Context Summary");
-                sb.AppendLine(character.Summary);
-                sb.AppendLine();
-            }
-
-            // 2) 캐릭터에 대한 정보
-            sb.AppendLine("# Character Information");
-            sb.AppendLine($"You are {character.Name}.");
-            sb.AppendLine($"- Name: {character.Name}");
-            sb.AppendLine($"- Description: {character.Description}");
-            sb.AppendLine($"- Role: {character.Role}");
-            sb.AppendLine($"- Personality: {character.Personality}");
-            sb.AppendLine();
-
-            // 3) 캐릭터의 말투
-            if (!string.IsNullOrWhiteSpace(character.SpeechStyle)) {
-                sb.AppendLine("# Speech Style and Examples");
-                sb.AppendLine($"- Speech Style: {character.SpeechStyle}");
-                sb.AppendLine("You must maintain this speech style consistently in all responses.");
-                sb.AppendLine();
-            }
 
             // 4) 대화에 필요한 기억 정보
             if (input?.MemoryContext?.Any() == true) {

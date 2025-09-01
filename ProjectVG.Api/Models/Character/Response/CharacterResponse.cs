@@ -1,4 +1,5 @@
 using ProjectVG.Application.Models.Character;
+using ProjectVG.Domain.Entities.Characters;
 using System.Text.Json.Serialization;
 
 namespace ProjectVG.Api.Models.Character.Response
@@ -14,21 +15,41 @@ namespace ProjectVG.Api.Models.Character.Response
         [JsonPropertyName("description")]
         public string Description { get; init; } = string.Empty;
 
-        [JsonPropertyName("role")]
-        public string Role { get; init; } = string.Empty;
+        [JsonPropertyName("image_url")]
+        public string ImageUrl { get; init; } = string.Empty;
+
+        [JsonPropertyName("voice_id")]
+        public string VoiceId { get; init; } = string.Empty;
 
         [JsonPropertyName("is_active")]
         public bool IsActive { get; init; } = true;
 
+        [JsonPropertyName("config_mode")]
+        public string ConfigMode { get; init; } = "individual";
+
+        [JsonPropertyName("individual_config")]
+        public IndividualConfig? IndividualConfig { get; init; }
+
+        [JsonPropertyName("system_prompt")]
+        public string? SystemPrompt { get; init; }
+
+        [JsonPropertyName("effective_system_prompt")]
+        public string EffectiveSystemPrompt { get; init; } = string.Empty;
 
         public static CharacterResponse ToResponseDto(CharacterDto characterDto)
         {
-            return new CharacterResponse {
+            return new CharacterResponse
+            {
                 Id = characterDto.Id,
                 Name = characterDto.Name,
                 Description = characterDto.Description,
-                Role = characterDto.Role,
-                IsActive = characterDto.IsActive
+                ImageUrl = characterDto.ImageUrl,
+                VoiceId = characterDto.VoiceId,
+                IsActive = characterDto.IsActive,
+                ConfigMode = characterDto.ConfigMode.ToString().ToLowerInvariant(),
+                IndividualConfig = characterDto.IndividualConfig,
+                SystemPrompt = characterDto.SystemPrompt,
+                EffectiveSystemPrompt = characterDto.EffectiveSystemPrompt
             };
         }
     }

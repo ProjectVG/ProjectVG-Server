@@ -488,8 +488,8 @@ namespace ProjectVG.Tests.Application.Integration
         private async Task<ProjectVG.Application.Models.Character.CharacterDto> CreateCharacterAsync(
             string name = "TestCharacter")
         {
-            var createCommand = TestDataBuilder.CreateCreateCharacterCommand(name);
-            return await _characterService.CreateCharacterAsync(createCommand);
+            var createCommand = TestDataBuilder.CreateCreateCharacterWithFieldsCommand(name);
+            return await _characterService.CreateCharacterWithFieldsAsync(createCommand);
         }
 
         #endregion

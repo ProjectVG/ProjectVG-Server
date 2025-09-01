@@ -18,19 +18,32 @@ namespace ProjectVG.Application.Services.Character
         Task<CharacterDto> GetCharacterByIdAsync(Guid id);
 
         /// <summary>
-        /// 새 캐릭터를 생성합니다
+        /// 개별 설정으로 새 캐릭터를 생성합니다
         /// </summary>
-        /// <param name="command">캐릭터 생성 명령</param>
+        /// <param name="command">개별 설정 캐릭터 생성 명령</param>
         /// <returns>생성된 캐릭터</returns>
-        Task<CharacterDto> CreateCharacterAsync(CreateCharacterCommand command);
+        Task<CharacterDto> CreateCharacterWithFieldsAsync(CreateCharacterWithFieldsCommand command);
 
         /// <summary>
-        /// 캐릭터를 수정합니다
+        /// SystemPrompt로 새 캐릭터를 생성합니다
         /// </summary>
-        /// <param name="id">캐릭터 ID</param>
-        /// <param name="command">캐릭터 수정 명령</param>
+        /// <param name="command">SystemPrompt 캐릭터 생성 명령</param>
+        /// <returns>생성된 캐릭터</returns>
+        Task<CharacterDto> CreateCharacterWithSystemPromptAsync(CreateCharacterWithSystemPromptCommand command);
+
+        /// <summary>
+        /// 캐릭터를 개별 설정 모드로 수정합니다
+        /// </summary>
+        /// <param name="command">개별 설정 수정 명령</param>
         /// <returns>수정된 캐릭터</returns>
-        Task<CharacterDto> UpdateCharacterAsync(Guid id, UpdateCharacterCommand command);
+        Task<CharacterDto> UpdateCharacterToIndividualAsync(UpdateCharacterToIndividualCommand command);
+
+        /// <summary>
+        /// 캐릭터를 SystemPrompt 모드로 수정합니다
+        /// </summary>
+        /// <param name="command">SystemPrompt 수정 명령</param>
+        /// <returns>수정된 캐릭터</returns>
+        Task<CharacterDto> UpdateCharacterToSystemPromptAsync(UpdateCharacterToSystemPromptCommand command);
 
         /// <summary>
         /// 캐릭터를 삭제합니다
