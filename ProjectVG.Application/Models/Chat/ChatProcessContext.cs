@@ -127,7 +127,7 @@ namespace ProjectVG.Application.Models.Chat
                 for (int i = 0; i < Segments.Count; i++)
                 {
                     var segment = Segments[i];
-                    sb.AppendLine($"  [{i}] Type: {segment.Type}, Content: \"{segment.Content}\"");
+                    sb.AppendLine($"  [{i}] Content: \"{segment.Content}\", Emotion: {segment.Emotion}, Actions: [{(segment.Actions != null ? string.Join(", ", segment.Actions) : "")}]");
                 }
             }
             else

@@ -142,7 +142,6 @@ DO NOT add any text before, after, or outside of this format.";
         private List<ChatSegment> ParseCustomFormat(string response)
         {
             var segments = new List<ChatSegment>();
-            var currentEmotion = "neutral";
             var order = 0;
 
             try 
@@ -151,48 +150,20 @@ DO NOT add any text before, after, or outside of this format.";
                 
                 while (position < response.Length)
                 {
-                    // Look for emotion pattern: [emotion:감정]
-                    var emotionPattern = @"\[emotion:([^\]]+)\]";
-                    var emotionMatch = Regex.Match(response.Substring(position), emotionPattern);
-                    
-                    if (emotionMatch.Success && emotionMatch.Index == 0)
+                    var segmentResult = ParseNextSegment(response, position, order);
+                    if (segmentResult.segment != null)
                     {
-                        // Update current emotion
-                        currentEmotion = emotionMatch.Groups[1].Value;
-                        position += emotionMatch.Length;
-                        continue;
+                        segments.Add(segmentResult.segment);
+                        order++;
                     }
-
-                    // Look for text pattern: "텍스트"
-                    var textPattern = "\"([^\"]+)\"";
-                    var textMatch = Regex.Match(response.Substring(position), textPattern);
                     
-                    if (textMatch.Success && textMatch.Index == 0)
-                    {
-                        // Create text segment with current emotion
-                        var textContent = textMatch.Groups[1].Value;
-                        var textSegment = ChatSegment.CreateText(textContent, currentEmotion, order++);
-                        segments.Add(textSegment);
-                        position += textMatch.Length;
-                        continue;
-                    }
-
-                    // Look for action pattern: (action:액션)
-                    var actionPattern = @"\(action:([^)]+)\)";
-                    var actionMatch = Regex.Match(response.Substring(position), actionPattern);
+                    position = segmentResult.newPosition;
                     
-                    if (actionMatch.Success && actionMatch.Index == 0)
+                    // Safety check to avoid infinite loop
+                    if (segmentResult.newPosition <= position && segmentResult.segment == null)
                     {
-                        // Create action segment
-                        var actionContent = actionMatch.Groups[1].Value;
-                        var actionSegment = ChatSegment.CreateAction(actionContent, order++);
-                        segments.Add(actionSegment);
-                        position += actionMatch.Length;
-                        continue;
+                        position++;
                     }
-
-                    // If no pattern matched, advance position to avoid infinite loop
-                    position++;
                 }
 
                 return segments.Any() ? segments : CreateFallbackSegment(response);
@@ -204,11 +175,90 @@ DO NOT add any text before, after, or outside of this format.";
             }
         }
 
+        private (ChatSegment? segment, int newPosition) ParseNextSegment(string response, int startPosition, int order)
+        {
+            var currentEmotion = "neutral";
+            var textParts = new List<string>();
+            var actions = new List<string>();
+            var position = startPosition;
+
+            // Continue parsing until we hit the next emotion marker or end of string
+            while (position < response.Length)
+            {
+                // Check if we've reached the start of the next segment (next emotion marker)
+                if (position > startPosition)
+                {
+                    var nextEmotionPattern = @"\[emotion:([^\]]+)\]";
+                    var nextEmotionMatch = Regex.Match(response.Substring(position), nextEmotionPattern);
+                    if (nextEmotionMatch.Success && nextEmotionMatch.Index == 0)
+                    {
+                        // We've reached the next segment, stop here
+                        break;
+                    }
+                }
+
+                // Look for emotion pattern: [emotion:감정]
+                var emotionPattern = @"\[emotion:([^\]]+)\]";
+                var emotionMatch = Regex.Match(response.Substring(position), emotionPattern);
+                
+                if (emotionMatch.Success && emotionMatch.Index == 0)
+                {
+                    // Update current emotion (only for the first emotion in this segment)
+                    if (position == startPosition)
+                    {
+                        currentEmotion = emotionMatch.Groups[1].Value;
+                    }
+                    position += emotionMatch.Length;
+                    continue;
+                }
+
+                // Look for text pattern: "텍스트"
+                var textPattern = "\"([^\"]+)\"";
+                var textMatch = Regex.Match(response.Substring(position), textPattern);
+                
+                if (textMatch.Success && textMatch.Index == 0)
+                {
+                    textParts.Add(textMatch.Groups[1].Value);
+                    position += textMatch.Length;
+                    continue;
+                }
+
+                // Look for action pattern: (action:액션)
+                var actionPattern = @"\(action:([^)]+)\)";
+                var actionMatch = Regex.Match(response.Substring(position), actionPattern);
+                
+                if (actionMatch.Success && actionMatch.Index == 0)
+                {
+                    actions.Add(actionMatch.Groups[1].Value);
+                    position += actionMatch.Length;
+                    continue;
+                }
+
+                // If no pattern matched, advance position
+                position++;
+            }
+
+            // Create unified segment if we have content
+            if (textParts.Any() || actions.Any())
+            {
+                var combinedText = string.Join(" ", textParts).Trim();
+                var segment = ChatSegment.Create(
+                    combinedText, 
+                    currentEmotion, 
+                    actions.Any() ? actions : null, 
+                    order
+                );
+                return (segment, position);
+            }
+
+            return (null, position);
+        }
+
         private List<ChatSegment> CreateFallbackSegment(string response)
         {
             var segments = new List<ChatSegment>
             {
-                ChatSegment.CreateText(response, "neutral", 0)
+                ChatSegment.Create(response, "neutral", null, 0)
             };
             return segments;
         }

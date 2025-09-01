@@ -7,14 +7,18 @@ namespace ProjectVG.Application.Models.WebSocket
         [JsonPropertyName("type")]
         public string Type { get; init; } = string.Empty;
         
+        [JsonPropertyName("message_type")]
+        public string MessageType { get; init; } = "json";
+        
         [JsonPropertyName("data")]
         public object Data { get; init; } = new();
         
         public WebSocketMessage() { }
         
-        public WebSocketMessage(string type, object data)
+        public WebSocketMessage(string type, object data, string messageType = "json")
         {
             Type = type;
+            MessageType = messageType;
             Data = data;
         }
     }

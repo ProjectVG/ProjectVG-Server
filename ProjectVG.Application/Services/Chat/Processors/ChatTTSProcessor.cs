@@ -34,7 +34,7 @@ namespace ProjectVG.Application.Services.Chat.Processors
             var ttsTasks = new List<Task<(int idx, TextToSpeechResponse)>>();
             for (int i = 0; i < context.Segments?.Count; i++) {
                 var segment = context.Segments[i];
-                if (!segment.HasContent || segment.IsActionSegment) continue;
+                if (!segment.HasContent) continue;
 
                 var emotion = NormalizeEmotion(segment.Emotion, profile);
                 int idx = i;

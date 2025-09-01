@@ -98,55 +98,22 @@ namespace ProjectVG.Tests.Services.Chat.Handlers
         }
 
         [Fact]
-        public async Task HandleAsync_WithWebSocketFailure_ShouldRetryWithBackoff()
-        {
-            var context = CreateTestContext();
-            var segment = ChatSegment.CreateText("Test message");
-            context.SetResponse("Test", new List<ChatSegment> { segment }, 0.0);
-
-            var callCount = 0;
-            _mockWebSocketService.Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<WebSocketMessage>()))
-                .Returns(() =>
-                {
-                    callCount++;
-                    if (callCount < 3)
-                        throw new Exception("Connection failed");
-                    return Task.CompletedTask;
-                });
-
-            await _handler.HandleAsync(context);
-
-            _mockWebSocketService.Verify(
-                x => x.SendAsync(It.IsAny<string>(), It.IsAny<WebSocketMessage>()), 
-                Times.Exactly(3));
-
-            _mockLogger.Verify(
-                x => x.Log(
-                    LogLevel.Warning,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("세그먼트 전송 실패")),
-                    It.IsAny<Exception>(),
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                Times.Exactly(2)); // 2 failures before success
-        }
-
-        [Fact]
-        public async Task HandleAsync_WithPersistentFailure_ShouldThrowAfterMaxRetries()
+        public async Task HandleAsync_WithWebSocketFailure_ShouldThrowImmediately()
         {
             var context = CreateTestContext();
             var segment = ChatSegment.CreateText("Test message");
             context.SetResponse("Test", new List<ChatSegment> { segment }, 0.0);
 
             _mockWebSocketService.Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<WebSocketMessage>()))
-                .ThrowsAsync(new Exception("Persistent failure"));
+                .ThrowsAsync(new Exception("Connection failed"));
 
             var act = async () => await _handler.HandleAsync(context);
 
-            await act.Should().ThrowAsync<Exception>().WithMessage("Persistent failure");
+            await act.Should().ThrowAsync<Exception>().WithMessage("Connection failed");
 
             _mockWebSocketService.Verify(
                 x => x.SendAsync(It.IsAny<string>(), It.IsAny<WebSocketMessage>()), 
-                Times.Exactly(3)); // Max retries
+                Times.Once);
 
             VerifyErrorLogged("채팅 결과 전송 중 오류 발생");
         }
@@ -178,7 +145,7 @@ namespace ProjectVG.Tests.Services.Chat.Handlers
         }
 
         [Fact]
-        public async Task HandleAsync_WithSegmentTypes_ShouldSetCorrectMessageTypes()
+        public async Task HandleAsync_WithDifferentSegmentTypes_ShouldAllUseChatType()
         {
             var context = CreateTestContext();
             var segments = new List<ChatSegment>
@@ -194,11 +161,54 @@ namespace ProjectVG.Tests.Services.Chat.Handlers
 
             await _handler.HandleAsync(context);
 
-            var chatMessage = sentMessages[0].Data as ChatProcessResultMessage;
+            var textMessage = sentMessages[0].Data as ChatProcessResultMessage;
             var actionMessage = sentMessages[1].Data as ChatProcessResultMessage;
 
-            chatMessage!.Type.Should().Be("chat");
-            actionMessage!.Type.Should().Be("action");
+            textMessage!.Type.Should().Be("chat");
+            actionMessage!.Type.Should().Be("chat");
+            
+            // Actions should be included in the Actions field
+            actionMessage.Actions.Should().NotBeNull().And.Contain("Action message");
+        }
+
+        [Fact]
+        public async Task HandleAsync_ShouldIncludeRequestIdInMessages()
+        {
+            var context = CreateTestContext();
+            var segment = ChatSegment.CreateText("Test message with request ID");
+            context.SetResponse("Test", new List<ChatSegment> { segment }, 0.0);
+
+            WebSocketMessage? sentMessage = null;
+            _mockWebSocketService.Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<WebSocketMessage>()))
+                .Callback<string, WebSocketMessage>((_, message) => sentMessage = message);
+
+            await _handler.HandleAsync(context);
+
+            sentMessage.Should().NotBeNull();
+            var resultMessage = sentMessage!.Data as ChatProcessResultMessage;
+            resultMessage.Should().NotBeNull();
+            resultMessage!.RequestId.Should().Be(context.RequestId.ToString());
+        }
+
+        [Fact]
+        public async Task HandleAsync_ShouldUseConsistentWebSocketMessageType()
+        {
+            var context = CreateTestContext();
+            var segments = new List<ChatSegment>
+            {
+                ChatSegment.CreateText("Text message"),
+                ChatSegment.CreateAction("Action message")
+            };
+            context.SetResponse("Test", segments, 0.0);
+
+            var sentMessages = new List<WebSocketMessage>();
+            _mockWebSocketService.Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<WebSocketMessage>()))
+                .Callback<string, WebSocketMessage>((_, message) => sentMessages.Add(message));
+
+            await _handler.HandleAsync(context);
+
+            sentMessages.Should().HaveCount(2);
+            sentMessages.Should().AllSatisfy(msg => msg.Type.Should().Be("chat"));
         }
 
         private static ChatProcessContext CreateTestContext()
