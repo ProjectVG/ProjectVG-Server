@@ -23,22 +23,25 @@ namespace ProjectVG.Application.Services.Chat.Handlers
             foreach (var segment in context.Segments.OrderBy(s => s.Order)) {
                 if (segment.IsEmpty) continue;
 
-                var integratedMessage = new IntegratedChatMessage {
-                    SessionId = context.SessionId,
+                var integratedMessage = new ChatProcessResultMessage {
+                    Type = segment.Type == SegmentType.Text ? "text" : "action",
                     Text = segment.Content,
-                    AudioFormat = segment.AudioContentType ?? "wav",
-                    AudioLength = segment.AudioLength,
                     Timestamp = DateTime.UtcNow
                 };
 
-                integratedMessage.SetAudioData(segment.AudioData);
+                if (segment.Type == SegmentType.Text && segment.HasAudio)
+                {
+                    integratedMessage.AudioFormat = segment.AudioContentType ?? "wav";
+                    integratedMessage.AudioLength = segment.AudioLength;
+                    integratedMessage.SetAudioData(segment.AudioData);
+                }
 
                 var wsMessage = new WebSocketMessage("chat", integratedMessage);
                 await _webSocketService.SendAsync(context.UserId.ToString(), wsMessage);
             }
 
             _logger.LogDebug("채팅 결과 전송 완료: 세션 {UserId}, 세그먼트 {SegmentCount}개",
-                context.SessionId, context.Segments.Count(s => !s.IsEmpty));
+                context.RequestId, context.Segments.Count(s => !s.IsEmpty));
         }
     }
 }

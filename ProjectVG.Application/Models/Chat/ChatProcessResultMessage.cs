@@ -2,16 +2,13 @@ using System.Text.Json.Serialization;
 
 namespace ProjectVG.Application.Models.Chat
 {
-    public class IntegratedChatMessage
+    public class ChatProcessResultMessage
     {
         [JsonPropertyName("type")]
-        public string Type { get; set; } = "chat";
+        public string Type { get; set; } = "text";
         
         [JsonPropertyName("message_type")]
         public string MessageType { get; set; } = "json";
-        
-        [JsonPropertyName("session_id")]
-        public string SessionId { get; set; } = string.Empty;
         
         [JsonPropertyName("text")]
         public string? Text { get; set; }

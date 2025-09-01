@@ -26,7 +26,7 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                 await _webSocketService.SendAsync(context.UserId.ToString(), errorResponse);
             }
             catch (Exception ex) {
-                _logger.LogError(ex, "오류 메시지 전송 실패: 세션 {UserId}", context.SessionId);
+                _logger.LogError(ex, "오류 메시지 전송 실패: 세션 {UserId}", context.RequestId);
             }
         }
     }

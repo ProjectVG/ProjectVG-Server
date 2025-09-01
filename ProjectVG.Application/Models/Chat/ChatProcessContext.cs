@@ -1,3 +1,4 @@
+using Azure.Core;
 using ProjectVG.Application.Models.Character;
 using ProjectVG.Domain.Entities.ConversationHistorys;
 
@@ -5,7 +6,7 @@ namespace ProjectVG.Application.Models.Chat
 {
     public class ChatProcessContext
     {
-        public string SessionId { get; private set; } = string.Empty;
+        public Guid RequestId { get; } = Guid.NewGuid();
         public Guid UserId { get; private set; }
         public Guid CharacterId { get; private set; }
         public string UserMessage { get; private set; } = string.Empty;
@@ -23,6 +24,7 @@ namespace ProjectVG.Application.Models.Chat
 
         public ChatProcessContext(ChatRequestCommand command)
         {
+            RequestId = command.Id;
             UserId = command.UserId;
             CharacterId = command.CharacterId;
             UserMessage = command.UserPrompt;
@@ -74,7 +76,7 @@ namespace ProjectVG.Application.Models.Chat
             // Request 기본 정보
             sb.AppendLine($"[ChatProcessContext Debug Info]");
             sb.AppendLine($"=== REQUEST INFO ===");
-            sb.AppendLine($"SessionId: {SessionId}");
+            sb.AppendLine($"SessionId: {RequestId}");
             sb.AppendLine($"UserId: {UserId}");
             sb.AppendLine($"CharacterId: {CharacterId}");
             sb.AppendLine($"UserMessage: \"{UserMessage}\"");
