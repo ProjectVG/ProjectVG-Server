@@ -30,11 +30,143 @@
       </div>
     </div>
 
-    <div class="top-row">
-      <select id="character-select">
-        <option value="11111111-1111-1111-1111-111111111111">하루</option>
-        <option value="22222222-2222-2222-2222-222222222222">소피아</option>
-      </select>
+    <!-- 탭 네비게이션 -->
+    <div id="tab-navigation" style="display: none;">
+      <div class="tab-buttons">
+        <button class="tab-btn active" data-tab="chat">채팅</button>
+        <button class="tab-btn" data-tab="characters">캐릭터 관리</button>
+      </div>
+    </div>
+
+    <!-- 채팅 섹션 -->
+    <div id="chat-section" class="tab-content">
+      <div class="top-row">
+        <select id="character-select">
+          <option value="">캐릭터를 선택하세요</option>
+        </select>
+        <button id="refresh-characters" class="refresh-btn">새로고침</button>
+      </div>
+    </div>
+
+    <!-- 캐릭터 관리 섹션 -->
+    <div id="character-management" class="tab-content" style="display: none;">
+      <div class="character-tabs">
+        <button class="character-tab-btn active" data-tab="list">내 캐릭터</button>
+        <button class="character-tab-btn" data-tab="public">공개 캐릭터</button>
+        <button class="character-tab-btn" data-tab="create">새 캐릭터</button>
+      </div>
+
+      <!-- 내 캐릭터 목록 -->
+      <div id="my-characters" class="character-tab-content">
+        <div class="character-list-header">
+          <h3>내 캐릭터</h3>
+          <select id="my-sort-order">
+            <option value="latest">최신순</option>
+            <option value="oldest">오래된순</option>
+            <option value="name">이름순</option>
+          </select>
+        </div>
+        <div id="my-character-list" class="character-grid"></div>
+      </div>
+
+      <!-- 공개 캐릭터 목록 -->
+      <div id="public-characters" class="character-tab-content" style="display: none;">
+        <div class="character-list-header">
+          <h3>공개 캐릭터</h3>
+          <select id="public-sort-order">
+            <option value="latest">최신순</option>
+            <option value="oldest">오래된순</option>
+            <option value="name">이름순</option>
+          </select>
+        </div>
+        <div id="public-character-list" class="character-grid"></div>
+      </div>
+
+      <!-- 캐릭터 생성 폼 -->
+      <div id="character-create" class="character-tab-content" style="display: none;">
+        <div class="create-form">
+          <h3>새 캐릭터 만들기</h3>
+          
+          <div class="form-group">
+            <label>캐릭터 이름</label>
+            <input type="text" id="create-name" placeholder="캐릭터 이름을 입력하세요" maxlength="100">
+          </div>
+
+          <div class="form-group">
+            <label>설명</label>
+            <textarea id="create-description" placeholder="캐릭터 설명을 입력하세요" maxlength="1000"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>이미지 URL (선택사항)</label>
+            <input type="url" id="create-image-url" placeholder="https://example.com/image.jpg">
+          </div>
+
+          <div class="form-group">
+            <label>음성 ID (선택사항)</label>
+            <input type="text" id="create-voice-id" placeholder="음성 ID를 입력하세요">
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="create-is-public" checked>
+              공개 캐릭터로 만들기
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label>캐릭터 설정 방식</label>
+            <div class="config-mode-tabs">
+              <button type="button" class="config-tab active" data-mode="individual">개별 설정</button>
+              <button type="button" class="config-tab" data-mode="prompt">시스템 프롬프트</button>
+            </div>
+          </div>
+
+          <!-- 개별 설정 폼 -->
+          <div id="individual-config" class="config-form">
+            <div class="form-group">
+              <label>역할</label>
+              <input type="text" id="config-role" placeholder="예: 친근한 AI 어시스턴트">
+            </div>
+            <div class="form-group">
+              <label>성격</label>
+              <input type="text" id="config-personality" placeholder="예: 밝고 긍정적인">
+            </div>
+            <div class="form-group">
+              <label>말투</label>
+              <input type="text" id="config-speech-style" placeholder="예: 정중하고 친근한 말투">
+            </div>
+            <div class="form-group">
+              <label>사용자 호칭</label>
+              <input type="text" id="config-user-alias" placeholder="예: 님">
+            </div>
+            <div class="form-group">
+              <label>요약</label>
+              <textarea id="config-summary" placeholder="캐릭터에 대한 간단한 요약"></textarea>
+            </div>
+            <div class="form-group">
+              <label>배경</label>
+              <textarea id="config-background" placeholder="캐릭터의 배경 설정"></textarea>
+            </div>
+          </div>
+
+          <!-- 시스템 프롬프트 폼 -->
+          <div id="prompt-config" class="config-form" style="display: none;">
+            <div class="form-group">
+              <label>시스템 프롬프트 (최대 5000자)</label>
+              <textarea id="config-system-prompt" placeholder="시스템 프롬프트를 입력하세요" maxlength="5000" rows="10"></textarea>
+              <div class="char-counter">
+                <span id="prompt-char-count">0</span> / 5000
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" id="create-character-btn" class="create-btn">캐릭터 생성</button>
+            <button type="button" id="reset-form-btn" class="reset-btn">초기화</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="chat-log"></div>
