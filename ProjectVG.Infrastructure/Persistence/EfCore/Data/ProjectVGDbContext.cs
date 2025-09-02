@@ -56,6 +56,9 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.SetNull);
                 
+                // 공개 여부 설정
+                entity.Property(e => e.IsPublic).IsRequired().HasDefaultValue(true);
+                
                 // 설정 모드
                 entity.Property(e => e.ConfigMode).IsRequired().HasDefaultValue(CharacterConfigMode.Individual);
                 
@@ -80,6 +83,7 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 entity.HasIndex(e => e.IsActive);
                 entity.HasIndex(e => e.ConfigMode);
                 entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.IsPublic);
             });
 
             // ConversationHistorys 엔티티 설정

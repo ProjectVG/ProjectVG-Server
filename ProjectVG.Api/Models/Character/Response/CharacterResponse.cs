@@ -42,6 +42,9 @@ namespace ProjectVG.Api.Models.Character.Response
         [JsonPropertyName("created_by_username")]
         public string? CreatedByUsername { get; init; }
 
+        [JsonPropertyName("is_public")]
+        public bool IsPublic { get; init; }
+
         public static CharacterResponse ToResponseDto(CharacterDto characterDto)
         {
             return new CharacterResponse
@@ -57,7 +60,8 @@ namespace ProjectVG.Api.Models.Character.Response
                 SystemPrompt = characterDto.SystemPrompt,
                 EffectiveSystemPrompt = characterDto.EffectiveSystemPrompt,
                 CreatedByUserId = characterDto.CreatedByUserId,
-                CreatedByUsername = characterDto.CreatedByUsername
+                CreatedByUsername = characterDto.CreatedByUsername,
+                IsPublic = characterDto.IsPublic
             };
         }
     }

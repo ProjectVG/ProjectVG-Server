@@ -46,7 +46,8 @@ namespace ProjectVG.Application.Services.Character
                 ImageUrl = command.ImageUrl,
                 VoiceId = command.VoiceId,
                 IsActive = command.IsActive,
-                UserId = command.UserId
+                UserId = command.UserId,
+                IsPublic = command.IsPublic
             };
             
             character.SetIndividualConfig(command.IndividualConfig);
@@ -67,7 +68,8 @@ namespace ProjectVG.Application.Services.Character
                 ImageUrl = command.ImageUrl,
                 VoiceId = command.VoiceId,
                 IsActive = command.IsActive,
-                UserId = command.UserId
+                UserId = command.UserId,
+                IsPublic = command.IsPublic
             };
             
             character.SetSystemPrompt(command.SystemPrompt);
@@ -132,6 +134,44 @@ namespace ProjectVG.Application.Services.Character
         {
             var character = await _characterRepository.GetByIdAsync(id);
             return character != null;
+        }
+
+        public async Task<IEnumerable<CharacterDto>> GetMyCharactersAsync(Guid userId, string orderBy = "latest")
+        {
+            var characters = await _characterRepository.GetByUserIdAsync(userId);
+            
+            // 정렬 적용
+            var sortedCharacters = orderBy.ToLower() switch
+            {
+                "latest" => characters.OrderByDescending(c => c.CreatedAt),
+                "oldest" => characters.OrderBy(c => c.CreatedAt),
+                "name" => characters.OrderBy(c => c.Name),
+                _ => characters.OrderByDescending(c => c.CreatedAt)
+            };
+
+            var characterDtos = sortedCharacters.Select(c => new CharacterDto(c));
+            _logger.LogInformation("사용자 {UserId}의 캐릭터 {Count}개 조회 완료", userId, characterDtos.Count());
+            
+            return characterDtos;
+        }
+
+        public async Task<IEnumerable<CharacterDto>> GetPublicCharactersAsync(string orderBy = "latest")
+        {
+            var characters = await _characterRepository.GetPublicCharactersAsync();
+            
+            // 정렬 적용
+            var sortedCharacters = orderBy.ToLower() switch
+            {
+                "latest" => characters.OrderByDescending(c => c.CreatedAt),
+                "oldest" => characters.OrderBy(c => c.CreatedAt),
+                "name" => characters.OrderBy(c => c.Name),
+                _ => characters.OrderByDescending(c => c.CreatedAt)
+            };
+
+            var characterDtos = sortedCharacters.Select(c => new CharacterDto(c));
+            _logger.LogInformation("공개 캐릭터 {Count}개 조회 완료", characterDtos.Count());
+            
+            return characterDtos;
         }
     }
 }

@@ -93,5 +93,28 @@ namespace ProjectVG.Api.Controllers
             await _characterService.DeleteCharacterAsync(id);
             return NoContent();
         }
+
+        [HttpGet("my")]
+        [JwtAuthentication]
+        public async Task<ActionResult<IEnumerable<CharacterResponse>>> GetMyCharacters([FromQuery] string orderBy = "latest")
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            var characterDtos = await _characterService.GetMyCharactersAsync(userId.Value, orderBy);
+            var responses = characterDtos.Select(CharacterResponse.ToResponseDto);
+            return Ok(responses);
+        }
+
+        [HttpGet("public")]
+        public async Task<ActionResult<IEnumerable<CharacterResponse>>> GetPublicCharacters([FromQuery] string orderBy = "latest")
+        {
+            var characterDtos = await _characterService.GetPublicCharactersAsync(orderBy);
+            var responses = characterDtos.Select(CharacterResponse.ToResponseDto);
+            return Ok(responses);
+        }
     }
 } 

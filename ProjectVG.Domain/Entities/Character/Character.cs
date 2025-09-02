@@ -33,6 +33,9 @@ namespace ProjectVG.Domain.Entities.Characters
         /// <summary> 캐릭터를 생성한 사용자 (네비게이션 속성) </summary>
         public virtual Users.User? User { get; set; }
         
+        /// <summary> 캐릭터 공개 여부 (true: 공개, false: 비공개) </summary>
+        public bool IsPublic { get; set; } = true;
+        
         /// <summary> 설정 모드 (개별 설정 vs SystemPrompt) </summary>
         public CharacterConfigMode ConfigMode { get; set; } = CharacterConfigMode.Individual;
         
@@ -126,6 +129,39 @@ namespace ProjectVG.Domain.Entities.Characters
         public bool CanStartConversation()
         {
             return IsActive && ValidateConfiguration() && !string.IsNullOrEmpty(GetEffectiveSystemPrompt());
+        }
+        
+        /// <summary>
+        /// 시스템 캐릭터인지 확인 (UserId가 null인 캐릭터)
+        /// </summary>
+        /// <returns>시스템 캐릭터이면 true</returns>
+        public bool IsSystemCharacter()
+        {
+            return UserId == null;
+        }
+        
+        /// <summary>
+        /// 특정 사용자가 이 캐릭터의 소유자인지 확인
+        /// </summary>
+        /// <param name="userId">확인할 사용자 ID</param>
+        /// <returns>소유자이면 true</returns>
+        public bool IsOwnedBy(Guid userId)
+        {
+            return UserId.HasValue && UserId.Value == userId;
+        }
+        
+        /// <summary>
+        /// 특정 사용자가 이 캐릭터를 볼 수 있는지 확인
+        /// </summary>
+        /// <param name="userId">확인할 사용자 ID (null이면 비로그인 사용자)</param>
+        /// <returns>볼 수 있으면 true</returns>
+        public bool CanBeViewedBy(Guid? userId)
+        {
+            // 공개 캐릭터는 누구나 볼 수 있음
+            if (IsPublic) return true;
+            
+            // 비공개 캐릭터는 소유자만 볼 수 있음
+            return userId.HasValue && IsOwnedBy(userId.Value);
         }
     }
 } 

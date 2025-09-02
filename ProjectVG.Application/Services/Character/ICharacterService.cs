@@ -57,5 +57,20 @@ namespace ProjectVG.Application.Services.Character
         /// <param name="id">캐릭터 ID</param>
         /// <returns>캐릭터 존재 여부</returns>
         Task<bool> CharacterExistsAsync(Guid id);
+
+        /// <summary>
+        /// 특정 사용자가 소유한 캐릭터들을 조회합니다 (공개/비공개 모두 포함)
+        /// </summary>
+        /// <param name="userId">사용자 ID</param>
+        /// <param name="orderBy">정렬 방식 (latest: 최신순)</param>
+        /// <returns>사용자 소유 캐릭터 목록</returns>
+        Task<IEnumerable<CharacterDto>> GetMyCharactersAsync(Guid userId, string orderBy = "latest");
+
+        /// <summary>
+        /// 공개 캐릭터들을 조회합니다 (시스템 캐릭터 + 모든 사용자의 공개 캐릭터)
+        /// </summary>
+        /// <param name="orderBy">정렬 방식 (latest: 최신순)</param>
+        /// <returns>공개 캐릭터 목록</returns>
+        Task<IEnumerable<CharacterDto>> GetPublicCharactersAsync(string orderBy = "latest");
     }
 } 

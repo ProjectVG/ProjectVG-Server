@@ -79,5 +79,21 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
             await _context.SaveChangesAsync();
 
         }
+
+        public async Task<IEnumerable<Character>> GetByUserIdAsync(Guid userId)
+        {
+            return await _context.Characters
+                .Include(c => c.User)
+                .Where(c => c.UserId == userId && c.IsActive)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Character>> GetPublicCharactersAsync()
+        {
+            return await _context.Characters
+                .Include(c => c.User)
+                .Where(c => c.IsPublic && c.IsActive)
+                .ToListAsync();
+        }
     }
 }

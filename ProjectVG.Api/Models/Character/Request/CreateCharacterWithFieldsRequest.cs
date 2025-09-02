@@ -31,6 +31,9 @@ namespace ProjectVG.Api.Models.Character.Request
         [Required(ErrorMessage = "개별 설정은 필수입니다.")]
         public IndividualConfig IndividualConfig { get; init; } = new();
 
+        [JsonPropertyName("is_public")]
+        public bool IsPublic { get; init; } = true;
+
         public CreateCharacterWithFieldsCommand ToCommand(Guid? userId = null)
         {
             return new CreateCharacterWithFieldsCommand
@@ -40,7 +43,8 @@ namespace ProjectVG.Api.Models.Character.Request
                 ImageUrl = ImageUrl,
                 VoiceId = VoiceId,
                 IndividualConfig = IndividualConfig,
-                UserId = userId
+                UserId = userId,
+                IsPublic = IsPublic
             };
         }
     }

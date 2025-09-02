@@ -19,6 +19,7 @@ namespace ProjectVG.Application.Models.Character
         
         public Guid? CreatedByUserId { get; init; }
         public string? CreatedByUsername { get; init; }
+        public bool IsPublic { get; init; }
 
         public CharacterDto(Domain.Entities.Characters.Character character)
         {
@@ -34,6 +35,7 @@ namespace ProjectVG.Application.Models.Character
             EffectiveSystemPrompt = character.GetEffectiveSystemPrompt();
             CreatedByUserId = character.UserId;
             CreatedByUsername = character.User?.Username;
+            IsPublic = character.IsPublic;
         }
     }
 }

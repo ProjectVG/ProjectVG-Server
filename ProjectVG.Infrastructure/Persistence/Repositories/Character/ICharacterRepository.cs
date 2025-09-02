@@ -9,5 +9,7 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
         Task<Character> CreateAsync(Character character);
         Task<Character> UpdateAsync(Character character);
         Task DeleteAsync(Guid id);
+        Task<IEnumerable<Character>> GetByUserIdAsync(Guid userId);
+        Task<IEnumerable<Character>> GetPublicCharactersAsync();
     }
 } 
