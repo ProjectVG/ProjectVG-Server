@@ -16,6 +16,9 @@ namespace ProjectVG.Application.Models.Character
         public string? SystemPrompt { get; init; }
         
         public string EffectiveSystemPrompt { get; init; } = string.Empty;
+        
+        public Guid? CreatedByUserId { get; init; }
+        public string? CreatedByUsername { get; init; }
 
         public CharacterDto(Domain.Entities.Characters.Character character)
         {
@@ -29,6 +32,8 @@ namespace ProjectVG.Application.Models.Character
             IndividualConfig = character.IndividualConfig;
             SystemPrompt = character.SystemPrompt;
             EffectiveSystemPrompt = character.GetEffectiveSystemPrompt();
+            CreatedByUserId = character.UserId;
+            CreatedByUsername = character.User?.Username;
         }
     }
 }

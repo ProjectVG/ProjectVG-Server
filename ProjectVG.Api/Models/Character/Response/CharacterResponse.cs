@@ -36,6 +36,12 @@ namespace ProjectVG.Api.Models.Character.Response
         [JsonPropertyName("effective_system_prompt")]
         public string EffectiveSystemPrompt { get; init; } = string.Empty;
 
+        [JsonPropertyName("created_by_user_id")]
+        public Guid? CreatedByUserId { get; init; }
+
+        [JsonPropertyName("created_by_username")]
+        public string? CreatedByUsername { get; init; }
+
         public static CharacterResponse ToResponseDto(CharacterDto characterDto)
         {
             return new CharacterResponse
@@ -49,7 +55,9 @@ namespace ProjectVG.Api.Models.Character.Response
                 ConfigMode = characterDto.ConfigMode.ToString().ToLowerInvariant(),
                 IndividualConfig = characterDto.IndividualConfig,
                 SystemPrompt = characterDto.SystemPrompt,
-                EffectiveSystemPrompt = characterDto.EffectiveSystemPrompt
+                EffectiveSystemPrompt = characterDto.EffectiveSystemPrompt,
+                CreatedByUserId = characterDto.CreatedByUserId,
+                CreatedByUsername = characterDto.CreatedByUsername
             };
         }
     }

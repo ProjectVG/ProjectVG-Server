@@ -27,6 +27,12 @@ namespace ProjectVG.Domain.Entities.Characters
         /// <summary> 캐릭터 보이스 ID </summary>
         public string VoiceId { get; set; } = string.Empty;
         
+        /// <summary> 캐릭터를 생성한 사용자 ID (nullable - 시스템 캐릭터 허용) </summary>
+        public Guid? UserId { get; set; }
+        
+        /// <summary> 캐릭터를 생성한 사용자 (네비게이션 속성) </summary>
+        public virtual Users.User? User { get; set; }
+        
         /// <summary> 설정 모드 (개별 설정 vs SystemPrompt) </summary>
         public CharacterConfigMode ConfigMode { get; set; } = CharacterConfigMode.Individual;
         

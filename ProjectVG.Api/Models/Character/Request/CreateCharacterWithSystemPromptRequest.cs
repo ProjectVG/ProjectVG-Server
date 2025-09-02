@@ -31,7 +31,7 @@ namespace ProjectVG.Api.Models.Character.Request
         [StringLength(5000, MinimumLength = 1, ErrorMessage = "SystemPrompt는 1-5000자 사이여야 합니다.")]
         public string SystemPrompt { get; init; } = string.Empty;
 
-        public CreateCharacterWithSystemPromptCommand ToCommand()
+        public CreateCharacterWithSystemPromptCommand ToCommand(Guid? userId = null)
         {
             return new CreateCharacterWithSystemPromptCommand
             {
@@ -39,7 +39,8 @@ namespace ProjectVG.Api.Models.Character.Request
                 Description = Description,
                 ImageUrl = ImageUrl,
                 VoiceId = VoiceId,
-                SystemPrompt = SystemPrompt
+                SystemPrompt = SystemPrompt,
+                UserId = userId
             };
         }
     }

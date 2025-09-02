@@ -49,6 +49,13 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 entity.Property(e => e.VoiceId).HasMaxLength(100);
                 entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
                 
+                // User 관계 설정 (nullable)
+                entity.Property(e => e.UserId).IsRequired(false);
+                entity.HasOne(e => e.User)
+                    .WithMany(u => u.Characters)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                
                 // 설정 모드
                 entity.Property(e => e.ConfigMode).IsRequired().HasDefaultValue(CharacterConfigMode.Individual);
                 
@@ -72,6 +79,7 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 entity.HasIndex(e => e.Name);
                 entity.HasIndex(e => e.IsActive);
                 entity.HasIndex(e => e.ConfigMode);
+                entity.HasIndex(e => e.UserId);
             });
 
             // ConversationHistorys 엔티티 설정

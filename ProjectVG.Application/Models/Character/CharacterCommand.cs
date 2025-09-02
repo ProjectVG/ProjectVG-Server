@@ -12,6 +12,7 @@ namespace ProjectVG.Application.Models.Character
         public string ImageUrl { get; init; } = string.Empty;
         public string VoiceId { get; init; } = string.Empty;
         public bool IsActive { get; init; } = true;
+        public Guid? UserId { get; init; }
     }
     
     /// <summary>

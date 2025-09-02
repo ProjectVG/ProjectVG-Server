@@ -49,5 +49,10 @@ namespace ProjectVG.Domain.Entities.Users
         /// 계정 상태
         /// </summary>
         public AccountStatus Status { get; set; } = AccountStatus.Active;
+        
+        /// <summary>
+        /// 사용자가 생성한 캐릭터들 (네비게이션 속성)
+        /// </summary>
+        public virtual ICollection<Characters.Character> Characters { get; set; } = new List<Characters.Character>();
     }
 } 

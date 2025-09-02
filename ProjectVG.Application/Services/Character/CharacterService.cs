@@ -45,7 +45,8 @@ namespace ProjectVG.Application.Services.Character
                 Description = command.Description,
                 ImageUrl = command.ImageUrl,
                 VoiceId = command.VoiceId,
-                IsActive = command.IsActive
+                IsActive = command.IsActive,
+                UserId = command.UserId
             };
             
             character.SetIndividualConfig(command.IndividualConfig);
@@ -65,7 +66,8 @@ namespace ProjectVG.Application.Services.Character
                 Description = command.Description,
                 ImageUrl = command.ImageUrl,
                 VoiceId = command.VoiceId,
-                IsActive = command.IsActive
+                IsActive = command.IsActive,
+                UserId = command.UserId
             };
             
             character.SetSystemPrompt(command.SystemPrompt);

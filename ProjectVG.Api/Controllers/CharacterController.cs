@@ -3,6 +3,8 @@ using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Models.Character;
 using ProjectVG.Api.Models.Character.Request;
 using ProjectVG.Api.Models.Character.Response;
+using ProjectVG.Api.Filters;
+using System.Security.Claims;
 
 namespace ProjectVG.Api.Controllers
 {
@@ -17,6 +19,16 @@ namespace ProjectVG.Api.Controllers
         {
             _characterService = characterService;
             _logger = logger;
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst("user_id")?.Value;
+            if (Guid.TryParse(userIdClaim, out var userId))
+            {
+                return userId;
+            }
+            return null;
         }
 
         [HttpGet]
@@ -36,18 +48,22 @@ namespace ProjectVG.Api.Controllers
         }
 
         [HttpPost("individual")]
+        [JwtAuthentication]
         public async Task<ActionResult<CharacterResponse>> CreateCharacterWithFields([FromBody] CreateCharacterWithFieldsRequest request)
         {
-            var command = request.ToCommand();
+            var userId = GetCurrentUserId();
+            var command = request.ToCommand(userId);
             var characterDto = await _characterService.CreateCharacterWithFieldsAsync(command);
             var response = CharacterResponse.ToResponseDto(characterDto);
             return CreatedAtAction(nameof(GetCharacterById), new { id = response.Id }, response);
         }
 
         [HttpPost("systemprompt")]
+        [JwtAuthentication]
         public async Task<ActionResult<CharacterResponse>> CreateCharacterWithSystemPrompt([FromBody] CreateCharacterWithSystemPromptRequest request)
         {
-            var command = request.ToCommand();
+            var userId = GetCurrentUserId();
+            var command = request.ToCommand(userId);
             var characterDto = await _characterService.CreateCharacterWithSystemPromptAsync(command);
             var response = CharacterResponse.ToResponseDto(characterDto);
             return CreatedAtAction(nameof(GetCharacterById), new { id = response.Id }, response);
