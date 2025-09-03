@@ -20,7 +20,7 @@ namespace ProjectVG.Application
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
             // Auth Services
-            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IUserAuthService, AuthService>();
             services.AddScoped<IOAuth2Service, OAuth2Service>();
             services.AddScoped<IOAuth2ProviderFactory, OAuth2ProviderFactory>();
 

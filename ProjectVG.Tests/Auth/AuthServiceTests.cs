@@ -57,7 +57,7 @@ namespace ProjectVG.Tests.Auth
             _mockTokenManagementService.Setup(x => x.GrantInitialCreditsAsync(userId)).ReturnsAsync(true);
 
             // Act
-            var result = await _authService.LoginWithOAuthAsync(provider, accessToken);
+            var result = await _authService.SignInWithOAuthAsync(provider, accessToken);
 
             // Assert
             result.Should().NotBeNull();
@@ -81,7 +81,7 @@ namespace ProjectVG.Tests.Auth
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => _authService.LoginWithOAuthAsync(provider, accessToken)
+                () => _authService.SignInWithOAuthAsync(provider, accessToken)
             );
 
             exception.ErrorCode.Should().Be(ErrorCode.INVALID_INPUT);
@@ -96,7 +96,7 @@ namespace ProjectVG.Tests.Auth
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => _authService.LoginWithOAuthAsync(provider, accessToken)
+                () => _authService.SignInWithOAuthAsync(provider, accessToken)
             );
 
             exception.ErrorCode.Should().Be(ErrorCode.INVALID_INPUT);
@@ -132,7 +132,7 @@ namespace ProjectVG.Tests.Auth
             _mockUserService.Setup(x => x.TryGetByIdAsync(userId)).ReturnsAsync(user);
 
             // Act
-            var result = await _authService.RefreshTokenAsync(refreshToken);
+            var result = await _authService.RefreshAccessTokenAsync(refreshToken);
 
             // Assert
             result.Should().NotBeNull();
@@ -174,7 +174,7 @@ namespace ProjectVG.Tests.Auth
             _mockTokenManagementService.Setup(x => x.GrantInitialCreditsAsync(userId)).ReturnsAsync(true);
 
             // Act
-            var result = await _authService.LoginWithOAuthAsync(provider, guestId);
+            var result = await _authService.SignInWithOAuthAsync(provider, guestId);
 
             // Assert
             result.Should().NotBeNull();
@@ -220,7 +220,7 @@ namespace ProjectVG.Tests.Auth
             _mockTokenManagementService.Setup(x => x.GrantInitialCreditsAsync(userId)).ReturnsAsync(false);
 
             // Act
-            var result = await _authService.LoginWithOAuthAsync(provider, guestId);
+            var result = await _authService.SignInWithOAuthAsync(provider, guestId);
 
             // Assert
             result.Should().NotBeNull();
@@ -242,7 +242,7 @@ namespace ProjectVG.Tests.Auth
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => _authService.RefreshTokenAsync(refreshToken)
+                () => _authService.RefreshAccessTokenAsync(refreshToken)
             );
 
             exception.ErrorCode.Should().Be(ErrorCode.TOKEN_INVALID);
@@ -258,7 +258,7 @@ namespace ProjectVG.Tests.Auth
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => _authService.RefreshTokenAsync(refreshToken)
+                () => _authService.RefreshAccessTokenAsync(refreshToken)
             );
 
             exception.ErrorCode.Should().Be(ErrorCode.TOKEN_INVALID);
@@ -327,7 +327,7 @@ namespace ProjectVG.Tests.Auth
 
             // Act & Assert
             await Assert.ThrowsAsync<Exception>(
-                () => _authService.LoginWithOAuthAsync(provider, accessToken)
+                () => _authService.SignInWithOAuthAsync(provider, accessToken)
             );
         }
 
@@ -342,7 +342,7 @@ namespace ProjectVG.Tests.Auth
 
             // Act & Assert
             await Assert.ThrowsAsync<Exception>(
-                () => _authService.RefreshTokenAsync(refreshToken)
+                () => _authService.RefreshAccessTokenAsync(refreshToken)
             );
         }
 
@@ -394,7 +394,7 @@ namespace ProjectVG.Tests.Auth
             _mockTokenManagementService.Setup(x => x.GrantInitialCreditsAsync(userId)).ReturnsAsync(true);
 
             // Act
-            var result = await _authService.LoginWithOAuthAsync(provider, guestId);
+            var result = await _authService.SignInWithOAuthAsync(provider, guestId);
 
             // Assert
             result.Should().NotBeNull();
@@ -444,7 +444,7 @@ namespace ProjectVG.Tests.Auth
             _mockTokenManagementService.Setup(x => x.GrantInitialCreditsAsync(userId)).ReturnsAsync(false);
 
             // Act
-            var result = await _authService.LoginWithOAuthAsync(provider, guestId);
+            var result = await _authService.SignInWithOAuthAsync(provider, guestId);
 
             // Assert
             result.Should().NotBeNull();
@@ -484,7 +484,7 @@ namespace ProjectVG.Tests.Auth
             _mockTokenManagementService.Setup(x => x.GrantInitialCreditsAsync(userId)).ReturnsAsync(false);
 
             // Act
-            var result = await _authService.LoginWithOAuthAsync(provider, providerId);
+            var result = await _authService.SignInWithOAuthAsync(provider, providerId);
 
             // Assert
             result.Should().NotBeNull();
@@ -525,7 +525,7 @@ namespace ProjectVG.Tests.Auth
                 .ThrowsAsync(new Exception("Credit granting service unavailable"));
 
             // Act & Assert - Should not throw exception
-            var result = await _authService.LoginWithOAuthAsync(provider, accessToken);
+            var result = await _authService.SignInWithOAuthAsync(provider, accessToken);
 
             // Verify login still completed successfully
             result.Should().NotBeNull();

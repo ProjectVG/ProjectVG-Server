@@ -1,15 +1,17 @@
 using Microsoft.Extensions.Logging;
+using ProjectVG.Application.Models.Auth;
 using ProjectVG.Application.Models.User;
-using ProjectVG.Application.Services.Users;
 using ProjectVG.Application.Services.Credit;
-using ProjectVG.Infrastructure.Auth;
-using ProjectVG.Common.Exceptions;
+using ProjectVG.Application.Services.Users;
 using ProjectVG.Common.Constants;
+using ProjectVG.Common.Exceptions;
 using ProjectVG.Domain.Entities.Users;
+using ProjectVG.Infrastructure.Auth;
+using System;
 
 namespace ProjectVG.Application.Services.Auth
 {
-    public class AuthService : IAuthService
+    public class AuthService : IUserAuthService
     {
         private readonly IUserService _userService;
         private readonly ITokenService _tokenService;
@@ -17,7 +19,7 @@ namespace ProjectVG.Application.Services.Auth
         private readonly ILogger<AuthService> _logger;
 
         public AuthService(
-            IUserService userService, 
+            IUserService userService,
             ITokenService tokenService,
             ICreditManagementService tokenManagementService,
             ILogger<AuthService> logger)
@@ -28,114 +30,115 @@ namespace ProjectVG.Application.Services.Auth
             _logger = logger;
         }
 
-        public async Task<AuthResult> LoginWithOAuthAsync(string provider, string providerUserId)
+        public async Task<AuthResult> SignInWithOAuthAsync(string provider, string providerUserId)
         {
-            // OAuth 프로바이더별 사용자 처리
-            Guid userId;
-            UserDto user;
+            return provider switch {
+                "guest" => await GuestLoginAsync(providerUserId),
+                "google" or "apple" => await OAuth2LoginAsync(provider, providerUserId),
+                _ => throw new ValidationException(ErrorCode.OAUTH2_PROVIDER_NOT_SUPPORTED)
+            };
+        }
 
-            if (provider == "guest")
-            {
-                if (string.IsNullOrEmpty(providerUserId))
-                {
-                    throw new ValidationException(ErrorCode.GUEST_ID_INVALID);
-                }
-
-                // 기존 게스트 사용자가 있는지 확인
-                user = await _userService.TryGetByProviderAsync("guest", providerUserId);
-                
-                if (user == null)
-                {
-                    // 새로운 게스트 사용자 생성
-                    string uuid = GenerateGuestUuid(providerUserId);
-                    var createCommand = new UserCreateCommand(
-                        Username: $"guest_{uuid}",
-                        Email: $"guest@guest{uuid}.local",
-                        ProviderId: providerUserId,
-                        Provider: "guest"
-                    );
-                    
-                    user = await _userService.CreateUserAsync(createCommand);
-                    _logger.LogInformation("New guest user created: {UserId} with GuestId: {GuestId}", user.Id, providerUserId);
-                }
-                else
-                {
-                    _logger.LogInformation("Existing guest user logged in: {UserId} with GuestId: {GuestId}", user.Id, providerUserId);
-                }
+        private async Task<AuthResult> GuestLoginAsync(string guestId)
+        {
+            if (string.IsNullOrEmpty(guestId)) {
+                throw new ValidationException(ErrorCode.GUEST_ID_INVALID);
             }
-            // 실제 OAuth 프로바이더인 경우 (Google, Apple 등)
-            else if (provider == "google" || provider == "apple")
-            {
-                if (string.IsNullOrEmpty(providerUserId))
-                {
-                    throw new ValidationException(ErrorCode.PROVIDER_USER_ID_INVALID);
-                }
 
-                // 새로운 사용자 ID 생성
-                userId = Guid.NewGuid();
-                
-                user = new UserDto
-                {
-                    Id = userId,
+            var user = await _userService.TryGetByProviderAsync("guest", guestId);
+
+            if (user == null) {
+                string uuid = GenerateGuestUuid(guestId);
+                var createCommand = new UserCreateCommand(
+                    Username: $"guest_{uuid}",
+                    Email: $"guest@guest{uuid}.local",
+                    ProviderId: guestId,
+                    Provider: "guest"
+                );
+
+                user = await _userService.CreateUserAsync(createCommand);
+                _logger.LogInformation("새 게스트 사용자 생성됨: UserId={UserId}, GuestId={GuestId}", user.Id, guestId);
+            }
+            else {
+                _logger.LogDebug("기존 게스트 사용자 로그인: UserId={UserId}, GuestId={GuestId}", user.Id, guestId);
+            }
+
+            return await FinalizeLoginAsync(user, "guest");
+        }
+
+        private async Task<AuthResult> OAuth2LoginAsync(string provider, string providerUserId)
+        {
+            if (string.IsNullOrEmpty(providerUserId)) {
+                throw new ValidationException(ErrorCode.PROVIDER_USER_ID_INVALID);
+            }
+
+            var user = await _userService.TryGetByProviderAsync(provider, providerUserId);
+
+            if (user == null) {
+                string uuid = GenerateGuestUuid(providerUserId);
+                var createCommand = new UserCreateCommand(
+                    Username: $"임시 유저 이름",
+                    Email: $"guest@guest{uuid}.local",
+                    ProviderId: providerUserId,
+                    Provider: provider
+                );
+
+
+                user = new UserDto {
+                    
+
+                    Id = Guid.NewGuid(),
                     Username = $"{provider}_user_{providerUserId}",
                     Email = $"{providerUserId}@{provider}.oauth",
-                    Status = AccountStatus.Active
+                    Status = AccountStatus.Active,
+                    Provider = provider,
+                    ProviderId = providerUserId
                 };
-
-                _logger.LogInformation("New OAuth user created: {UserId} from {Provider} with ProviderId: {ProviderId}", 
-                    userId, provider, providerUserId);
-            }
-            else
-            {
-                throw new ValidationException(ErrorCode.OAUTH2_PROVIDER_NOT_SUPPORTED);
             }
 
-            // OAuth2 사용자인 경우 Provider 정보를 포함하여 사용자 생성 (test와 guest는 이미 처리됨)
-            if (provider != "test" && provider != "guest")
-            {
-                user = user with { Provider = provider, ProviderId = providerUserId };
-            }
+            _logger.LogInformation("새 OAuth 사용자 생성됨: UserId={UserId}, Provider={Provider}, ProviderId={ProviderId}",
+                user.Id, provider, providerUserId);
 
-            // 첫 로그인 토큰 지급 시도
+            return await FinalizeLoginAsync(user, provider);
+        }
+
+        private async Task<AuthResult> FinalizeLoginAsync(UserDto user, string provider)
+        {
+            // 초기 크레딧 지급
             var tokenGranted = await _tokenManagementService.GrantInitialCreditsAsync(user.Id);
-            if (tokenGranted)
-            {
-                _logger.LogInformation("Initial tokens (5000) granted successfully to user {UserId}", user.Id);
+            if (tokenGranted) {
+                _logger.LogInformation("사용자 {UserId}에게 최초 크레딧 지급 완료", user.Id);
             }
-            else
-            {
-                _logger.LogInformation("Initial tokens already granted or grant failed for user {UserId}", user.Id);
+            else {
+                _logger.LogDebug("사용자 {UserId}는 이미 크레딧이 지급되었거나 지급 실패", user.Id);
             }
 
+            // 최종 JWT 토큰 발급
             var tokens = await _tokenService.GenerateTokensAsync(user.Id);
-            
-            _logger.LogInformation("Users {UserId} logged in with OAuth provider: {Provider}", user.Id, provider);
-            
-            return new AuthResult
-            {
+
+            _logger.LogDebug("사용자 {UserId} 로그인 완료 (Provider={Provider})", user.Id, provider);
+
+            return new AuthResult {
                 Tokens = tokens,
                 User = user
             };
         }
 
-        public async Task<AuthResult> RefreshTokenAsync(string refreshToken)
+        public async Task<AuthResult> RefreshAccessTokenAsync(string? refreshToken)
         {
-            if (string.IsNullOrEmpty(refreshToken))
-            {
+            if (string.IsNullOrEmpty(refreshToken)) {
                 throw new ValidationException(ErrorCode.TOKEN_MISSING, "리프레시 토큰이 필요합니다");
             }
 
             var tokens = await _tokenService.RefreshAccessTokenAsync(refreshToken);
-            if (tokens == null)
-            {
+            if (tokens == null) {
                 throw new ValidationException(ErrorCode.TOKEN_REFRESH_FAILED, "유효하지 않거나 만료된 리프레시 토큰입니다");
             }
 
             var userId = await _tokenService.GetUserIdFromTokenAsync(refreshToken);
             var user = userId.HasValue ? await _userService.TryGetByIdAsync(userId.Value) : null;
 
-            return new AuthResult
-            {
+            return new AuthResult {
                 Tokens = tokens,
                 User = user
             };
@@ -143,27 +146,27 @@ namespace ProjectVG.Application.Services.Auth
 
         public async Task<bool> LogoutAsync(string refreshToken)
         {
-            if (string.IsNullOrEmpty(refreshToken))
-            {
+            if (string.IsNullOrEmpty(refreshToken)) {
                 throw new ValidationException(ErrorCode.TOKEN_MISSING, "리프레시 토큰이 필요합니다");
             }
 
             var revoked = await _tokenService.RevokeRefreshTokenAsync(refreshToken);
-            if (revoked)
-            {
+            if (revoked) {
                 var userId = await _tokenService.GetUserIdFromTokenAsync(refreshToken);
-                _logger.LogInformation("Users {UserId} logged out successfully", userId);
+                _logger.LogInformation("사용자 {UserId} 로그아웃 성공", userId);
+            }
+            else {
+                _logger.LogWarning("리프레시 토큰 만료 또는 무효화 실패: {RefreshToken}", refreshToken);
             }
             return revoked;
         }
-
         private static string GenerateGuestUuid(string providerUserId)
         {
-            // SHA256 해시를 사용하여 일관된 UUID 생성
             using var sha256 = System.Security.Cryptography.SHA256.Create();
             var hash = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(providerUserId));
             var hashString = Convert.ToHexString(hash);
             return hashString.Substring(0, Math.Min(hashString.Length, 16)).ToLowerInvariant();
         }
+
     }
 }

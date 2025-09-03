@@ -85,6 +85,7 @@ namespace ProjectVG.Api.Controllers
             return Redirect(result.RedirectUrl!);
         }
 
+
         [HttpGet("oauth2/token")]
         public async Task<IActionResult> GetOAuth2Token([FromQuery] string state)
         {
