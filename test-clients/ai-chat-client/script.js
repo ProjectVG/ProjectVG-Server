@@ -10,7 +10,7 @@ const HTTP_URL = `http://${ENDPOINT}/api/v1/chat`;
 const LOGIN_URL = `http://${ENDPOINT}/api/v1/auth/guest-login`;
 const CHARACTER_BASE_URL = `http://${ENDPOINT}/api/v1/character`;
 const CONVERSATION_BASE_URL = `http://${ENDPOINT}/api/v1/conversation`;
-const TOKEN_BASE_URL = `http://${ENDPOINT}/api/v1/tokens`;
+const TOKEN_BASE_URL = `http://${ENDPOINT}/api/v1/credits`;
 const SERVER_MESSAGE_TYPE = "json";
 let ws = null;
 let reconnectAttempts = 0;
@@ -23,7 +23,7 @@ const statusBox = document.getElementById('status');
 const loginStatus = document.getElementById('login-status');
 const wsStatus = document.getElementById('ws-status');
 const sessionIdDisplay = document.getElementById('session-id');
-const tokenBalanceDisplay = document.getElementById('token-balance');
+const creditBalanceDisplay = document.getElementById('credit-balance');
 const serverInfo = document.getElementById('server-info');
 const chatLog = document.getElementById('chat-log');
 const userInput = document.getElementById('user-input');
@@ -394,16 +394,16 @@ function connectWebSocket() {
             }
 
             // 토큰 정보 업데이트 처리
-            if (chatData.tokens_used !== undefined || chatData.tokens_remaining !== undefined) {
-              updateTokenDisplay(chatData.tokens_used, chatData.tokens_remaining);
+            if (chatData.credits_used !== undefined || chatData.credits_remaining !== undefined) {
+              updateTokenDisplay(chatData.credits_used, chatData.credits_remaining);
             }
 
             if (messageText) {
               appendLog(messageText);
               
               // 토큰 사용량 표시 추가
-              if (chatData.tokens_used) {
-                appendLog(`<small style='color:#9e9e9e'>[토큰 사용: ${chatData.tokens_used}, 잔액: ${chatData.tokens_remaining || 'N/A'}]</small>`);
+              if (chatData.credits_used) {
+                appendLog(`<small style='color:#9e9e9e'>[토큰 사용: ${chatData.credits_used}, 잔액: ${chatData.credits_remaining || 'N/A'}]</small>`);
               }
             }
 
@@ -1328,7 +1328,7 @@ if (nextPageBtn) {
 // 토큰 잔액 로드
 async function loadTokenBalance() {
   if (!authToken) {
-    tokenBalanceDisplay.textContent = '-';
+    creditBalanceDisplay.textContent = '-';
     return;
   }
   
@@ -1343,43 +1343,43 @@ async function loadTokenBalance() {
     if (response.ok) {
       const data = await response.json();
       const balance = data.balance || data.tokenBalance || 0;
-      tokenBalanceDisplay.textContent = balance.toLocaleString();
+      creditBalanceDisplay.textContent = balance.toLocaleString();
       
       // 낮은 잔액 경고
       if (balance < 1000) {
-        tokenBalanceDisplay.style.color = '#f44336'; // 빨간색
+        creditBalanceDisplay.style.color = '#f44336'; // 빨간색
       } else if (balance < 5000) {
-        tokenBalanceDisplay.style.color = '#ff9800'; // 주황색
+        creditBalanceDisplay.style.color = '#ff9800'; // 주황색
       } else {
-        tokenBalanceDisplay.style.color = '#28a745'; // 녹색
+        creditBalanceDisplay.style.color = '#28a745'; // 녹색
       }
     } else {
       console.error('토큰 잔액 로드 실패:', response.status);
-      tokenBalanceDisplay.textContent = 'Error';
+      creditBalanceDisplay.textContent = 'Error';
     }
   } catch (error) {
     console.error('토큰 잔액 로드 오류:', error);
-    tokenBalanceDisplay.textContent = 'Error';
+    creditBalanceDisplay.textContent = 'Error';
   }
 }
 
 // 토큰 디스플레이 업데이트
-function updateTokenDisplay(tokensUsed, tokensRemaining) {
-  if (tokensRemaining !== undefined && tokensRemaining !== null) {
-    tokenBalanceDisplay.textContent = tokensRemaining.toLocaleString();
+function updateTokenDisplay(creditsUsed, creditsRemaining) {
+  if (creditsRemaining !== undefined && creditsRemaining !== null) {
+    creditBalanceDisplay.textContent = creditsRemaining.toLocaleString();
     
     // 잔액에 따른 색상 변경
-    if (tokensRemaining < 1000) {
-      tokenBalanceDisplay.style.color = '#f44336'; // 빨간색
-    } else if (tokensRemaining < 5000) {
-      tokenBalanceDisplay.style.color = '#ff9800'; // 주황색
+    if (creditsRemaining < 1000) {
+      creditBalanceDisplay.style.color = '#f44336'; // 빨간색
+    } else if (creditsRemaining < 5000) {
+      creditBalanceDisplay.style.color = '#ff9800'; // 주황색
     } else {
-      tokenBalanceDisplay.style.color = '#28a745'; // 녹색
+      creditBalanceDisplay.style.color = '#28a745'; // 녹색
     }
     
     // 낮은 잔액 경고
-    if (tokensRemaining < 500) {
-      appendLog(`<span style='color:#f44336'><b>[경고]</b> 토큰 잔액이 부족합니다 (잔액: ${tokensRemaining})</span>`);
+    if (creditsRemaining < 500) {
+      appendLog(`<span style='color:#f44336'><b>[경고]</b> 토큰 잔액이 부족합니다 (잔액: ${creditsRemaining})</span>`);
     }
   }
 }

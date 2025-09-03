@@ -34,11 +34,11 @@ namespace ProjectVG.Application.Models.Chat
         [JsonPropertyName("order")]
         public int Order { get; init; }
         
-        [JsonPropertyName("tokens_used")]
-        public decimal? TokensUsed { get; init; }
+        [JsonPropertyName("credits_used")]
+        public decimal? CreditsUsed { get; init; }
         
-        [JsonPropertyName("tokens_remaining")]
-        public decimal? TokensRemaining { get; init; }
+        [JsonPropertyName("credits_remaining")]
+        public decimal? CreditsRemaining { get; init; }
         
         public static ChatProcessResultMessage FromSegment(ChatSegment segment, string? requestId = null)
         {
@@ -72,9 +72,9 @@ namespace ProjectVG.Application.Models.Chat
             }
         }
         
-        public ChatProcessResultMessage WithTokenInfo(decimal? tokensUsed, decimal? tokensRemaining)
+        public ChatProcessResultMessage WithCreditInfo(decimal? creditsUsed, decimal? creditsRemaining)
         {
-            return this with { TokensUsed = tokensUsed, TokensRemaining = tokensRemaining };
+            return this with { CreditsUsed = creditsUsed, CreditsRemaining = creditsRemaining };
         }
     }
 }

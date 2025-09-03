@@ -61,7 +61,7 @@ namespace ProjectVG.Api.Controllers
 
         private string GetRefreshTokenFromHeader()
         {
-            return Request.Headers["X-Refresh-Token"].FirstOrDefault() ?? string.Empty;
+            return Request.Headers["X-Refresh-Credit"].FirstOrDefault() ?? string.Empty;
         }
     }
 } 

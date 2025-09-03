@@ -101,8 +101,8 @@ namespace ProjectVG.Api.Controllers
 
             await _oauth2Service.DeleteTokenDataAsync(state);
 
-            Response.Headers.Append("X-Access-Token", tokenData.AccessToken);
-            Response.Headers.Append("X-Refresh-Token", tokenData.RefreshToken);
+            Response.Headers.Append("X-Access-Credit", tokenData.AccessToken);
+            Response.Headers.Append("X-Refresh-Credit", tokenData.RefreshToken);
             Response.Headers.Append("X-Expires-In", tokenData.ExpiresIn.ToString());
             Response.Headers.Append("X-UID", tokenData.UID);
 

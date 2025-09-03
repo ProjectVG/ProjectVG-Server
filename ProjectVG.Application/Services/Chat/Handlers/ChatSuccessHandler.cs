@@ -1,7 +1,7 @@
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Application.Services.WebSocket;
-using ProjectVG.Application.Services.Token;
+using ProjectVG.Application.Services.Credit;
 
 
 namespace ProjectVG.Application.Services.Chat.Handlers
@@ -10,12 +10,12 @@ namespace ProjectVG.Application.Services.Chat.Handlers
     {
         private readonly ILogger<ChatSuccessHandler> _logger;
         private readonly IWebSocketManager _webSocketService;
-        private readonly ITokenManagementService _tokenManagementService;
+        private readonly ICreditManagementService _tokenManagementService;
 
         public ChatSuccessHandler(
         ILogger<ChatSuccessHandler> logger,
         IWebSocketManager webSocketService,
-        ITokenManagementService tokenManagementService)
+        ICreditManagementService tokenManagementService)
         {
             _logger = logger;
             _webSocketService = webSocketService;
@@ -59,7 +59,7 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                     try
                     {
                         var message = ChatProcessResultMessage.FromSegment(segment, requestId)
-                            .WithTokenInfo(tokensUsed, tokensRemaining);
+                            .WithCreditInfo(tokensUsed, tokensRemaining);
                         var wsMessage = new WebSocketMessage("chat", message);
                         
                         await _webSocketService.SendAsync(userId, wsMessage);
@@ -72,7 +72,7 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                     }
                 }
 
-                _logger.LogDebug("채팅 결과 전송 완료: 요청 {RequestId}, 세그먼트 {SegmentCount}개, 토큰 사용: {TokensUsed}, 잔액: {TokensRemaining}",
+                _logger.LogDebug("채팅 결과 전송 완료: 요청 {RequestId}, 세그먼트 {SegmentCount}개, 토큰 사용: {CreditsUsed}, 잔액: {CreditsRemaining}",
                     context.RequestId, validSegments.Count, tokensUsed, tokensRemaining);
             }
             catch (Exception ex)
@@ -85,12 +85,12 @@ namespace ProjectVG.Application.Services.Chat.Handlers
         /// <summary>
         /// 채팅 처리를 위한 토큰 차감
         /// </summary>
-        private async Task<TokenTransactionResult> DeductTokensForChatAsync(ChatProcessContext context)
+        private async Task<CreditTransactionResult> DeductTokensForChatAsync(ChatProcessContext context)
         {
             try
             {
                 var transactionId = $"CHAT_{context.RequestId}_{DateTime.UtcNow:yyyyMMddHHmmss}";
-                var result = await _tokenManagementService.DeductTokensAsync(
+                var result = await _tokenManagementService.DeductCreditsAsync(
                     context.UserId,
                     (decimal)context.Cost,
                     transactionId,
@@ -116,7 +116,7 @@ namespace ProjectVG.Application.Services.Chat.Handlers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "채팅 토큰 차감 처리 중 예외 발생: {RequestId}", context.RequestId);
-                return TokenTransactionResult.CreateFailure($"토큰 차감 처리 중 예외 발생: {ex.Message}");
+                return CreditTransactionResult.CreateFailure($"토큰 차감 처리 중 예외 발생: {ex.Message}");
             }
         }
     }

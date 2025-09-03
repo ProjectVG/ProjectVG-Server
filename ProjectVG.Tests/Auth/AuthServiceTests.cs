@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using ProjectVG.Application.Services.Auth;
 using ProjectVG.Application.Services.Users;
-using ProjectVG.Application.Services.Token;
+using ProjectVG.Application.Services.Credit;
 using ProjectVG.Infrastructure.Auth;
 using ProjectVG.Common.Models;
 using ProjectVG.Application.Models.User;
@@ -19,14 +19,14 @@ namespace ProjectVG.Tests.Auth
         private readonly AuthService _authService;
         private readonly Mock<IUserService> _mockUserService;
         private readonly Mock<ITokenService> _mockTokenService;
-        private readonly Mock<ITokenManagementService> _mockTokenManagementService;
+        private readonly Mock<ICreditManagementService> _mockTokenManagementService;
         private readonly Mock<ILogger<AuthService>> _mockLogger;
 
         public AuthServiceTests()
         {
             _mockUserService = new Mock<IUserService>();
             _mockTokenService = new Mock<ITokenService>();
-            _mockTokenManagementService = new Mock<ITokenManagementService>();
+            _mockTokenManagementService = new Mock<ICreditManagementService>();
             _mockLogger = new Mock<ILogger<AuthService>>();
 
             _authService = new AuthService(
@@ -54,7 +54,7 @@ namespace ProjectVG.Tests.Auth
             };
 
             _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
-            _mockTokenManagementService.Setup(x => x.GrantInitialTokensAsync(userId)).ReturnsAsync(true);
+            _mockTokenManagementService.Setup(x => x.GrantInitialCreditsAsync(userId)).ReturnsAsync(true);
 
             // Act
             var result = await _authService.LoginWithOAuthAsync(provider, accessToken);
@@ -69,7 +69,7 @@ namespace ProjectVG.Tests.Auth
             result.User.Status.Should().Be(AccountStatus.Active);
 
             _mockTokenService.Verify(x => x.GenerateTokensAsync(userId), Times.Once);
-            _mockTokenManagementService.Verify(x => x.GrantInitialTokensAsync(userId), Times.Once);
+            _mockTokenManagementService.Verify(x => x.GrantInitialCreditsAsync(userId), Times.Once);
         }
 
         [Fact]
@@ -171,7 +171,7 @@ namespace ProjectVG.Tests.Auth
             _mockUserService.Setup(x => x.TryGetByProviderAsync("guest", guestId)).ReturnsAsync((UserDto?)null);
             _mockUserService.Setup(x => x.CreateUserAsync(It.IsAny<UserCreateCommand>())).ReturnsAsync(createdUser);
             _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
-            _mockTokenManagementService.Setup(x => x.GrantInitialTokensAsync(userId)).ReturnsAsync(true);
+            _mockTokenManagementService.Setup(x => x.GrantInitialCreditsAsync(userId)).ReturnsAsync(true);
 
             // Act
             var result = await _authService.LoginWithOAuthAsync(provider, guestId);
@@ -188,7 +188,7 @@ namespace ProjectVG.Tests.Auth
             _mockUserService.Verify(x => x.TryGetByProviderAsync("guest", guestId), Times.Once);
             _mockUserService.Verify(x => x.CreateUserAsync(It.IsAny<UserCreateCommand>()), Times.Once);
             _mockTokenService.Verify(x => x.GenerateTokensAsync(userId), Times.Once);
-            _mockTokenManagementService.Verify(x => x.GrantInitialTokensAsync(userId), Times.Once);
+            _mockTokenManagementService.Verify(x => x.GrantInitialCreditsAsync(userId), Times.Once);
         }
 
         [Fact]
@@ -217,7 +217,7 @@ namespace ProjectVG.Tests.Auth
 
             _mockUserService.Setup(x => x.TryGetByProviderAsync("guest", guestId)).ReturnsAsync(existingUser);
             _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
-            _mockTokenManagementService.Setup(x => x.GrantInitialTokensAsync(userId)).ReturnsAsync(false);
+            _mockTokenManagementService.Setup(x => x.GrantInitialCreditsAsync(userId)).ReturnsAsync(false);
 
             // Act
             var result = await _authService.LoginWithOAuthAsync(provider, guestId);
@@ -230,7 +230,7 @@ namespace ProjectVG.Tests.Auth
             _mockUserService.Verify(x => x.TryGetByProviderAsync("guest", guestId), Times.Once);
             _mockUserService.Verify(x => x.CreateUserAsync(It.IsAny<UserCreateCommand>()), Times.Never);
             _mockTokenService.Verify(x => x.GenerateTokensAsync(userId), Times.Once);
-            _mockTokenManagementService.Verify(x => x.GrantInitialTokensAsync(userId), Times.Once);
+            _mockTokenManagementService.Verify(x => x.GrantInitialCreditsAsync(userId), Times.Once);
         }
 
         [Fact]
@@ -391,7 +391,7 @@ namespace ProjectVG.Tests.Auth
             _mockUserService.Setup(x => x.TryGetByProviderAsync(provider, guestId)).ReturnsAsync((UserDto?)null);
             _mockUserService.Setup(x => x.CreateUserAsync(It.IsAny<UserCreateCommand>())).ReturnsAsync(createdUser);
             _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
-            _mockTokenManagementService.Setup(x => x.GrantInitialTokensAsync(userId)).ReturnsAsync(true);
+            _mockTokenManagementService.Setup(x => x.GrantInitialCreditsAsync(userId)).ReturnsAsync(true);
 
             // Act
             var result = await _authService.LoginWithOAuthAsync(provider, guestId);
@@ -401,7 +401,7 @@ namespace ProjectVG.Tests.Auth
             result.User.Should().Be(createdUser);
 
             // Verify token granting was attempted
-            _mockTokenManagementService.Verify(x => x.GrantInitialTokensAsync(userId), Times.Once);
+            _mockTokenManagementService.Verify(x => x.GrantInitialCreditsAsync(userId), Times.Once);
 
             // Verify success logging
             _mockLogger.Verify(
@@ -441,7 +441,7 @@ namespace ProjectVG.Tests.Auth
 
             _mockUserService.Setup(x => x.TryGetByProviderAsync(provider, guestId)).ReturnsAsync(existingUser);
             _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
-            _mockTokenManagementService.Setup(x => x.GrantInitialTokensAsync(userId)).ReturnsAsync(false);
+            _mockTokenManagementService.Setup(x => x.GrantInitialCreditsAsync(userId)).ReturnsAsync(false);
 
             // Act
             var result = await _authService.LoginWithOAuthAsync(provider, guestId);
@@ -451,7 +451,7 @@ namespace ProjectVG.Tests.Auth
             result.User.Should().Be(existingUser);
 
             // Verify token granting was attempted
-            _mockTokenManagementService.Verify(x => x.GrantInitialTokensAsync(userId), Times.Once);
+            _mockTokenManagementService.Verify(x => x.GrantInitialCreditsAsync(userId), Times.Once);
 
             // Verify already granted logging
             _mockLogger.Verify(
@@ -481,7 +481,7 @@ namespace ProjectVG.Tests.Auth
             };
 
             _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
-            _mockTokenManagementService.Setup(x => x.GrantInitialTokensAsync(userId)).ReturnsAsync(false);
+            _mockTokenManagementService.Setup(x => x.GrantInitialCreditsAsync(userId)).ReturnsAsync(false);
 
             // Act
             var result = await _authService.LoginWithOAuthAsync(provider, providerId);
@@ -491,7 +491,7 @@ namespace ProjectVG.Tests.Auth
             result.Tokens.Should().Be(tokenResponse);
 
             // Verify token granting was attempted
-            _mockTokenManagementService.Verify(x => x.GrantInitialTokensAsync(userId), Times.Once);
+            _mockTokenManagementService.Verify(x => x.GrantInitialCreditsAsync(userId), Times.Once);
 
             // Verify failure logging
             _mockLogger.Verify(
@@ -521,8 +521,8 @@ namespace ProjectVG.Tests.Auth
             };
 
             _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
-            _mockTokenManagementService.Setup(x => x.GrantInitialTokensAsync(userId))
-                .ThrowsAsync(new Exception("Token granting service unavailable"));
+            _mockTokenManagementService.Setup(x => x.GrantInitialCreditsAsync(userId))
+                .ThrowsAsync(new Exception("Credit granting service unavailable"));
 
             // Act & Assert - Should not throw exception
             var result = await _authService.LoginWithOAuthAsync(provider, accessToken);
@@ -533,7 +533,7 @@ namespace ProjectVG.Tests.Auth
             result.User!.Id.Should().Be(userId);
 
             // Verify token granting was attempted
-            _mockTokenManagementService.Verify(x => x.GrantInitialTokensAsync(userId), Times.Once);
+            _mockTokenManagementService.Verify(x => x.GrantInitialCreditsAsync(userId), Times.Once);
         }
 
         #endregion

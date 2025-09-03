@@ -1,36 +1,32 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using ProjectVG.Application.Services.Token;
-using ProjectVG.Common.Constants;
-using ProjectVG.Common.Exceptions;
-using ProjectVG.Domain.Entities.Tokens;
+using ProjectVG.Domain.Entities.Credits;
 using ProjectVG.Infrastructure.Persistence.EfCore;
-using ProjectVG.Infrastructure.Persistence.Repositories.Token;
+using ProjectVG.Infrastructure.Persistence.Repositories.Credit;
 using ProjectVG.Infrastructure.Persistence.Repositories.Users;
 
-namespace ProjectVG.Application.Services.Token
+namespace ProjectVG.Application.Services.Credit
 {
     /// <summary>
-    /// 토큰 관리 서비스 구현
-    /// 사용자 토큰 잔액 관리, 토큰 증감, 거래 기록 관리 등을 담당
+    /// 크래딧 관리 서비스 구현
+    /// 사용자 크래딧 잔액 관리, 크래딧 증감, 거래 기록 관리 등을 담당
     /// </summary>
-    public class TokenManagementService : ITokenManagementService
+    public class CreditManagementService : ICreditManagementService
     {
         private readonly ProjectVGDbContext _context;
         private readonly IUserRepository _userRepository;
-        private readonly ITokenTransactionRepository _transactionRepository;
-        private readonly ILogger<TokenManagementService> _logger;
+        private readonly ICreditTransactionRepository _transactionRepository;
+        private readonly ILogger<CreditManagementService> _logger;
 
         // 상수 정의
-        private const decimal INITIAL_TOKEN_AMOUNT = 5000m;
-        private const string INITIAL_TOKEN_SOURCE = "LOGIN_BONUS";
+        private const decimal INITIAL_CREDIT_AMOUNT = 5000m;
+        private const string INITIAL_CREDIT_SOURCE = "LOGIN_BONUS";
         private const string ROLLBACK_SOURCE = "ROLLBACK";
 
-        public TokenManagementService(
+        public CreditManagementService(
             ProjectVGDbContext context,
             IUserRepository userRepository,
-            ITokenTransactionRepository transactionRepository,
-            ILogger<TokenManagementService> logger)
+            ICreditTransactionRepository transactionRepository,
+            ILogger<CreditManagementService> logger)
         {
             _context = context;
             _userRepository = userRepository;
@@ -38,7 +34,7 @@ namespace ProjectVG.Application.Services.Token
             _logger = logger;
         }
 
-        public async Task<TokenBalanceInfo> GetTokenBalanceAsync(Guid userId)
+        public async Task<CreditBalanceInfo> GetCreditBalanceAsync(Guid userId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
@@ -46,18 +42,18 @@ namespace ProjectVG.Application.Services.Token
                 throw new ValidationException(ErrorCode.USER_NOT_FOUND, $"User not found: {userId}");
             }
 
-            return new TokenBalanceInfo
+            return new CreditBalanceInfo
             {
                 UserId = userId,
-                CurrentBalance = user.TokenBalance,
-                TotalEarned = user.TotalTokensEarned,
-                TotalSpent = user.TotalTokensSpent,
+                CurrentBalance = user.CreditBalance,
+                TotalEarned = user.TotalCreditsEarned,
+                TotalSpent = user.TotalCreditsSpent,
                 LastUpdated = user.UpdatedAt ?? DateTime.UtcNow,
-                InitialTokensGranted = user.InitialTokensGranted
+                InitialCreditsGranted = user.InitialCreditsGranted
             };
         }
 
-        public async Task<bool> HasSufficientTokensAsync(Guid userId, decimal requiredAmount)
+        public async Task<bool> HasSufficientCreditsAsync(Guid userId, decimal requiredAmount)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
@@ -65,10 +61,10 @@ namespace ProjectVG.Application.Services.Token
                 return false;
             }
 
-            return user.TokenBalance >= requiredAmount;
+            return user.CreditBalance >= requiredAmount;
         }
 
-        public async Task<TokenTransactionResult> AddTokensAsync(
+        public async Task<CreditTransactionResult> AddCreditsAsync(
             Guid userId, 
             decimal amount, 
             string source, 
@@ -78,7 +74,7 @@ namespace ProjectVG.Application.Services.Token
         {
             if (amount <= 0)
             {
-                return TokenTransactionResult.CreateFailure("Token amount must be positive");
+                return CreditTransactionResult.CreateFailure("Credit amount must be positive");
             }
 
             var strategy = _context.Database.CreateExecutionStrategy();
@@ -90,49 +86,49 @@ namespace ProjectVG.Application.Services.Token
                     var user = await _userRepository.GetByIdAsync(userId);
                     if (user == null)
                     {
-                        return TokenTransactionResult.CreateFailure("User not found");
+                        return CreditTransactionResult.CreateFailure("User not found");
                     }
 
-                    // 토큰 추가
-                    user.TokenBalance += amount;
-                    user.TotalTokensEarned += amount;
+                    // 크래딧 추가
+                    user.CreditBalance += amount;
+                    user.TotalCreditsEarned += amount;
                     user.UpdatedAt = DateTime.UtcNow;
 
                     await _userRepository.UpdateAsync(user);
 
                     // 거래 기록 생성
                     var transactionId = GenerateTransactionId();
-                    var tokenTransaction = new TokenTransaction
+                    var creditTransaction = new CreditTransaction
                     {
                         UserId = userId,
                         TransactionId = transactionId,
-                        Type = TokenTransactionType.Earn,
+                        Type = CreditTransactionType.Earn,
                         Amount = amount,
-                        BalanceAfter = user.TokenBalance,
+                        BalanceAfter = user.CreditBalance,
                         Source = source,
                         Description = description,
                         RelatedEntityId = relatedEntityId,
                         RelatedEntityType = relatedEntityType
                     };
 
-                    await _transactionRepository.CreateAsync(tokenTransaction);
+                    await _transactionRepository.CreateAsync(creditTransaction);
                     await transaction.CommitAsync();
 
-                    _logger.LogInformation("Tokens added successfully: User={UserId}, Amount={Amount}, Source={Source}", 
+                    _logger.LogInformation("Credits added successfully: User={UserId}, Amount={Amount}, Source={Source}", 
                         userId, amount, source);
 
-                    return TokenTransactionResult.CreateSuccess(transactionId, amount, user.TokenBalance);
+                    return CreditTransactionResult.CreateSuccess(transactionId, amount, user.CreditBalance);
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    _logger.LogError(ex, "Failed to add tokens: User={UserId}, Amount={Amount}", userId, amount);
-                    return TokenTransactionResult.CreateFailure("Failed to add tokens");
+                    _logger.LogError(ex, "Failed to add credits: User={UserId}, Amount={Amount}", userId, amount);
+                    return CreditTransactionResult.CreateFailure("Failed to add credits");
                 }
             });
         }
 
-        public async Task<TokenTransactionResult> DeductTokensAsync(
+        public async Task<CreditTransactionResult> DeductCreditsAsync(
             Guid userId, 
             decimal amount, 
             string transactionId,
@@ -143,14 +139,14 @@ namespace ProjectVG.Application.Services.Token
         {
             if (amount <= 0)
             {
-                return TokenTransactionResult.CreateFailure("Token amount must be positive");
+                return CreditTransactionResult.CreateFailure("Credit amount must be positive");
             }
 
             // 중복 거래 체크
             if (await _transactionRepository.TransactionExistsAsync(transactionId))
             {
                 _logger.LogWarning("Duplicate transaction attempt: {TransactionId}", transactionId);
-                return TokenTransactionResult.CreateFailure("Transaction already exists");
+                return CreditTransactionResult.CreateFailure("Transaction already exists");
             }
 
             var strategy = _context.Database.CreateExecutionStrategy();
@@ -162,60 +158,60 @@ namespace ProjectVG.Application.Services.Token
                     var user = await _userRepository.GetByIdAsync(userId);
                     if (user == null)
                     {
-                        return TokenTransactionResult.CreateFailure("User not found");
+                        return CreditTransactionResult.CreateFailure("User not found");
                     }
 
                     // 잔액 확인
-                    if (user.TokenBalance < amount)
+                    if (user.CreditBalance < amount)
                     {
-                        _logger.LogWarning("Insufficient tokens: User={UserId}, Required={Amount}, Available={Balance}", 
-                            userId, amount, user.TokenBalance);
-                        return TokenTransactionResult.CreateFailure("Insufficient token balance");
+                        _logger.LogWarning("Insufficient credits: User={UserId}, Required={Amount}, Available={Balance}", 
+                            userId, amount, user.CreditBalance);
+                        return CreditTransactionResult.CreateFailure("Insufficient credit balance");
                     }
 
-                    // 토큰 차감
-                    user.TokenBalance -= amount;
-                    user.TotalTokensSpent += amount;
+                    // 크래딧 차감
+                    user.CreditBalance -= amount;
+                    user.TotalCreditsSpent += amount;
                     user.UpdatedAt = DateTime.UtcNow;
 
                     await _userRepository.UpdateAsync(user);
 
                     // 거래 기록 생성
-                    var tokenTransaction = new TokenTransaction
+                    var creditTransaction = new CreditTransaction
                     {
                         UserId = userId,
                         TransactionId = transactionId,
-                        Type = TokenTransactionType.Spend,
+                        Type = CreditTransactionType.Spend,
                         Amount = -amount, // 음수로 저장하여 차감 표시
-                        BalanceAfter = user.TokenBalance,
+                        BalanceAfter = user.CreditBalance,
                         Source = source,
                         Description = description,
                         RelatedEntityId = relatedEntityId,
                         RelatedEntityType = relatedEntityType
                     };
 
-                    await _transactionRepository.CreateAsync(tokenTransaction);
+                    await _transactionRepository.CreateAsync(creditTransaction);
                     await dbTransaction.CommitAsync();
 
-                    _logger.LogInformation("Tokens deducted successfully: User={UserId}, Amount={Amount}, Source={Source}", 
+                    _logger.LogInformation("Credits deducted successfully: User={UserId}, Amount={Amount}, Source={Source}", 
                         userId, amount, source);
 
-                    return TokenTransactionResult.CreateSuccess(transactionId, -amount, user.TokenBalance);
+                    return CreditTransactionResult.CreateSuccess(transactionId, -amount, user.CreditBalance);
                 }
                 catch (Exception ex)
                 {
                     await dbTransaction.RollbackAsync();
-                    _logger.LogError(ex, "Failed to deduct tokens: User={UserId}, Amount={Amount}", userId, amount);
-                    return TokenTransactionResult.CreateFailure("Failed to deduct tokens");
+                    _logger.LogError(ex, "Failed to deduct credits: User={UserId}, Amount={Amount}", userId, amount);
+                    return CreditTransactionResult.CreateFailure("Failed to deduct credits");
                 }
             });
         }
 
-        public async Task<TokenTransactionHistory> GetTokenHistoryAsync(
+        public async Task<CreditTransactionHistory> GetCreditHistoryAsync(
             Guid userId, 
             int pageNumber = 1, 
             int pageSize = 50,
-            TokenTransactionType? transactionType = null)
+            CreditTransactionType? transactionType = null)
         {
             // 페이지네이션 검증
             if (pageNumber < 1) pageNumber = 1;
@@ -224,7 +220,7 @@ namespace ProjectVG.Application.Services.Token
             var (transactions, totalCount) = await _transactionRepository.GetUserTransactionsAsync(
                 userId, pageNumber, pageSize, transactionType);
 
-            var transactionInfos = transactions.Select(t => new TokenTransactionInfo
+            var transactionInfos = transactions.Select(t => new CreditTransactionInfo
             {
                 Id = t.Id,
                 TransactionId = t.TransactionId,
@@ -238,7 +234,7 @@ namespace ProjectVG.Application.Services.Token
                 CreatedAt = t.CreatedAt
             }).ToList();
 
-            return new TokenTransactionHistory
+            return new CreditTransactionHistory
             {
                 UserId = userId,
                 Transactions = transactionInfos,
@@ -248,18 +244,18 @@ namespace ProjectVG.Application.Services.Token
             };
         }
 
-        public async Task<bool> GrantInitialTokensAsync(Guid userId)
+        public async Task<bool> GrantInitialCreditsAsync(Guid userId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
             {
-                _logger.LogWarning("Cannot grant initial tokens: User not found {UserId}", userId);
+                _logger.LogWarning("Cannot grant initial credits: User not found {UserId}", userId);
                 return false;
             }
 
-            if (user.InitialTokensGranted)
+            if (user.InitialCreditsGranted)
             {
-                _logger.LogInformation("Initial tokens already granted for user {UserId}", userId);
+                _logger.LogInformation("Initial credits already granted for user {UserId}", userId);
                 return false;
             }
 
@@ -269,59 +265,59 @@ namespace ProjectVG.Application.Services.Token
                 using var transaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    // 첫 로그인 토큰 지급
-                    user.TokenBalance += INITIAL_TOKEN_AMOUNT;
-                    user.TotalTokensEarned += INITIAL_TOKEN_AMOUNT;
-                    user.InitialTokensGranted = true;
+                    // 첫 로그인 크래딧 지급
+                    user.CreditBalance += INITIAL_CREDIT_AMOUNT;
+                    user.TotalCreditsEarned += INITIAL_CREDIT_AMOUNT;
+                    user.InitialCreditsGranted = true;
                     user.UpdatedAt = DateTime.UtcNow;
 
                     await _userRepository.UpdateAsync(user);
 
                     // 거래 기록 생성
                     var transactionId = GenerateTransactionId();
-                    var tokenTransaction = new TokenTransaction
+                    var creditTransaction = new CreditTransaction
                     {
                         UserId = userId,
                         TransactionId = transactionId,
-                        Type = TokenTransactionType.Earn,
-                        Amount = INITIAL_TOKEN_AMOUNT,
-                        BalanceAfter = user.TokenBalance,
-                        Source = INITIAL_TOKEN_SOURCE,
-                        Description = "첫 로그인 보너스 토큰",
+                        Type = CreditTransactionType.Earn,
+                        Amount = INITIAL_CREDIT_AMOUNT,
+                        BalanceAfter = user.CreditBalance,
+                        Source = INITIAL_CREDIT_SOURCE,
+                        Description = "첫 로그인 보너스 크래딧",
                         RelatedEntityType = "User",
                         RelatedEntityId = userId.ToString()
                     };
 
-                    await _transactionRepository.CreateAsync(tokenTransaction);
+                    await _transactionRepository.CreateAsync(creditTransaction);
                     await transaction.CommitAsync();
 
-                    _logger.LogInformation("Initial tokens granted successfully: User={UserId}, Amount={Amount}", 
-                        userId, INITIAL_TOKEN_AMOUNT);
+                    _logger.LogInformation("Initial credits granted successfully: User={UserId}, Amount={Amount}", 
+                        userId, INITIAL_CREDIT_AMOUNT);
 
                     return true;
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    _logger.LogError(ex, "Failed to grant initial tokens for user {UserId}", userId);
+                    _logger.LogError(ex, "Failed to grant initial credits for user {UserId}", userId);
                     return false;
                 }
             });
         }
 
-        public async Task<TokenTransactionResult> RollbackTransactionAsync(string originalTransactionId, string reason)
+        public async Task<CreditTransactionResult> RollbackTransactionAsync(string originalTransactionId, string reason)
         {
             var originalTransaction = await _transactionRepository.GetByTransactionIdAsync(originalTransactionId);
             if (originalTransaction == null)
             {
-                return TokenTransactionResult.CreateFailure("Original transaction not found");
+                return CreditTransactionResult.CreateFailure("Original transaction not found");
             }
 
             // 이미 롤백된 거래인지 확인
-            var existingRollback = await _transactionRepository.GetByRelatedEntityAsync("TokenTransaction", originalTransactionId);
+            var existingRollback = await _transactionRepository.GetByRelatedEntityAsync("CreditTransaction", originalTransactionId);
             if (existingRollback.Any(t => t.Source == ROLLBACK_SOURCE))
             {
-                return TokenTransactionResult.CreateFailure("Transaction already rolled back");
+                return CreditTransactionResult.CreateFailure("Transaction already rolled back");
             }
 
             var strategy = _context.Database.CreateExecutionStrategy();
@@ -333,20 +329,20 @@ namespace ProjectVG.Application.Services.Token
                     var user = await _userRepository.GetByIdAsync(originalTransaction.UserId);
                     if (user == null)
                     {
-                        return TokenTransactionResult.CreateFailure("User not found");
+                        return CreditTransactionResult.CreateFailure("User not found");
                     }
 
                     // 롤백 처리: 원래 거래의 반대 동작 수행
                     var rollbackAmount = -originalTransaction.Amount; // 원래 거래의 반대
-                    user.TokenBalance += rollbackAmount;
+                    user.CreditBalance += rollbackAmount;
                     
-                    if (originalTransaction.Type == TokenTransactionType.Spend)
+                    if (originalTransaction.Type == CreditTransactionType.Spend)
                     {
-                        user.TotalTokensSpent -= Math.Abs(originalTransaction.Amount);
+                        user.TotalCreditsSpent -= Math.Abs(originalTransaction.Amount);
                     }
                     else
                     {
-                        user.TotalTokensEarned -= originalTransaction.Amount;
+                        user.TotalCreditsEarned -= originalTransaction.Amount;
                     }
 
                     user.UpdatedAt = DateTime.UtcNow;
@@ -354,16 +350,16 @@ namespace ProjectVG.Application.Services.Token
 
                     // 롤백 거래 기록 생성
                     var rollbackTransactionId = GenerateTransactionId();
-                    var rollbackTransaction = new TokenTransaction
+                    var rollbackTransaction = new CreditTransaction
                     {
                         UserId = originalTransaction.UserId,
                         TransactionId = rollbackTransactionId,
-                        Type = originalTransaction.Type == TokenTransactionType.Spend ? TokenTransactionType.Earn : TokenTransactionType.Spend,
+                        Type = originalTransaction.Type == CreditTransactionType.Spend ? CreditTransactionType.Earn : CreditTransactionType.Spend,
                         Amount = rollbackAmount,
-                        BalanceAfter = user.TokenBalance,
+                        BalanceAfter = user.CreditBalance,
                         Source = ROLLBACK_SOURCE,
                         Description = $"롤백: {reason}",
-                        RelatedEntityType = "TokenTransaction",
+                        RelatedEntityType = "CreditTransaction",
                         RelatedEntityId = originalTransactionId
                     };
 
@@ -373,13 +369,13 @@ namespace ProjectVG.Application.Services.Token
                     _logger.LogInformation("Transaction rolled back: Original={OriginalId}, Rollback={RollbackId}, Reason={Reason}", 
                         originalTransactionId, rollbackTransactionId, reason);
 
-                    return TokenTransactionResult.CreateSuccess(rollbackTransactionId, rollbackAmount, user.TokenBalance);
+                    return CreditTransactionResult.CreateSuccess(rollbackTransactionId, rollbackAmount, user.CreditBalance);
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
                     _logger.LogError(ex, "Failed to rollback transaction: {TransactionId}", originalTransactionId);
-                    return TokenTransactionResult.CreateFailure("Failed to rollback transaction");
+                    return CreditTransactionResult.CreateFailure("Failed to rollback transaction");
                 }
             });
         }

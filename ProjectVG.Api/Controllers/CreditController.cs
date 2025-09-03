@@ -1,32 +1,32 @@
 using Microsoft.AspNetCore.Mvc;
-using ProjectVG.Application.Services.Token;
+using ProjectVG.Application.Services.Credit;
 using ProjectVG.Api.Filters;
 using System.Security.Claims;
 
 namespace ProjectVG.Api.Controllers
 {
     /// <summary>
-    /// 토큰 관리 API 컨트롤러
-    /// 사용자의 토큰 잔액 조회, 거래 내역 조회 등을 제공
+    /// 크래딧 관리 API 컨트롤러
+    /// 사용자의 크래딧 잔액 조회, 거래 내역 조회 등을 제공
     /// </summary>
     [ApiController]
-    [Route("api/v1/tokens")]
+    [Route("api/v1/credits")]
     [JwtAuthentication]
-    public class TokenController : ControllerBase
+    public class CreditController : ControllerBase
     {
-        private readonly ITokenManagementService _tokenManagementService;
-        private readonly ILogger<TokenController> _logger;
+        private readonly ICreditManagementService _creditManagementService;
+        private readonly ILogger<CreditController> _logger;
 
-        public TokenController(ITokenManagementService tokenManagementService, ILogger<TokenController> logger)
+        public CreditController(ICreditManagementService creditManagementService, ILogger<CreditController> logger)
         {
-            _tokenManagementService = tokenManagementService;
+            _creditManagementService = creditManagementService;
             _logger = logger;
         }
 
         /// <summary>
-        /// 현재 사용자의 토큰 잔액 조회
+        /// 현재 사용자의 크래딧 잔액 조회
         /// </summary>
-        /// <returns>토큰 잔액 정보</returns>
+        /// <returns>크래딧 잔액 정보</returns>
         [HttpGet("balance")]
         public async Task<IActionResult> GetBalance()
         {
@@ -34,7 +34,7 @@ namespace ProjectVG.Api.Controllers
             
             try
             {
-                var balance = await _tokenManagementService.GetTokenBalanceAsync(userId);
+                var balance = await _creditManagementService.GetCreditBalanceAsync(userId);
                 return Ok(new
                 {
                     userId = balance.UserId,
@@ -42,23 +42,23 @@ namespace ProjectVG.Api.Controllers
                     totalEarned = balance.TotalEarned,
                     totalSpent = balance.TotalSpent,
                     lastUpdated = balance.LastUpdated,
-                    initialTokensGranted = balance.InitialTokensGranted
+                    initialTokensGranted = balance.InitialCreditsGranted
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get token balance for user {UserId}", userId);
-                return StatusCode(500, new { error = "Failed to retrieve token balance" });
+                _logger.LogError(ex, "Failed to get credit balance for user {UserId}", userId);
+                return StatusCode(500, new { error = "Failed to retrieve credit balance" });
             }
         }
 
         /// <summary>
-        /// 토큰 거래 내역 조회 (페이지네이션)
+        /// 크래딧 거래 내역 조회 (페이지네이션)
         /// </summary>
         /// <param name="page">페이지 번호 (1부터 시작)</param>
         /// <param name="pageSize">페이지 크기 (최대 100)</param>
         /// <param name="type">거래 유형 필터 (Earn=1, Spend=2)</param>
-        /// <returns>토큰 거래 내역</returns>
+        /// <returns>크래딧 거래 내역</returns>
         [HttpGet("history")]
         public async Task<IActionResult> GetHistory(
             [FromQuery] int page = 1, 
@@ -71,15 +71,15 @@ namespace ProjectVG.Api.Controllers
             if (page < 1) page = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 20;
             
-            Domain.Entities.Tokens.TokenTransactionType? transactionType = null;
-            if (type.HasValue && Enum.IsDefined(typeof(Domain.Entities.Tokens.TokenTransactionType), type.Value))
+            Domain.Entities.Credits.CreditTransactionType? transactionType = null;
+            if (type.HasValue && Enum.IsDefined(typeof(Domain.Entities.Credits.CreditTransactionType), type.Value))
             {
-                transactionType = (Domain.Entities.Tokens.TokenTransactionType)type.Value;
+                transactionType = (Domain.Entities.Credits.CreditTransactionType)type.Value;
             }
 
             try
             {
-                var history = await _tokenManagementService.GetTokenHistoryAsync(userId, page, pageSize, transactionType);
+                var history = await _creditManagementService.GetCreditHistoryAsync(userId, page, pageSize, transactionType);
                 
                 return Ok(new
                 {
@@ -110,18 +110,18 @@ namespace ProjectVG.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get token history for user {UserId}", userId);
-                return StatusCode(500, new { error = "Failed to retrieve token history" });
+                _logger.LogError(ex, "Failed to get credit history for user {UserId}", userId);
+                return StatusCode(500, new { error = "Failed to retrieve credit history" });
             }
         }
 
         /// <summary>
-        /// 토큰 충분 여부 확인
+        /// 크래딧 충분 여부 확인
         /// </summary>
-        /// <param name="amount">확인할 토큰 수량</param>
-        /// <returns>토큰 충분 여부</returns>
+        /// <param name="amount">확인할 크래딧 수량</param>
+        /// <returns>크래딧 충분 여부</returns>
         [HttpGet("check/{amount}")]
-        public async Task<IActionResult> CheckSufficientTokens(decimal amount)
+        public async Task<IActionResult> CheckSufficientCredits(decimal amount)
         {
             if (amount <= 0)
             {
@@ -132,33 +132,33 @@ namespace ProjectVG.Api.Controllers
             
             try
             {
-                var hasSufficient = await _tokenManagementService.HasSufficientTokensAsync(userId, amount);
-                var balance = await _tokenManagementService.GetTokenBalanceAsync(userId);
+                var hasSufficient = await _creditManagementService.HasSufficientCreditsAsync(userId, amount);
+                var balance = await _creditManagementService.GetCreditBalanceAsync(userId);
                 
                 return Ok(new
                 {
                     userId = userId,
                     requiredAmount = amount,
                     currentBalance = balance.CurrentBalance,
-                    hasSufficientTokens = hasSufficient,
+                    hasSufficientCredits = hasSufficient,
                     shortage = hasSufficient ? 0 : amount - balance.CurrentBalance
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to check token sufficiency for user {UserId}, amount {Amount}", userId, amount);
-                return StatusCode(500, new { error = "Failed to check token sufficiency" });
+                _logger.LogError(ex, "Failed to check credit sufficiency for user {UserId}, amount {Amount}", userId, amount);
+                return StatusCode(500, new { error = "Failed to check credit sufficiency" });
             }
         }
 
         /// <summary>
-        /// 토큰 추가 (관리자 전용 또는 결제 시스템 연동용)
+        /// 크래딧 추가 (관리자 전용 또는 결제 시스템 연동용)
         /// 실제 운영 환경에서는 결제 검증 로직이 필요
         /// </summary>
-        /// <param name="request">토큰 추가 요청</param>
-        /// <returns>토큰 추가 결과</returns>
+        /// <param name="request">크래딧 추가 요청</param>
+        /// <returns>크래딧 추가 결과</returns>
         [HttpPost("add")]
-        public async Task<IActionResult> AddTokens([FromBody] AddTokenRequest request)
+        public async Task<IActionResult> AddCredits([FromBody] AddCreditRequest request)
         {
             if (!ModelState.IsValid)
             {
@@ -170,11 +170,11 @@ namespace ProjectVG.Api.Controllers
             try
             {
                 // 실제 운영에서는 결제 검증, 권한 확인 등이 필요
-                var result = await _tokenManagementService.AddTokensAsync(
+                var result = await _creditManagementService.AddCreditsAsync(
                     userId,
                     request.Amount,
                     request.Source ?? "MANUAL_ADD",
-                    request.Description ?? "토큰 수동 추가",
+                    request.Description ?? "크래딧 수동 추가",
                     request.RelatedEntityId,
                     request.RelatedEntityType
                 );
@@ -197,8 +197,8 @@ namespace ProjectVG.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to add tokens for user {UserId}", userId);
-                return StatusCode(500, new { error = "Failed to add tokens" });
+                _logger.LogError(ex, "Failed to add credits for user {UserId}", userId);
+                return StatusCode(500, new { error = "Failed to add credits" });
             }
         }
 
@@ -210,24 +210,24 @@ namespace ProjectVG.Api.Controllers
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
             {
-                throw new UnauthorizedAccessException("Invalid user ID in token");
+                throw new UnauthorizedAccessException("Invalid user ID in credit");
             }
             return userId;
         }
     }
 
     /// <summary>
-    /// 토큰 추가 요청 모델
+    /// 크래딧 추가 요청 모델
     /// </summary>
-    public class AddTokenRequest
+    public class AddCreditRequest
     {
         /// <summary>
-        /// 추가할 토큰 수량 (필수)
+        /// 추가할 크래딧 수량 (필수)
         /// </summary>
         public decimal Amount { get; set; }
 
         /// <summary>
-        /// 토큰 소스 (선택, 기본값: MANUAL_ADD)
+        /// 크래딧 소스 (선택, 기본값: MANUAL_ADD)
         /// </summary>
         public string? Source { get; set; }
 

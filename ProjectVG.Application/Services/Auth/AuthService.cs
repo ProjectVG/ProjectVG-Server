@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.User;
 using ProjectVG.Application.Services.Users;
-using ProjectVG.Application.Services.Token;
+using ProjectVG.Application.Services.Credit;
 using ProjectVG.Infrastructure.Auth;
 using ProjectVG.Common.Exceptions;
 using ProjectVG.Common.Constants;
@@ -13,13 +13,13 @@ namespace ProjectVG.Application.Services.Auth
     {
         private readonly IUserService _userService;
         private readonly ITokenService _tokenService;
-        private readonly ITokenManagementService _tokenManagementService;
+        private readonly ICreditManagementService _tokenManagementService;
         private readonly ILogger<AuthService> _logger;
 
         public AuthService(
             IUserService userService, 
             ITokenService tokenService,
-            ITokenManagementService tokenManagementService,
+            ICreditManagementService tokenManagementService,
             ILogger<AuthService> logger)
         {
             _userService = userService;
@@ -97,7 +97,7 @@ namespace ProjectVG.Application.Services.Auth
             }
 
             // 첫 로그인 토큰 지급 시도
-            var tokenGranted = await _tokenManagementService.GrantInitialTokensAsync(user.Id);
+            var tokenGranted = await _tokenManagementService.GrantInitialCreditsAsync(user.Id);
             if (tokenGranted)
             {
                 _logger.LogInformation("Initial tokens (5000) granted successfully to user {UserId}", user.Id);

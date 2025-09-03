@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -12,7 +12,7 @@ namespace ProjectVG.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterColumn<decimal>(
-                name: "TotalTokensSpent",
+                name: "TotalCreditsSpent",
                 table: "Users",
                 type: "decimal(18,2)",
                 precision: 18,
@@ -23,7 +23,7 @@ namespace ProjectVG.Infrastructure.Migrations
                 oldType: "decimal(18,2)");
 
             migrationBuilder.AlterColumn<decimal>(
-                name: "TotalTokensEarned",
+                name: "TotalCreditsEarned",
                 table: "Users",
                 type: "decimal(18,2)",
                 precision: 18,
@@ -34,7 +34,7 @@ namespace ProjectVG.Infrastructure.Migrations
                 oldType: "decimal(18,2)");
 
             migrationBuilder.AlterColumn<decimal>(
-                name: "TokenBalance",
+                name: "CreditBalance",
                 table: "Users",
                 type: "decimal(18,2)",
                 precision: 18,
@@ -45,7 +45,7 @@ namespace ProjectVG.Infrastructure.Migrations
                 oldType: "decimal(18,2)");
 
             migrationBuilder.AlterColumn<bool>(
-                name: "InitialTokensGranted",
+                name: "InitialCreditsGranted",
                 table: "Users",
                 type: "bit",
                 nullable: false,
@@ -54,7 +54,7 @@ namespace ProjectVG.Infrastructure.Migrations
                 oldType: "bit");
 
             migrationBuilder.CreateTable(
-                name: "TokenTransactions",
+                name: "CreditTransactions",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -112,33 +112,33 @@ namespace ProjectVG.Infrastructure.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_TokenTransactions_RelatedEntityType_RelatedEntityId",
-                table: "TokenTransactions",
+                table: "CreditTransactions",
                 columns: new[] { "RelatedEntityType", "RelatedEntityId" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_TokenTransactions_Source",
-                table: "TokenTransactions",
+                table: "CreditTransactions",
                 column: "Source");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TokenTransactions_TransactionId",
-                table: "TokenTransactions",
+                table: "CreditTransactions",
                 column: "TransactionId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_TokenTransactions_Type",
-                table: "TokenTransactions",
+                table: "CreditTransactions",
                 column: "Type");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TokenTransactions_UserId",
-                table: "TokenTransactions",
+                table: "CreditTransactions",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TokenTransactions_UserId_CreatedAt",
-                table: "TokenTransactions",
+                table: "CreditTransactions",
                 columns: new[] { "UserId", "CreatedAt" });
         }
 
@@ -146,10 +146,10 @@ namespace ProjectVG.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "TokenTransactions");
+                name: "CreditTransactions");
 
             migrationBuilder.AlterColumn<decimal>(
-                name: "TotalTokensSpent",
+                name: "TotalCreditsSpent",
                 table: "Users",
                 type: "decimal(18,2)",
                 nullable: false,
@@ -160,7 +160,7 @@ namespace ProjectVG.Infrastructure.Migrations
                 oldDefaultValue: 0m);
 
             migrationBuilder.AlterColumn<decimal>(
-                name: "TotalTokensEarned",
+                name: "TotalCreditsEarned",
                 table: "Users",
                 type: "decimal(18,2)",
                 nullable: false,
@@ -171,7 +171,7 @@ namespace ProjectVG.Infrastructure.Migrations
                 oldDefaultValue: 0m);
 
             migrationBuilder.AlterColumn<decimal>(
-                name: "TokenBalance",
+                name: "CreditBalance",
                 table: "Users",
                 type: "decimal(18,2)",
                 nullable: false,
@@ -182,7 +182,7 @@ namespace ProjectVG.Infrastructure.Migrations
                 oldDefaultValue: 0m);
 
             migrationBuilder.AlterColumn<bool>(
-                name: "InitialTokensGranted",
+                name: "InitialCreditsGranted",
                 table: "Users",
                 type: "bit",
                 nullable: false,

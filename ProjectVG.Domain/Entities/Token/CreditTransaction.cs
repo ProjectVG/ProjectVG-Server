@@ -1,12 +1,12 @@
 using ProjectVG.Domain.Common;
 
-namespace ProjectVG.Domain.Entities.Tokens
+namespace ProjectVG.Domain.Entities.Credits
 {
     /// <summary>
     /// 토큰 거래 내역 엔티티
     /// 모든 토큰 증감 이력을 추적하여 감사와 투명성을 보장
     /// </summary>
-    public class TokenTransaction : BaseEntity
+    public class CreditTransaction : BaseEntity
     {
         /// <summary>
         /// 내부용 고유 ID
@@ -26,7 +26,7 @@ namespace ProjectVG.Domain.Entities.Tokens
         /// <summary>
         /// 거래 유형 (EARN: 획득, SPEND: 사용)
         /// </summary>
-        public TokenTransactionType Type { get; set; }
+        public CreditTransactionType Type { get; set; }
         
         /// <summary>
         /// 거래 금액 (양수: 증가, 음수: 감소)
@@ -67,7 +67,7 @@ namespace ProjectVG.Domain.Entities.Tokens
     /// <summary>
     /// 토큰 거래 유형
     /// </summary>
-    public enum TokenTransactionType
+    public enum CreditTransactionType
     {
         /// <summary>
         /// 토큰 획득 (로그인 보너스, 결제, 이벤트 등)

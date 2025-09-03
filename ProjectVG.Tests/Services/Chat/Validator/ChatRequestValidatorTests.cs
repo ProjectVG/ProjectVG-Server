@@ -4,7 +4,7 @@ using Moq;
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Services.Chat.Validators;
 using ProjectVG.Application.Services.Character;
-using ProjectVG.Application.Services.Token;
+using ProjectVG.Application.Services.Credit;
 using ProjectVG.Application.Services.Users;
 using ProjectVG.Application.Models.Character;
 using ProjectVG.Infrastructure.Persistence.Session;
@@ -21,7 +21,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
         private readonly Mock<ISessionStorage> _mockSessionStorage;
         private readonly Mock<IUserService> _mockUserService;
         private readonly Mock<ICharacterService> _mockCharacterService;
-        private readonly Mock<ITokenManagementService> _mockTokenManagementService;
+        private readonly Mock<ICreditManagementService> _mockCreditManagementService;
         private readonly Mock<ILogger<ChatRequestValidator>> _mockLogger;
 
         public ChatRequestValidatorTests()
@@ -29,14 +29,14 @@ namespace ProjectVG.Tests.Services.Chat.Validators
             _mockSessionStorage = new Mock<ISessionStorage>();
             _mockUserService = new Mock<IUserService>();
             _mockCharacterService = new Mock<ICharacterService>();
-            _mockTokenManagementService = new Mock<ITokenManagementService>();
+            _mockCreditManagementService = new Mock<ICreditManagementService>();
             _mockLogger = new Mock<ILogger<ChatRequestValidator>>();
 
             _validator = new ChatRequestValidator(
                 _mockSessionStorage.Object,
                 _mockUserService.Object,
                 _mockCharacterService.Object,
-                _mockTokenManagementService.Object,
+                _mockCreditManagementService.Object,
                 _mockLogger.Object);
         }
 
@@ -48,20 +48,20 @@ namespace ProjectVG.Tests.Services.Chat.Validators
             // Arrange
             var command = CreateValidChatCommand();
             var character = CreateValidCharacterDto(command.CharacterId);
-            var tokenBalance = CreateTokenBalance(command.UserId, 1000);
+            var creditBalance = CreateCreditBalance(command.UserId, 1000);
 
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.GetCharacterByIdAsync(command.CharacterId))
                 .ReturnsAsync(character);
-            _mockTokenManagementService.Setup(x => x.GetTokenBalanceAsync(command.UserId))
-                .ReturnsAsync(tokenBalance);
+            _mockCreditManagementService.Setup(x => x.GetCreditBalanceAsync(command.UserId))
+                .ReturnsAsync(creditBalance);
 
             // Act & Assert
             await _validator.ValidateAsync(command); // Should not throw
             
             _mockCharacterService.Verify(x => x.CharacterExistsAsync(command.CharacterId), Times.Once);
-            _mockTokenManagementService.Verify(x => x.GetTokenBalanceAsync(command.UserId), Times.Once);
+            _mockCreditManagementService.Verify(x => x.GetCreditBalanceAsync(command.UserId), Times.Once);
         }
 
         [Fact]
@@ -78,7 +78,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
 
             exception.ErrorCode.Should().Be(ErrorCode.CHARACTER_NOT_FOUND);
             _mockCharacterService.Verify(x => x.CharacterExistsAsync(command.CharacterId), Times.Once);
-            _mockTokenManagementService.Verify(x => x.GetTokenBalanceAsync(It.IsAny<Guid>()), Times.Never);
+            _mockCreditManagementService.Verify(x => x.GetCreditBalanceAsync(It.IsAny<Guid>()), Times.Never);
         }
 
         [Fact]
@@ -102,7 +102,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
             
             // Should not call external services for invalid input
             _mockCharacterService.Verify(x => x.CharacterExistsAsync(It.IsAny<Guid>()), Times.Never);
-            _mockTokenManagementService.Verify(x => x.GetTokenBalanceAsync(It.IsAny<Guid>()), Times.Never);
+            _mockCreditManagementService.Verify(x => x.GetCreditBalanceAsync(It.IsAny<Guid>()), Times.Never);
         }
 
         [Fact]
@@ -127,78 +127,78 @@ namespace ProjectVG.Tests.Services.Chat.Validators
 
         #endregion
 
-        #region Token Balance Validation Tests
+        #region Credit Balance Validation Tests
 
         [Fact]
-        public async Task ValidateAsync_ZeroTokenBalance_ShouldThrowInsufficientTokenException()
+        public async Task ValidateAsync_ZeroCreditBalance_ShouldThrowInsufficientCreditException()
         {
             // Arrange
             var command = CreateValidChatCommand();
             var character = CreateValidCharacterDto(command.CharacterId);
-            var tokenBalance = CreateTokenBalance(command.UserId, 0); // Zero balance
+            var creditBalance = CreateCreditBalance(command.UserId, 0); // Zero balance
 
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.GetCharacterByIdAsync(command.CharacterId))
                 .ReturnsAsync(character);
-            _mockTokenManagementService.Setup(x => x.GetTokenBalanceAsync(command.UserId))
-                .ReturnsAsync(tokenBalance);
+            _mockCreditManagementService.Setup(x => x.GetCreditBalanceAsync(command.UserId))
+                .ReturnsAsync(creditBalance);
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<ValidationException>(
                 () => _validator.ValidateAsync(command));
 
-            exception.ErrorCode.Should().Be(ErrorCode.INSUFFICIENT_TOKEN_BALANCE);
-            exception.Message.Should().Contain("토큰이 부족합니다");
-            exception.Message.Should().Contain("현재 잔액: 0 토큰");
-            exception.Message.Should().Contain("필요 토큰: 10 토큰");
+            exception.ErrorCode.Should().Be(ErrorCode.INSUFFICIENT_CREDIT_BALANCE);
+            exception.Message.Should().Contain("크래딧이 부족합니다");
+            exception.Message.Should().Contain("현재 잔액: 0 크래딧");
+            exception.Message.Should().Contain("필요 크래딧: 10 크래딧");
 
             // Verify warning was logged
-            VerifyWarningLogged("토큰 잔액 부족 (0 토큰)");
+            VerifyWarningLogged("크래딧 잔액 부족 (0 크래딧)");
         }
 
         [Fact]
-        public async Task ValidateAsync_InsufficientTokenBalance_ShouldThrowInsufficientTokenException()
+        public async Task ValidateAsync_InsufficientCreditBalance_ShouldThrowInsufficientCreditException()
         {
             // Arrange
             var command = CreateValidChatCommand();
             var character = CreateValidCharacterDto(command.CharacterId);
-            var tokenBalance = CreateTokenBalance(command.UserId, 5); // Less than required 10 tokens
+            var creditBalance = CreateCreditBalance(command.UserId, 5); // Less than required 10 credits
 
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.GetCharacterByIdAsync(command.CharacterId))
                 .ReturnsAsync(character);
-            _mockTokenManagementService.Setup(x => x.GetTokenBalanceAsync(command.UserId))
-                .ReturnsAsync(tokenBalance);
+            _mockCreditManagementService.Setup(x => x.GetCreditBalanceAsync(command.UserId))
+                .ReturnsAsync(creditBalance);
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<ValidationException>(
                 () => _validator.ValidateAsync(command));
 
-            exception.ErrorCode.Should().Be(ErrorCode.INSUFFICIENT_TOKEN_BALANCE);
-            exception.Message.Should().Contain("토큰이 부족합니다");
-            exception.Message.Should().Contain("현재 잔액: 5 토큰");
-            exception.Message.Should().Contain("필요 토큰: 10 토큰");
+            exception.ErrorCode.Should().Be(ErrorCode.INSUFFICIENT_CREDIT_BALANCE);
+            exception.Message.Should().Contain("크래딧이 부족합니다");
+            exception.Message.Should().Contain("현재 잔액: 5 크래딧");
+            exception.Message.Should().Contain("필요 크래딧: 10 크래딧");
 
             // Verify warning was logged with specific details
-            VerifyWarningLoggedWithParameters("토큰 부족", command.UserId.ToString(), "5", "10");
+            VerifyWarningLoggedWithParameters("크래딧 부족", command.UserId.ToString(), "5", "10");
         }
 
         [Fact]
-        public async Task ValidateAsync_ExactlyEnoughTokens_ShouldPassValidation()
+        public async Task ValidateAsync_ExactlyEnoughCredits_ShouldPassValidation()
         {
             // Arrange
             var command = CreateValidChatCommand();
             var character = CreateValidCharacterDto(command.CharacterId);
-            var tokenBalance = CreateTokenBalance(command.UserId, 10); // Exactly required amount
+            var creditBalance = CreateCreditBalance(command.UserId, 10); // Exactly required amount
 
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.GetCharacterByIdAsync(command.CharacterId))
                 .ReturnsAsync(character);
-            _mockTokenManagementService.Setup(x => x.GetTokenBalanceAsync(command.UserId))
-                .ReturnsAsync(tokenBalance);
+            _mockCreditManagementService.Setup(x => x.GetCreditBalanceAsync(command.UserId))
+                .ReturnsAsync(creditBalance);
 
             // Act & Assert - Should not throw
             await _validator.ValidateAsync(command);
@@ -208,19 +208,19 @@ namespace ProjectVG.Tests.Services.Chat.Validators
         }
 
         [Fact]
-        public async Task ValidateAsync_MoreThanEnoughTokens_ShouldPassValidation()
+        public async Task ValidateAsync_MoreThanEnoughCredits_ShouldPassValidation()
         {
             // Arrange
             var command = CreateValidChatCommand();
             var character = CreateValidCharacterDto(command.CharacterId);
-            var tokenBalance = CreateTokenBalance(command.UserId, 100); // More than enough
+            var creditBalance = CreateCreditBalance(command.UserId, 100); // More than enough
 
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.GetCharacterByIdAsync(command.CharacterId))
                 .ReturnsAsync(character);
-            _mockTokenManagementService.Setup(x => x.GetTokenBalanceAsync(command.UserId))
-                .ReturnsAsync(tokenBalance);
+            _mockCreditManagementService.Setup(x => x.GetCreditBalanceAsync(command.UserId))
+                .ReturnsAsync(creditBalance);
 
             // Act & Assert - Should not throw
             await _validator.ValidateAsync(command);
@@ -234,7 +234,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
         #region Edge Cases and Error Handling
 
         [Fact]
-        public async Task ValidateAsync_TokenServiceThrowsException_ShouldPropagateException()
+        public async Task ValidateAsync_CreditServiceThrowsException_ShouldPropagateException()
         {
             // Arrange
             var command = CreateValidChatCommand();
@@ -244,14 +244,14 @@ namespace ProjectVG.Tests.Services.Chat.Validators
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.GetCharacterByIdAsync(command.CharacterId))
                 .ReturnsAsync(character);
-            _mockTokenManagementService.Setup(x => x.GetTokenBalanceAsync(command.UserId))
-                .ThrowsAsync(new Exception("Token service unavailable"));
+            _mockCreditManagementService.Setup(x => x.GetCreditBalanceAsync(command.UserId))
+                .ThrowsAsync(new Exception("Credit service unavailable"));
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<Exception>(
                 () => _validator.ValidateAsync(command));
 
-            exception.Message.Should().Be("Token service unavailable");
+            exception.Message.Should().Be("Credit service unavailable");
         }
 
         [Fact]
@@ -268,33 +268,33 @@ namespace ProjectVG.Tests.Services.Chat.Validators
                 () => _validator.ValidateAsync(command));
 
             exception.Message.Should().Be("Character service unavailable");
-            _mockTokenManagementService.Verify(x => x.GetTokenBalanceAsync(It.IsAny<Guid>()), Times.Never);
+            _mockCreditManagementService.Verify(x => x.GetCreditBalanceAsync(It.IsAny<Guid>()), Times.Never);
         }
 
         [Fact]
-        public async Task ValidateAsync_NegativeTokenBalance_ShouldThrowInsufficientTokenException()
+        public async Task ValidateAsync_NegativeCreditBalance_ShouldThrowInsufficientCreditException()
         {
             // Arrange
             var command = CreateValidChatCommand();
             var character = CreateValidCharacterDto(command.CharacterId);
-            var tokenBalance = CreateTokenBalance(command.UserId, -5); // Negative balance
+            var creditBalance = CreateCreditBalance(command.UserId, -5); // Negative balance
 
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.GetCharacterByIdAsync(command.CharacterId))
                 .ReturnsAsync(character);
-            _mockTokenManagementService.Setup(x => x.GetTokenBalanceAsync(command.UserId))
-                .ReturnsAsync(tokenBalance);
+            _mockCreditManagementService.Setup(x => x.GetCreditBalanceAsync(command.UserId))
+                .ReturnsAsync(creditBalance);
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<ValidationException>(
                 () => _validator.ValidateAsync(command));
 
-            exception.ErrorCode.Should().Be(ErrorCode.INSUFFICIENT_TOKEN_BALANCE);
-            exception.Message.Should().Contain("현재 잔액: -5 토큰");
+            exception.ErrorCode.Should().Be(ErrorCode.INSUFFICIENT_CREDIT_BALANCE);
+            exception.Message.Should().Contain("현재 잔액: -5 크래딧");
 
             // Verify warning was logged for zero tokens (negative counts as zero)
-            VerifyWarningLogged("토큰 잔액 부족 (0 토큰)");
+            VerifyWarningLogged("크래딧 잔액 부족 (0 크래딧)");
         }
 
         #endregion
@@ -330,16 +330,16 @@ namespace ProjectVG.Tests.Services.Chat.Validators
             return new CharacterDto(character);
         }
 
-        private static TokenBalanceInfo CreateTokenBalance(Guid userId, decimal balance)
+        private static CreditBalanceInfo CreateCreditBalance(Guid userId, decimal balance)
         {
-            return new TokenBalanceInfo
+            return new CreditBalanceInfo
             {
                 UserId = userId,
                 CurrentBalance = balance,
                 TotalEarned = Math.Max(balance, 0),
                 TotalSpent = 0,
                 LastUpdated = DateTime.UtcNow,
-                InitialTokensGranted = balance > 0
+                InitialCreditsGranted = balance > 0
             };
         }
 
@@ -355,7 +355,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
                 Times.Once);
         }
 
-        private void VerifyWarningLoggedWithParameters(string expectedMessage, string userId, string currentBalance, string requiredTokens)
+        private void VerifyWarningLoggedWithParameters(string expectedMessage, string userId, string currentBalance, string requiredCredits)
         {
             _mockLogger.Verify(
                 x => x.Log(
@@ -365,7 +365,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
                         v.ToString()!.Contains(expectedMessage) &&
                         v.ToString()!.Contains(userId) &&
                         v.ToString()!.Contains(currentBalance) &&
-                        v.ToString()!.Contains(requiredTokens)),
+                        v.ToString()!.Contains(requiredCredits)),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -12,28 +12,28 @@ namespace ProjectVG.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<bool>(
-                name: "InitialTokensGranted",
+                name: "InitialCreditsGranted",
                 table: "Users",
                 type: "bit",
                 nullable: false,
                 defaultValue: false);
 
             migrationBuilder.AddColumn<decimal>(
-                name: "TokenBalance",
+                name: "CreditBalance",
                 table: "Users",
                 type: "decimal(18,2)",
                 nullable: false,
                 defaultValue: 0m);
 
             migrationBuilder.AddColumn<decimal>(
-                name: "TotalTokensEarned",
+                name: "TotalCreditsEarned",
                 table: "Users",
                 type: "decimal(18,2)",
                 nullable: false,
                 defaultValue: 0m);
 
             migrationBuilder.AddColumn<decimal>(
-                name: "TotalTokensSpent",
+                name: "TotalCreditsSpent",
                 table: "Users",
                 type: "decimal(18,2)",
                 nullable: false,
@@ -57,14 +57,14 @@ namespace ProjectVG.Infrastructure.Migrations
                 table: "Users",
                 keyColumn: "Id",
                 keyValue: new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-                columns: new[] { "CreatedAt", "InitialTokensGranted", "TokenBalance", "TotalTokensEarned", "TotalTokensSpent", "UpdatedAt" },
+                columns: new[] { "CreatedAt", "InitialCreditsGranted", "CreditBalance", "TotalCreditsEarned", "TotalCreditsSpent", "UpdatedAt" },
                 values: new object[] { new DateTime(2025, 9, 3, 3, 20, 58, 519, DateTimeKind.Utc).AddTicks(5812), false, 0m, 0m, 0m, new DateTime(2025, 9, 3, 3, 20, 58, 519, DateTimeKind.Utc).AddTicks(5812) });
 
             migrationBuilder.UpdateData(
                 table: "Users",
                 keyColumn: "Id",
                 keyValue: new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
-                columns: new[] { "CreatedAt", "InitialTokensGranted", "TokenBalance", "TotalTokensEarned", "TotalTokensSpent", "UpdatedAt" },
+                columns: new[] { "CreatedAt", "InitialCreditsGranted", "CreditBalance", "TotalCreditsEarned", "TotalCreditsSpent", "UpdatedAt" },
                 values: new object[] { new DateTime(2025, 9, 3, 3, 20, 58, 519, DateTimeKind.Utc).AddTicks(5814), false, 0m, 0m, 0m, new DateTime(2025, 9, 3, 3, 20, 58, 519, DateTimeKind.Utc).AddTicks(5814) });
         }
 
@@ -72,19 +72,19 @@ namespace ProjectVG.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "InitialTokensGranted",
+                name: "InitialCreditsGranted",
                 table: "Users");
 
             migrationBuilder.DropColumn(
-                name: "TokenBalance",
+                name: "CreditBalance",
                 table: "Users");
 
             migrationBuilder.DropColumn(
-                name: "TotalTokensEarned",
+                name: "TotalCreditsEarned",
                 table: "Users");
 
             migrationBuilder.DropColumn(
-                name: "TotalTokensSpent",
+                name: "TotalCreditsSpent",
                 table: "Users");
 
             migrationBuilder.UpdateData(

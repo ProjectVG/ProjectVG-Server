@@ -70,7 +70,7 @@ namespace ProjectVG.Api
             services.AddCors(options => {
                 options.AddPolicy("AllowAll",
                     policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()
-                        .WithExposedHeaders("X-Access-Token", "X-Refresh-Token", "X-Expires-In", "X-UID"));
+                        .WithExposedHeaders("X-Access-Credit", "X-Refresh-Credit", "X-Expires-In", "X-UID"));
             });
 
             return services;

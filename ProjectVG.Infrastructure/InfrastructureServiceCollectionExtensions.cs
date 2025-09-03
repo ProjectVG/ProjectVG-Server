@@ -8,7 +8,7 @@ using ProjectVG.Infrastructure.Integrations.TextToSpeechClient;
 using ProjectVG.Infrastructure.Persistence.EfCore;
 using ProjectVG.Infrastructure.Persistence.Repositories.Characters;
 using ProjectVG.Infrastructure.Persistence.Repositories.Conversation;
-using ProjectVG.Infrastructure.Persistence.Repositories.Token;
+using ProjectVG.Infrastructure.Persistence.Repositories.Credit;
 using ProjectVG.Infrastructure.Persistence.Repositories.Users;
 using ProjectVG.Infrastructure.Persistence.Session;
 using ProjectVG.Infrastructure.Auth;
@@ -98,7 +98,7 @@ namespace ProjectVG.Infrastructure
             services.AddScoped<ICharacterRepository, SqlServerCharacterRepository>();
             services.AddScoped<IConversationRepository, SqlServerConversationRepository>();
             services.AddScoped<IUserRepository, SqlServerUserRepository>();
-            services.AddScoped<ITokenTransactionRepository, SqlServerTokenTransactionRepository>();
+            services.AddScoped<ICreditTransactionRepository, SqlServerCreditTransactionRepository>();
             services.AddSingleton<ISessionStorage, InMemorySessionStorage>();
         }
 

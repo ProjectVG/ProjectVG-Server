@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ProjectVG.Domain.Entities.Characters;
 using ProjectVG.Domain.Entities.ConversationHistorys;
-using ProjectVG.Domain.Entities.Tokens;
+using ProjectVG.Domain.Entities.Credits;
 using ProjectVG.Domain.Entities.Users;
 using ProjectVG.Infrastructure.Persistence.Data;
 
@@ -16,7 +16,7 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
         public DbSet<User> Users { get; set; }
         public DbSet<Character> Characters { get; set; }
         public DbSet<ConversationHistory> ConversationHistories { get; set; }
-        public DbSet<TokenTransaction> TokenTransactions { get; set; }
+        public DbSet<CreditTransaction> CreditTransactions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -34,11 +34,11 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 entity.Property(e => e.Provider).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Status).IsRequired();
                 
-                // 토큰 관련 필드 설정 (정밀도: 18, 소수점: 2)
-                entity.Property(e => e.TokenBalance).HasPrecision(18, 2).HasDefaultValue(0m);
-                entity.Property(e => e.TotalTokensEarned).HasPrecision(18, 2).HasDefaultValue(0m);
-                entity.Property(e => e.TotalTokensSpent).HasPrecision(18, 2).HasDefaultValue(0m);
-                entity.Property(e => e.InitialTokensGranted).HasDefaultValue(false);
+                // 크래딧 관련 필드 설정
+                entity.Property(e => e.CreditBalance).HasPrecision(18, 2).HasDefaultValue(0m);
+                entity.Property(e => e.TotalCreditsEarned).HasPrecision(18, 2).HasDefaultValue(0m);
+                entity.Property(e => e.TotalCreditsSpent).HasPrecision(18, 2).HasDefaultValue(0m);
+                entity.Property(e => e.InitialCreditsGranted).HasDefaultValue(false);
                 
                 // 인덱스 설정
                 entity.HasIndex(e => e.UID).IsUnique();
@@ -125,8 +125,8 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 entity.HasIndex(e => e.Role);
             });
 
-            // TokenTransactions 엔티티 설정
-            modelBuilder.Entity<TokenTransaction>(entity =>
+            // CreditTransactions 엔티티 설정
+            modelBuilder.Entity<CreditTransaction>(entity =>
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).ValueGeneratedOnAdd();

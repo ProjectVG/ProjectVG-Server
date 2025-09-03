@@ -1,32 +1,32 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using ProjectVG.Domain.Entities.Tokens;
+using ProjectVG.Domain.Entities.Credits;
 using ProjectVG.Infrastructure.Persistence.EfCore;
 
-namespace ProjectVG.Infrastructure.Persistence.Repositories.Token
+namespace ProjectVG.Infrastructure.Persistence.Repositories.Credit
 {
     /// <summary>
-    /// SQL Server 기반 토큰 거래 기록 저장소 구현
+    /// SQL Server 기반 크래딧 거래 기록 저장소 구현
     /// </summary>
-    public class SqlServerTokenTransactionRepository : ITokenTransactionRepository
+    public class SqlServerCreditTransactionRepository : ICreditTransactionRepository
     {
         private readonly ProjectVGDbContext _context;
-        private readonly ILogger<SqlServerTokenTransactionRepository> _logger;
+        private readonly ILogger<SqlServerCreditTransactionRepository> _logger;
 
-        public SqlServerTokenTransactionRepository(ProjectVGDbContext context, ILogger<SqlServerTokenTransactionRepository> logger)
+        public SqlServerCreditTransactionRepository(ProjectVGDbContext context, ILogger<SqlServerCreditTransactionRepository> logger)
         {
             _context = context;
             _logger = logger;
         }
 
-        public async Task<TokenTransaction> CreateAsync(TokenTransaction transaction)
+        public async Task<CreditTransaction> CreateAsync(CreditTransaction transaction)
         {
             try
             {
-                _context.TokenTransactions.Add(transaction);
+                _context.CreditTransactions.Add(transaction);
                 await _context.SaveChangesAsync();
                 
-                _logger.LogInformation("Token transaction created: {TransactionId} for User {UserId}, Amount: {Amount}", 
+                _logger.LogInformation("Credit transaction created: {TransactionId} for User {UserId}, Amount: {Amount}", 
                     transaction.TransactionId, transaction.UserId, transaction.Amount);
                 
                 return transaction;
@@ -38,20 +38,20 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Token
             }
         }
 
-        public async Task<TokenTransaction?> GetByTransactionIdAsync(string transactionId)
+        public async Task<CreditTransaction?> GetByTransactionIdAsync(string transactionId)
         {
-            return await _context.TokenTransactions
+            return await _context.CreditTransactions
                 .Include(t => t.User)
                 .FirstOrDefaultAsync(t => t.TransactionId == transactionId);
         }
 
-        public async Task<(List<TokenTransaction> Transactions, int TotalCount)> GetUserTransactionsAsync(
+        public async Task<(List<CreditTransaction> Transactions, int TotalCount)> GetUserTransactionsAsync(
             Guid userId, 
             int pageNumber, 
             int pageSize,
-            TokenTransactionType? transactionType = null)
+            CreditTransactionType? transactionType = null)
         {
-            var query = _context.TokenTransactions
+            var query = _context.CreditTransactions
                 .Where(t => t.UserId == userId);
 
             if (transactionType.HasValue)
@@ -74,9 +74,9 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Token
             Guid userId, 
             DateTime startDate, 
             DateTime endDate,
-            TokenTransactionType? transactionType = null)
+            CreditTransactionType? transactionType = null)
         {
-            var query = _context.TokenTransactions
+            var query = _context.CreditTransactions
                 .Where(t => t.UserId == userId && 
                            t.CreatedAt >= startDate && 
                            t.CreatedAt <= endDate);
@@ -89,18 +89,18 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Token
             return await query.SumAsync(t => t.Amount);
         }
 
-        public async Task<List<TokenTransaction>> GetByRelatedEntityAsync(string relatedEntityType, string relatedEntityId)
+        public async Task<List<CreditTransaction>> GetByRelatedEntityAsync(string relatedEntityType, string relatedEntityId)
         {
-            return await _context.TokenTransactions
+            return await _context.CreditTransactions
                 .Where(t => t.RelatedEntityType == relatedEntityType && 
                            t.RelatedEntityId == relatedEntityId)
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
         }
 
-        public async Task<List<TokenTransaction>> GetBySourceAsync(Guid userId, string source, int? limit = null)
+        public async Task<List<CreditTransaction>> GetBySourceAsync(Guid userId, string source, int? limit = null)
         {
-            var query = _context.TokenTransactions
+            var query = _context.CreditTransactions
                 .Where(t => t.UserId == userId && t.Source == source)
                 .OrderByDescending(t => t.CreatedAt);
 
@@ -114,13 +114,13 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Token
 
         public async Task<bool> TransactionExistsAsync(string transactionId)
         {
-            return await _context.TokenTransactions
+            return await _context.CreditTransactions
                 .AnyAsync(t => t.TransactionId == transactionId);
         }
 
-        public async Task<List<TokenTransaction>> GetRecentTransactionsAsync(Guid userId, int count = 10)
+        public async Task<List<CreditTransaction>> GetRecentTransactionsAsync(Guid userId, int count = 10)
         {
-            return await _context.TokenTransactions
+            return await _context.CreditTransactions
                 .Where(t => t.UserId == userId)
                 .OrderByDescending(t => t.CreatedAt)
                 .Take(count)

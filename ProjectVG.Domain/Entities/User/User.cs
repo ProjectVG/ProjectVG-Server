@@ -51,24 +51,24 @@ namespace ProjectVG.Domain.Entities.Users
         public AccountStatus Status { get; set; } = AccountStatus.Active;
         
         /// <summary>
-        /// 현재 토큰 잔액 (1 Cost = 1 Token)
+        /// 현재 크래딧 잔액 (1 Cost = 1 Credit)
         /// </summary>
-        public decimal TokenBalance { get; set; } = 0;
+        public decimal CreditBalance { get; set; } = 0;
         
         /// <summary>
-        /// 총 획득한 토큰 수 (누적)
+        /// 총 획득한 크래딧 수 (누적)
         /// </summary>
-        public decimal TotalTokensEarned { get; set; } = 0;
+        public decimal TotalCreditsEarned { get; set; } = 0;
         
         /// <summary>
-        /// 총 사용한 토큰 수 (누적)
+        /// 총 사용한 크래딧 수 (누적)
         /// </summary>
-        public decimal TotalTokensSpent { get; set; } = 0;
+        public decimal TotalCreditsSpent { get; set; } = 0;
         
         /// <summary>
-        /// 첫 로그인 토큰 지급 여부
+        /// 첫 로그인 크래딧 지급 여부
         /// </summary>
-        public bool InitialTokensGranted { get; set; } = false;
+        public bool InitialCreditsGranted { get; set; } = false;
 
         /// <summary>
         /// 사용자가 생성한 캐릭터들 (네비게이션 속성)
