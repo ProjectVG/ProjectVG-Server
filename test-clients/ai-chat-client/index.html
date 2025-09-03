@@ -35,6 +35,7 @@
       <div class="tab-buttons">
         <button class="tab-btn active" data-tab="chat">채팅</button>
         <button class="tab-btn" data-tab="characters">캐릭터 관리</button>
+        <button class="tab-btn" data-tab="history">대화 기록</button>
       </div>
     </div>
 
@@ -165,6 +166,44 @@
             <button type="button" id="create-character-btn" class="create-btn">캐릭터 생성</button>
             <button type="button" id="reset-form-btn" class="reset-btn">초기화</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 대화 기록 섹션 -->
+    <div id="history-section" class="tab-content" style="display: none;">
+      <div class="history-controls">
+        <div class="history-header">
+          <h3>대화 기록</h3>
+          <div class="history-filters">
+            <select id="history-character-select">
+              <option value="">모든 캐릭터</option>
+            </select>
+            <select id="history-page-size">
+              <option value="10" selected>10개씩</option>
+              <option value="20">20개씩</option>
+              <option value="50">50개씩</option>
+            </select>
+            <button id="clear-history-btn" class="danger-btn" style="display: none;">기록 삭제</button>
+          </div>
+        </div>
+      </div>
+      
+      <div id="history-content">
+        <div id="history-loading" style="display: none; text-align: center; padding: 2em;">
+          <span>로딩 중...</span>
+        </div>
+        
+        <div id="history-empty" style="display: none; text-align: center; padding: 2em; color: #666;">
+          <span>대화 기록이 없습니다.</span>
+        </div>
+        
+        <div id="history-list"></div>
+        
+        <div id="history-pagination" style="display: none;">
+          <button id="prev-page-btn" disabled>이전</button>
+          <span id="page-info">1 / 1</span>
+          <button id="next-page-btn" disabled>다음</button>
         </div>
       </div>
     </div>

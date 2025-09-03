@@ -592,3 +592,178 @@ body {
     width: 100%;
   }
 }
+
+/* 대화 기록 스타일 */
+.history-controls {
+  background: #f8f9fa;
+  padding: 1.5em;
+  border-radius: 8px;
+  margin-bottom: 1.5em;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1em;
+}
+
+.history-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.history-filters {
+  display: flex;
+  gap: 1em;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.history-filters select {
+  padding: 0.5em;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  font-size: 0.9em;
+}
+
+.danger-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5em 1em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.danger-btn:hover {
+  background: #c82333;
+}
+
+#history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.history-conversation {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5em;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.history-conversation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1em;
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.history-character-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.history-timestamp {
+  font-size: 0.85em;
+  color: #666;
+}
+
+.history-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+}
+
+.history-message {
+  padding: 0.8em 1em;
+  border-radius: 8px;
+  max-width: 85%;
+}
+
+.history-message.user {
+  background: #e3f2fd;
+  align-self: flex-end;
+  border: 1px solid #bbdefb;
+}
+
+.history-message.assistant {
+  background: #f1f8e9;
+  align-self: flex-start;
+  border: 1px solid #dcedc8;
+}
+
+.history-message-role {
+  font-size: 0.75em;
+  font-weight: 600;
+  margin-bottom: 0.3em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.history-message-content {
+  line-height: 1.4;
+}
+
+.history-actions {
+  margin-top: 1em;
+  display: flex;
+  gap: 0.5em;
+}
+
+.history-delete-btn {
+  background: #ffc107;
+  color: #212529;
+  border: none;
+  padding: 0.3em 0.6em;
+  border-radius: 4px;
+  font-size: 0.8em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.history-delete-btn:hover {
+  background: #e0a800;
+}
+
+#history-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1em;
+  margin-top: 2em;
+  padding-top: 1em;
+  border-top: 1px solid #e0e0e0;
+}
+
+#history-pagination button {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  color: #495057;
+  padding: 0.5em 1em;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#history-pagination button:hover:not(:disabled) {
+  background: #e9ecef;
+}
+
+#history-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#page-info {
+  font-weight: 500;
+  color: #495057;
+}

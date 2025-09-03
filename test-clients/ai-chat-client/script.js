@@ -9,6 +9,7 @@ const WS_URL = `ws://${ENDPOINT}/ws`;
 const HTTP_URL = `http://${ENDPOINT}/api/v1/chat`;
 const LOGIN_URL = `http://${ENDPOINT}/api/v1/auth/guest-login`;
 const CHARACTER_BASE_URL = `http://${ENDPOINT}/api/v1/character`;
+const CONVERSATION_BASE_URL = `http://${ENDPOINT}/api/v1/conversation`;
 const SERVER_MESSAGE_TYPE = "json";
 let ws = null;
 let reconnectAttempts = 0;
@@ -44,10 +45,24 @@ const characterTabButtons = document.querySelectorAll('.character-tab-btn');
 const myCharactersSection = document.getElementById('my-characters');
 const publicCharactersSection = document.getElementById('public-characters');
 const characterCreateSection = document.getElementById('character-create');
+const historySection = document.getElementById('history-section');
 
 // 캐릭터 리스트 관련
 const myCharacterList = document.getElementById('my-character-list');
 const publicCharacterList = document.getElementById('public-character-list');
+
+// 대화 기록 관련 DOM 요소들
+const historyCharacterSelect = document.getElementById('history-character-select');
+const historyPageSize = document.getElementById('history-page-size');
+const clearHistoryBtn = document.getElementById('clear-history-btn');
+const historyContent = document.getElementById('history-content');
+const historyLoading = document.getElementById('history-loading');
+const historyEmpty = document.getElementById('history-empty');
+const historyList = document.getElementById('history-list');
+const historyPagination = document.getElementById('history-pagination');
+const prevPageBtn = document.getElementById('prev-page-btn');
+const nextPageBtn = document.getElementById('next-page-btn');
+const pageInfo = document.getElementById('page-info');
 const mySortOrder = document.getElementById('my-sort-order');
 const publicSortOrder = document.getElementById('public-sort-order');
 
@@ -86,6 +101,12 @@ let currentConfigMode = 'individual';
 let myCharacters = [];
 let publicCharacters = [];
 let selectedCharacterId = null;
+
+// 대화 기록 관련 상태 변수들
+let historyCharacters = [];
+let currentHistoryPage = 1;
+let totalHistoryPages = 1;
+let selectedHistoryCharacterId = null;
 
 // 서버 정보 표시
 serverInfo.textContent = ENDPOINT;
@@ -577,9 +598,16 @@ function switchTab(tabName) {
   if (tabName === 'chat') {
     chatSection.style.display = 'block';
     characterManagement.style.display = 'none';
+    historySection.style.display = 'none';
   } else if (tabName === 'characters') {
     chatSection.style.display = 'none';
     characterManagement.style.display = 'block';
+    historySection.style.display = 'none';
+  } else if (tabName === 'history') {
+    chatSection.style.display = 'none';
+    characterManagement.style.display = 'none';
+    historySection.style.display = 'block';
+    loadHistoryPage();
   }
 }
 
@@ -666,6 +694,7 @@ async function loadMyCharacters() {
     if (response.ok) {
       myCharacters = await response.json();
       renderCharacterList(myCharacters, myCharacterList, true);
+      updateHistoryCharacterSelect(); // 대화 기록 캐릭터 목록 업데이트
     } else {
       console.error('내 캐릭터 로드 실패:', response.status);
     }
@@ -1005,6 +1034,265 @@ if (resetFormBtn) {
 // 프롬프트 글자 수 카운터
 if (configSystemPrompt) {
   configSystemPrompt.addEventListener('input', updatePromptCharCount);
+}
+
+// ========== 대화 기록 관련 함수들 ==========
+
+// 대화 기록 캐릭터 목록 업데이트
+function updateHistoryCharacterSelect() {
+  if (!historyCharacterSelect) return;
+  
+  // 기존 옵션 제거 (첫 번째 "모든 캐릭터" 옵션 제외)
+  while (historyCharacterSelect.children.length > 1) {
+    historyCharacterSelect.removeChild(historyCharacterSelect.lastChild);
+  }
+  
+  // 내 캐릭터들을 드롭다운에 추가
+  myCharacters.forEach(character => {
+    const option = document.createElement('option');
+    option.value = character.id;
+    option.textContent = character.name;
+    historyCharacterSelect.appendChild(option);
+  });
+  
+  // 선택된 캐릭터가 있으면 설정
+  if (selectedHistoryCharacterId) {
+    historyCharacterSelect.value = selectedHistoryCharacterId;
+  }
+}
+
+// 대화 기록 로드
+async function loadHistoryPage(page = 1) {
+  if (!authToken) {
+    showHistoryEmpty('로그인이 필요합니다.');
+    return;
+  }
+  
+  showHistoryLoading();
+  
+  try {
+    const characterId = historyCharacterSelect.value;
+    const pageSize = historyPageSize.value || 10;
+    
+    if (!characterId) {
+      showHistoryEmpty('캐릭터를 선택해주세요.');
+      return;
+    }
+    
+    const url = `${CONVERSATION_BASE_URL}/${characterId}?page=${page}&pageSize=${pageSize}`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.messages || data.messages.length === 0) {
+      showHistoryEmpty('대화 기록이 없습니다.');
+      return;
+    }
+    
+    currentHistoryPage = data.currentPage;
+    totalHistoryPages = data.totalPages;
+    
+    renderHistoryList(data.messages, data);
+    updateHistoryPagination();
+    showHistoryContent();
+    
+  } catch (error) {
+    console.error('대화 기록 로드 실패:', error);
+    showHistoryEmpty('대화 기록을 불러오는 중 오류가 발생했습니다.');
+  }
+}
+
+// 대화 기록 렌더링
+function renderHistoryList(messages, paginationData) {
+  if (!historyList) return;
+  
+  // 대화 세션별로 그룹화
+  const conversations = groupMessagesByConversation(messages);
+  
+  historyList.innerHTML = conversations.map(conversation => {
+    const characterName = getCharacterName(conversation.characterId);
+    const timestamp = new Date(conversation.timestamp).toLocaleString('ko-KR');
+    
+    return `
+      <div class="history-conversation">
+        <div class="history-conversation-header">
+          <div class="history-character-name">${characterName}</div>
+          <div class="history-timestamp">${timestamp}</div>
+        </div>
+        <div class="history-messages">
+          ${conversation.messages.map(message => `
+            <div class="history-message ${message.role}">
+              <div class="history-message-role">${message.role}</div>
+              <div class="history-message-content">${escapeHtml(message.content)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// 메시지를 대화별로 그룹화
+function groupMessagesByConversation(messages) {
+  const conversations = new Map();
+  
+  messages.forEach(message => {
+    const conversationId = message.conversationId || `${message.characterId}-${message.timestamp}`;
+    
+    if (!conversations.has(conversationId)) {
+      conversations.set(conversationId, {
+        conversationId,
+        characterId: message.characterId,
+        timestamp: message.timestamp,
+        messages: []
+      });
+    }
+    
+    conversations.get(conversationId).messages.push(message);
+  });
+  
+  return Array.from(conversations.values()).sort((a, b) => 
+    new Date(b.timestamp) - new Date(a.timestamp)
+  );
+}
+
+// 캐릭터 이름 가져오기
+function getCharacterName(characterId) {
+  const character = myCharacters.find(c => c.id === characterId);
+  return character ? character.name : '알 수 없는 캐릭터';
+}
+
+// 대화 기록 삭제
+async function deleteHistory(characterId) {
+  if (!authToken || !characterId) return;
+  
+  if (!confirm('정말로 이 캐릭터와의 모든 대화 기록을 삭제하시겠습니까?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${CONVERSATION_BASE_URL}/${characterId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      alert('대화 기록이 삭제되었습니다.');
+      loadHistoryPage(currentHistoryPage);
+    } else {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('대화 기록 삭제 실패:', error);
+    alert('대화 기록 삭제 중 오류가 발생했습니다.');
+  }
+}
+
+// UI 상태 관리 함수들
+function showHistoryLoading() {
+  if (historyLoading) historyLoading.style.display = 'block';
+  if (historyEmpty) historyEmpty.style.display = 'none';
+  if (historyList) historyList.style.display = 'none';
+  if (historyPagination) historyPagination.style.display = 'none';
+}
+
+function showHistoryEmpty(message = '대화 기록이 없습니다.') {
+  if (historyLoading) historyLoading.style.display = 'none';
+  if (historyEmpty) {
+    historyEmpty.style.display = 'block';
+    historyEmpty.innerHTML = `<span>${message}</span>`;
+  }
+  if (historyList) historyList.style.display = 'none';
+  if (historyPagination) historyPagination.style.display = 'none';
+  if (clearHistoryBtn) clearHistoryBtn.style.display = 'none';
+}
+
+function showHistoryContent() {
+  if (historyLoading) historyLoading.style.display = 'none';
+  if (historyEmpty) historyEmpty.style.display = 'none';
+  if (historyList) historyList.style.display = 'block';
+  if (historyPagination) historyPagination.style.display = 'flex';
+  if (clearHistoryBtn) clearHistoryBtn.style.display = historyCharacterSelect.value ? 'block' : 'none';
+}
+
+// 페이지네이션 업데이트
+function updateHistoryPagination() {
+  if (!pageInfo) return;
+  
+  pageInfo.textContent = `${currentHistoryPage} / ${totalHistoryPages}`;
+  
+  if (prevPageBtn) {
+    prevPageBtn.disabled = currentHistoryPage <= 1;
+  }
+  
+  if (nextPageBtn) {
+    nextPageBtn.disabled = currentHistoryPage >= totalHistoryPages;
+  }
+}
+
+// HTML 이스케이프
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ========== 대화 기록 이벤트 리스너들 ==========
+
+// 대화 기록 캐릭터 선택 변경
+if (historyCharacterSelect) {
+  historyCharacterSelect.addEventListener('change', () => {
+    selectedHistoryCharacterId = historyCharacterSelect.value;
+    currentHistoryPage = 1;
+    loadHistoryPage();
+  });
+}
+
+// 대화 기록 페이지 크기 변경
+if (historyPageSize) {
+  historyPageSize.addEventListener('change', () => {
+    currentHistoryPage = 1;
+    loadHistoryPage();
+  });
+}
+
+// 대화 기록 삭제 버튼
+if (clearHistoryBtn) {
+  clearHistoryBtn.addEventListener('click', () => {
+    const characterId = historyCharacterSelect.value;
+    if (characterId) {
+      deleteHistory(characterId);
+    }
+  });
+}
+
+// 페이지네이션 버튼들
+if (prevPageBtn) {
+  prevPageBtn.addEventListener('click', () => {
+    if (currentHistoryPage > 1) {
+      loadHistoryPage(currentHistoryPage - 1);
+    }
+  });
+}
+
+if (nextPageBtn) {
+  nextPageBtn.addEventListener('click', () => {
+    if (currentHistoryPage < totalHistoryPages) {
+      loadHistoryPage(currentHistoryPage + 1);
+    }
+  });
 }
 
 // 초기화 - 로그인을 기다림
