@@ -5,7 +5,7 @@ using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Common.Constants;
 using ProjectVG.Common.Exceptions;
 using ProjectVG.Domain.Entities.ConversationHistorys;
-using ProjectVG.Infrastructure.Persistence.Repositories.Conversation;
+using ProjectVG.Domain.Repositories;
 using Xunit;
 
 namespace ProjectVG.Tests.Application.Services.Conversation

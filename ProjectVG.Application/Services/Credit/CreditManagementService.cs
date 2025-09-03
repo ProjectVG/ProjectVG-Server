@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ProjectVG.Domain.Entities.Credits;
 using ProjectVG.Infrastructure.Persistence.EfCore;
-using ProjectVG.Infrastructure.Persistence.Repositories.Credit;
-using ProjectVG.Infrastructure.Persistence.Repositories.Users;
+using ProjectVG.Domain.Repositories;
 
 namespace ProjectVG.Application.Services.Credit
 {

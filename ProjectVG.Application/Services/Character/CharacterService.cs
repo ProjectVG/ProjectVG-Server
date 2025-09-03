@@ -1,4 +1,4 @@
-using ProjectVG.Infrastructure.Persistence.Repositories.Characters;
+using ProjectVG.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Character;
 using ProjectVG.Common.Exceptions;

@@ -6,6 +6,7 @@ using ProjectVG.Infrastructure.Integrations.LLMClient;
 using ProjectVG.Infrastructure.Integrations.MemoryClient;
 using ProjectVG.Infrastructure.Integrations.TextToSpeechClient;
 using ProjectVG.Infrastructure.Persistence.EfCore;
+using ProjectVG.Domain.Repositories;
 using ProjectVG.Infrastructure.Persistence.Repositories.Characters;
 using ProjectVG.Infrastructure.Persistence.Repositories.Conversation;
 using ProjectVG.Infrastructure.Persistence.Repositories.Credit;

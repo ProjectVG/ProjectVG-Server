@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Domain.Entities.ConversationHistorys;
+using ProjectVG.Domain.Repositories;
 using ProjectVG.Infrastructure.Persistence.EfCore;
 
 namespace ProjectVG.Infrastructure.Persistence.Repositories.Conversation

@@ -1,5 +1,5 @@
 using ProjectVG.Domain.Entities.ConversationHistorys;
-using ProjectVG.Infrastructure.Persistence.Repositories.Conversation;
+using ProjectVG.Domain.Repositories;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Common.Exceptions;
 using ProjectVG.Common.Constants;

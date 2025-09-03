@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ProjectVG.Domain.Entities.Characters;
+using ProjectVG.Domain.Repositories;
 using ProjectVG.Infrastructure.Persistence.EfCore;
 
 namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters

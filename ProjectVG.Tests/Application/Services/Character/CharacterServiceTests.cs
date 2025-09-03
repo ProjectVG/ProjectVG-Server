@@ -5,7 +5,7 @@ using ProjectVG.Application.Models.Character;
 using ProjectVG.Application.Services.Character;
 using ProjectVG.Common.Constants;
 using ProjectVG.Common.Exceptions;
-using ProjectVG.Infrastructure.Persistence.Repositories.Characters;
+using ProjectVG.Domain.Repositories;
 using ProjectVG.Tests.Application.TestUtilities;
 using ProjectVG.Domain.Entities.Characters;
 using Xunit;

@@ -6,7 +6,7 @@ using ProjectVG.Application.Services.Users;
 using ProjectVG.Common.Constants;
 using ProjectVG.Common.Exceptions;
 using ProjectVG.Domain.Entities.Users;
-using ProjectVG.Infrastructure.Persistence.Repositories.Users;
+using ProjectVG.Domain.Repositories;
 using Xunit;
 
 namespace ProjectVG.Tests.Application.Services.User

@@ -1,7 +1,7 @@
 using ProjectVG.Application.Models.User;
 using ProjectVG.Common.Utils;
 using ProjectVG.Domain.Entities.Users;
-using ProjectVG.Infrastructure.Persistence.Repositories.Users;
+using ProjectVG.Domain.Repositories;
 
 namespace ProjectVG.Application.Services.Users
 {

@@ -6,6 +6,7 @@ using ProjectVG.Infrastructure.Persistence.EfCore;
 using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Users;
+using ProjectVG.Domain.Repositories;
 using ProjectVG.Infrastructure.Persistence.Repositories.Characters;
 using ProjectVG.Infrastructure.Persistence.Repositories.Conversation;
 using ProjectVG.Infrastructure.Persistence.Repositories.Users;

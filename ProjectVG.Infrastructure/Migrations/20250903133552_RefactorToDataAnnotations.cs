@@ -23,21 +23,21 @@ namespace ProjectVG.Infrastructure.Migrations
                 name: "IX_Users_UID",
                 table: "Users");
 
-            migrationBuilder.DropIndex(
-                name: "IX_CreditTransactions_Source",
-                table: "CreditTransactions");
+            migrationBuilder.Sql(@"
+                IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_CreditTransactions_Source' AND object_id = OBJECT_ID('CreditTransactions'))
+                    DROP INDEX [IX_CreditTransactions_Source] ON [CreditTransactions]");
 
-            migrationBuilder.DropIndex(
-                name: "IX_CreditTransactions_TransactionId",
-                table: "CreditTransactions");
+            migrationBuilder.Sql(@"
+                IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_CreditTransactions_TransactionId' AND object_id = OBJECT_ID('CreditTransactions'))
+                    DROP INDEX [IX_CreditTransactions_TransactionId] ON [CreditTransactions]");
 
-            migrationBuilder.DropIndex(
-                name: "IX_CreditTransactions_Type",
-                table: "CreditTransactions");
+            migrationBuilder.Sql(@"
+                IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_CreditTransactions_Type' AND object_id = OBJECT_ID('CreditTransactions'))
+                    DROP INDEX [IX_CreditTransactions_Type] ON [CreditTransactions]");
 
-            migrationBuilder.DropIndex(
-                name: "IX_CreditTransactions_UserId",
-                table: "CreditTransactions");
+            migrationBuilder.Sql(@"
+                IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_CreditTransactions_UserId' AND object_id = OBJECT_ID('CreditTransactions'))
+                    DROP INDEX [IX_CreditTransactions_UserId] ON [CreditTransactions]");
 
             migrationBuilder.DropIndex(
                 name: "IX_ConversationHistories_ConversationId",
