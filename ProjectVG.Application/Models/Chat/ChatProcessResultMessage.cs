@@ -34,6 +34,12 @@ namespace ProjectVG.Application.Models.Chat
         [JsonPropertyName("order")]
         public int Order { get; init; }
         
+        [JsonPropertyName("tokens_used")]
+        public decimal? TokensUsed { get; init; }
+        
+        [JsonPropertyName("tokens_remaining")]
+        public decimal? TokensRemaining { get; init; }
+        
         public static ChatProcessResultMessage FromSegment(ChatSegment segment, string? requestId = null)
         {
             var audioData = segment.HasAudio ? Convert.ToBase64String(segment.AudioData!) : null;
@@ -64,6 +70,11 @@ namespace ProjectVG.Application.Models.Chat
             {
                 return this with { AudioData = null };
             }
+        }
+        
+        public ChatProcessResultMessage WithTokenInfo(decimal? tokensUsed, decimal? tokensRemaining)
+        {
+            return this with { TokensUsed = tokensUsed, TokensRemaining = tokensRemaining };
         }
     }
 }

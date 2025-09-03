@@ -97,7 +97,15 @@ namespace ProjectVG.Application.Services.Auth
             }
 
             // 첫 로그인 토큰 지급 시도
-            await _tokenManagementService.GrantInitialTokensAsync(user.Id);
+            var tokenGranted = await _tokenManagementService.GrantInitialTokensAsync(user.Id);
+            if (tokenGranted)
+            {
+                _logger.LogInformation("Initial tokens (5000) granted successfully to user {UserId}", user.Id);
+            }
+            else
+            {
+                _logger.LogInformation("Initial tokens already granted or grant failed for user {UserId}", user.Id);
+            }
 
             var tokens = await _tokenService.GenerateTokensAsync(user.Id);
             

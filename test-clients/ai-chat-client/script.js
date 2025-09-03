@@ -10,6 +10,7 @@ const HTTP_URL = `http://${ENDPOINT}/api/v1/chat`;
 const LOGIN_URL = `http://${ENDPOINT}/api/v1/auth/guest-login`;
 const CHARACTER_BASE_URL = `http://${ENDPOINT}/api/v1/character`;
 const CONVERSATION_BASE_URL = `http://${ENDPOINT}/api/v1/conversation`;
+const TOKEN_BASE_URL = `http://${ENDPOINT}/api/v1/tokens`;
 const SERVER_MESSAGE_TYPE = "json";
 let ws = null;
 let reconnectAttempts = 0;
@@ -22,6 +23,7 @@ const statusBox = document.getElementById('status');
 const loginStatus = document.getElementById('login-status');
 const wsStatus = document.getElementById('ws-status');
 const sessionIdDisplay = document.getElementById('session-id');
+const tokenBalanceDisplay = document.getElementById('token-balance');
 const serverInfo = document.getElementById('server-info');
 const chatLog = document.getElementById('chat-log');
 const userInput = document.getElementById('user-input');
@@ -160,6 +162,9 @@ async function guestLogin() {
         
         loginSection.style.display = 'none';
         tabNavigation.style.display = 'block';
+        
+        // 토큰 잔액 로드
+        await loadTokenBalance();
         
         // 로그인 성공 후 WebSocket 연결 시작
         connectWebSocket();
@@ -388,8 +393,18 @@ function connectWebSocket() {
               }
             }
 
+            // 토큰 정보 업데이트 처리
+            if (chatData.tokens_used !== undefined || chatData.tokens_remaining !== undefined) {
+              updateTokenDisplay(chatData.tokens_used, chatData.tokens_remaining);
+            }
+
             if (messageText) {
               appendLog(messageText);
+              
+              // 토큰 사용량 표시 추가
+              if (chatData.tokens_used) {
+                appendLog(`<small style='color:#9e9e9e'>[토큰 사용: ${chatData.tokens_used}, 잔액: ${chatData.tokens_remaining || 'N/A'}]</small>`);
+              }
             }
 
             // 메타데이터 표시 (개발용)
@@ -1107,7 +1122,20 @@ async function loadHistoryPage(page = 1) {
     
   } catch (error) {
     console.error('대화 기록 로드 실패:', error);
-    showHistoryEmpty('대화 기록을 불러오는 중 오류가 발생했습니다.');
+    
+    let errorMessage = '대화 기록을 불러오는 중 오류가 발생했습니다.';
+    
+    if (error.message.includes('401')) {
+      errorMessage = '로그인이 필요합니다. 다시 로그인해주세요.';
+    } else if (error.message.includes('403')) {
+      errorMessage = '접근 권한이 없습니다.';
+    } else if (error.message.includes('404')) {
+      errorMessage = '선택한 캐릭터의 대화 기록이 없습니다.';
+    } else if (error.message.includes('500')) {
+      errorMessage = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    }
+    
+    showHistoryEmpty(errorMessage);
   }
 }
 
@@ -1293,6 +1321,67 @@ if (nextPageBtn) {
       loadHistoryPage(currentHistoryPage + 1);
     }
   });
+}
+
+// ========== 토큰 관리 기능 ==========
+
+// 토큰 잔액 로드
+async function loadTokenBalance() {
+  if (!authToken) {
+    tokenBalanceDisplay.textContent = '-';
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${TOKEN_BASE_URL}/balance`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      const balance = data.balance || data.tokenBalance || 0;
+      tokenBalanceDisplay.textContent = balance.toLocaleString();
+      
+      // 낮은 잔액 경고
+      if (balance < 1000) {
+        tokenBalanceDisplay.style.color = '#f44336'; // 빨간색
+      } else if (balance < 5000) {
+        tokenBalanceDisplay.style.color = '#ff9800'; // 주황색
+      } else {
+        tokenBalanceDisplay.style.color = '#28a745'; // 녹색
+      }
+    } else {
+      console.error('토큰 잔액 로드 실패:', response.status);
+      tokenBalanceDisplay.textContent = 'Error';
+    }
+  } catch (error) {
+    console.error('토큰 잔액 로드 오류:', error);
+    tokenBalanceDisplay.textContent = 'Error';
+  }
+}
+
+// 토큰 디스플레이 업데이트
+function updateTokenDisplay(tokensUsed, tokensRemaining) {
+  if (tokensRemaining !== undefined && tokensRemaining !== null) {
+    tokenBalanceDisplay.textContent = tokensRemaining.toLocaleString();
+    
+    // 잔액에 따른 색상 변경
+    if (tokensRemaining < 1000) {
+      tokenBalanceDisplay.style.color = '#f44336'; // 빨간색
+    } else if (tokensRemaining < 5000) {
+      tokenBalanceDisplay.style.color = '#ff9800'; // 주황색
+    } else {
+      tokenBalanceDisplay.style.color = '#28a745'; // 녹색
+    }
+    
+    // 낮은 잔액 경고
+    if (tokensRemaining < 500) {
+      appendLog(`<span style='color:#f44336'><b>[경고]</b> 토큰 잔액이 부족합니다 (잔액: ${tokensRemaining})</span>`);
+    }
+  }
 }
 
 // 초기화 - 로그인을 기다림

@@ -35,12 +35,19 @@ namespace ProjectVG.Api.Controllers
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
                 {
+                    _logger.LogWarning("Authentication failed: Invalid user ID in JWT token");
                     throw new ValidationException(ErrorCode.AUTHENTICATION_FAILED);
                 }
+
+                _logger.LogDebug("Fetching conversation history: UserId={UserId}, CharacterId={CharacterId}, Page={Page}, PageSize={PageSize}", 
+                    userGuid, characterId, request.Page, request.PageSize);
 
                 // 대화 기록 조회
                 var messages = await _conversationService.GetConversationHistoryAsync(userGuid, characterId, request.Page, request.PageSize);
                 var totalCount = await _conversationService.GetMessageCountAsync(userGuid, characterId);
+                
+                _logger.LogInformation("Conversation history retrieved: UserId={UserId}, CharacterId={CharacterId}, MessageCount={MessageCount}, TotalCount={TotalCount}", 
+                    userGuid, characterId, messages.Count(), totalCount);
 
                 // 응답 매핑
                 var response = new ConversationHistoryListResponse

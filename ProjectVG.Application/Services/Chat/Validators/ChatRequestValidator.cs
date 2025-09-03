@@ -49,11 +49,19 @@ namespace ProjectVG.Application.Services.Chat.Validators
             }
 
             // 토큰 잔액 검증 - 예상 비용으로 미리 확인
-            var hasSufficientTokens = await _tokenManagementService.HasSufficientTokensAsync(command.UserId, ESTIMATED_CHAT_COST);
+            var balance = await _tokenManagementService.GetTokenBalanceAsync(command.UserId);
+            var currentBalance = balance.CurrentBalance;
+            
+            if (currentBalance <= 0) {
+                _logger.LogWarning("토큰 잔액 부족 (0 토큰): UserId={UserId}", command.UserId);
+                throw new ValidationException(ErrorCode.INSUFFICIENT_TOKEN_BALANCE, $"토큰이 부족합니다. 현재 잔액: {currentBalance} 토큰, 필요 토큰: {ESTIMATED_CHAT_COST} 토큰");
+            }
+            
+            var hasSufficientTokens = currentBalance >= ESTIMATED_CHAT_COST;
             if (!hasSufficientTokens) {
-                _logger.LogWarning("토큰 부족: {UserId}, 필요 토큰: {RequiredTokens}", command.UserId, ESTIMATED_CHAT_COST);
-                var balance = await _tokenManagementService.GetTokenBalanceAsync(command.UserId);
-                throw new ValidationException(ErrorCode.INSUFFICIENT_TOKEN_BALANCE);
+                _logger.LogWarning("토큰 부족: UserId={UserId}, 현재잔액={CurrentBalance}, 필요토큰={RequiredTokens}", 
+                    command.UserId, currentBalance, ESTIMATED_CHAT_COST);
+                throw new ValidationException(ErrorCode.INSUFFICIENT_TOKEN_BALANCE, $"토큰이 부족합니다. 현재 잔액: {currentBalance} 토큰, 필요 토큰: {ESTIMATED_CHAT_COST} 토큰");
             }
 
             _logger.LogDebug("채팅 요청 검증 완료: {UserId}, {CharacterId}", command.UserId, command.CharacterId);

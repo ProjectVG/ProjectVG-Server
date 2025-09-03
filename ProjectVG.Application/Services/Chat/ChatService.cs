@@ -29,7 +29,6 @@ namespace ProjectVG.Application.Services.Chat
         private readonly ICostTrackingDecorator<ChatTTSProcessor> _ttsProcessor;
         private readonly ChatResultProcessor _resultProcessor;
 
-        private readonly ChatSuccessHandler _chatSuccessHandler;
         private readonly ChatFailureHandler _chatFailureHandler;
 
         public ChatService(
@@ -46,7 +45,6 @@ namespace ProjectVG.Application.Services.Chat
             ICostTrackingDecorator<ChatTTSProcessor> ttsProcessor,
             ChatResultProcessor resultProcessor,
 
-            ChatSuccessHandler chatSuccessHandler, 
             ChatFailureHandler chatFailureHandler
         ) {
             _metricsService = metricsService;
@@ -62,7 +60,6 @@ namespace ProjectVG.Application.Services.Chat
             _llmProcessor = llmProcessor;
             _ttsProcessor = ttsProcessor;
             _resultProcessor = resultProcessor;
-            _chatSuccessHandler = chatSuccessHandler;
             _chatFailureHandler = chatFailureHandler;
         }
 
@@ -115,10 +112,12 @@ namespace ProjectVG.Application.Services.Chat
                 await _llmProcessor.ProcessAsync(context);
                 await _ttsProcessor.ProcessAsync(context);
 
-                await _chatSuccessHandler.HandleAsync(context);
-
+                // ChatSuccessHandler와 ChatResultProcessor를 같은 스코프에서 실행
                 using var scope = _scopeFactory.CreateScope();
+                var successHandler = scope.ServiceProvider.GetRequiredService<ChatSuccessHandler>();
                 var resultProcessor = scope.ServiceProvider.GetRequiredService<ChatResultProcessor>();
+                
+                await successHandler.HandleAsync(context);
                 await resultProcessor.PersistResultsAsync(context);
             }
             catch (Exception) {

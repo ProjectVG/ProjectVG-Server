@@ -40,11 +40,26 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                 var requestId = context.RequestId.ToString();
                 var userId = context.UserId.ToString();
 
+                // 토큰 차감 및 잔액 정보 수집
+                decimal? tokensUsed = null;
+                decimal? tokensRemaining = null;
+                
+                if (context.Cost > 0)
+                {
+                    var tokenDeductionResult = await DeductTokensForChatAsync(context);
+                    if (tokenDeductionResult.Success)
+                    {
+                        tokensUsed = (decimal)context.Cost;
+                        tokensRemaining = tokenDeductionResult.BalanceAfter;
+                    }
+                }
+
                 foreach (var segment in validSegments)
                 {
                     try
                     {
-                        var message = ChatProcessResultMessage.FromSegment(segment, requestId);
+                        var message = ChatProcessResultMessage.FromSegment(segment, requestId)
+                            .WithTokenInfo(tokensUsed, tokensRemaining);
                         var wsMessage = new WebSocketMessage("chat", message);
                         
                         await _webSocketService.SendAsync(userId, wsMessage);
@@ -57,11 +72,8 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                     }
                 }
 
-                _logger.LogDebug("채팅 결과 전송 완료: 요청 {RequestId}, 세그먼트 {SegmentCount}개",
-                    context.RequestId, validSegments.Count);
-
-                // 성공적인 전송 후 토큰 차감 처리
-                await DeductTokensForSuccessfulChatAsync(context);
+                _logger.LogDebug("채팅 결과 전송 완료: 요청 {RequestId}, 세그먼트 {SegmentCount}개, 토큰 사용: {TokensUsed}, 잔액: {TokensRemaining}",
+                    context.RequestId, validSegments.Count, tokensUsed, tokensRemaining);
             }
             catch (Exception ex)
             {
@@ -71,48 +83,40 @@ namespace ProjectVG.Application.Services.Chat.Handlers
         }
 
         /// <summary>
-        /// 성공적인 채팅 처리 후 토큰 차감
+        /// 채팅 처리를 위한 토큰 차감
         /// </summary>
-        private async Task DeductTokensForSuccessfulChatAsync(ChatProcessContext context)
+        private async Task<TokenTransactionResult> DeductTokensForChatAsync(ChatProcessContext context)
         {
             try
             {
-                // 실제 사용된 Cost를 토큰으로 차감
-                if (context.Cost > 0)
-                {
-                    var transactionId = $"CHAT_{context.RequestId}_{DateTime.UtcNow:yyyyMMddHHmmss}";
-                    var result = await _tokenManagementService.DeductTokensAsync(
-                        context.UserId,
-                        (decimal)context.Cost,
-                        transactionId,
-                        "CHAT_USAGE",
-                        $"채팅 사용료 - 캐릭터: {context.CharacterId}",
-                        context.RequestId.ToString(),
-                        "ChatSession"
-                    );
+                var transactionId = $"CHAT_{context.RequestId}_{DateTime.UtcNow:yyyyMMddHHmmss}";
+                var result = await _tokenManagementService.DeductTokensAsync(
+                    context.UserId,
+                    (decimal)context.Cost,
+                    transactionId,
+                    "CHAT_USAGE",
+                    $"채팅 사용료 - 캐릭터: {context.CharacterId}",
+                    context.RequestId.ToString(),
+                    "ChatSession"
+                );
 
-                    if (result.Success)
-                    {
-                        _logger.LogInformation("채팅 토큰 차감 완료: {UserId}, 차감 토큰: {Cost}, 잔액: {Balance}",
-                            context.UserId, context.Cost, result.BalanceAfter);
-                    }
-                    else
-                    {
-                        _logger.LogError("채팅 토큰 차감 실패: {UserId}, 에러: {Error}",
-                            context.UserId, result.ErrorMessage);
-                        // 토큰 차감 실패는 로그만 남기고 사용자에게는 이미 성공 응답을 보냈으므로 예외를 던지지 않음
-                    }
+                if (result.Success)
+                {
+                    _logger.LogInformation("채팅 토큰 차감 완료: {UserId}, 차감 토큰: {Cost}, 잔액: {Balance}",
+                        context.UserId, context.Cost, result.BalanceAfter);
                 }
                 else
                 {
-                    _logger.LogWarning("채팅 처리 완료했지만 Cost가 0 또는 음수: {RequestId}, Cost: {Cost}",
-                        context.RequestId, context.Cost);
+                    _logger.LogError("채팅 토큰 차감 실패: {UserId}, 에러: {Error}",
+                        context.UserId, result.ErrorMessage);
                 }
+
+                return result;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "채팅 토큰 차감 처리 중 예외 발생: {RequestId}", context.RequestId);
-                // 토큰 차감 실패는 사용자 경험에 영향을 주지 않도록 예외를 삼킴
+                return TokenTransactionResult.CreateFailure($"토큰 차감 처리 중 예외 발생: {ex.Message}");
             }
         }
     }
