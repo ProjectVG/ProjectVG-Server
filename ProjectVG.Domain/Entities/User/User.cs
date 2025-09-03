@@ -51,6 +51,26 @@ namespace ProjectVG.Domain.Entities.Users
         public AccountStatus Status { get; set; } = AccountStatus.Active;
         
         /// <summary>
+        /// 현재 토큰 잔액 (1 Cost = 1 Token)
+        /// </summary>
+        public decimal TokenBalance { get; set; } = 0;
+        
+        /// <summary>
+        /// 총 획득한 토큰 수 (누적)
+        /// </summary>
+        public decimal TotalTokensEarned { get; set; } = 0;
+        
+        /// <summary>
+        /// 총 사용한 토큰 수 (누적)
+        /// </summary>
+        public decimal TotalTokensSpent { get; set; } = 0;
+        
+        /// <summary>
+        /// 첫 로그인 토큰 지급 여부
+        /// </summary>
+        public bool InitialTokensGranted { get; set; } = false;
+
+        /// <summary>
         /// 사용자가 생성한 캐릭터들 (네비게이션 속성)
         /// </summary>
         public virtual ICollection<Characters.Character> Characters { get; set; } = new List<Characters.Character>();

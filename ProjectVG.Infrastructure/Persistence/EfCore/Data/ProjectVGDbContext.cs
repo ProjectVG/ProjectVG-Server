@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ProjectVG.Domain.Entities.Characters;
 using ProjectVG.Domain.Entities.ConversationHistorys;
+using ProjectVG.Domain.Entities.Tokens;
 using ProjectVG.Domain.Entities.Users;
 using ProjectVG.Infrastructure.Persistence.Data;
 
@@ -15,6 +16,7 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
         public DbSet<User> Users { get; set; }
         public DbSet<Character> Characters { get; set; }
         public DbSet<ConversationHistory> ConversationHistories { get; set; }
+        public DbSet<TokenTransaction> TokenTransactions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -31,6 +33,12 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 entity.Property(e => e.ProviderId).IsRequired().HasMaxLength(255);
                 entity.Property(e => e.Provider).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Status).IsRequired();
+                
+                // 토큰 관련 필드 설정 (정밀도: 18, 소수점: 2)
+                entity.Property(e => e.TokenBalance).HasPrecision(18, 2).HasDefaultValue(0m);
+                entity.Property(e => e.TotalTokensEarned).HasPrecision(18, 2).HasDefaultValue(0m);
+                entity.Property(e => e.TotalTokensSpent).HasPrecision(18, 2).HasDefaultValue(0m);
+                entity.Property(e => e.InitialTokensGranted).HasDefaultValue(false);
                 
                 // 인덱스 설정
                 entity.HasIndex(e => e.UID).IsUnique();
@@ -115,6 +123,36 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 entity.HasIndex(e => e.Timestamp);
                 entity.HasIndex(e => e.ConversationId);
                 entity.HasIndex(e => e.Role);
+            });
+
+            // TokenTransactions 엔티티 설정
+            modelBuilder.Entity<TokenTransaction>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+                entity.Property(e => e.UserId).IsRequired();
+                entity.Property(e => e.TransactionId).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Type).IsRequired();
+                entity.Property(e => e.Amount).HasPrecision(18, 2).IsRequired();
+                entity.Property(e => e.BalanceAfter).HasPrecision(18, 2).IsRequired();
+                entity.Property(e => e.Source).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.RelatedEntityId).HasMaxLength(100);
+                entity.Property(e => e.RelatedEntityType).HasMaxLength(100);
+                
+                // User 관계 설정
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                // 인덱스 설정
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.TransactionId).IsUnique();
+                entity.HasIndex(e => new { e.UserId, e.CreatedAt });
+                entity.HasIndex(e => e.Type);
+                entity.HasIndex(e => e.Source);
+                entity.HasIndex(e => new { e.RelatedEntityType, e.RelatedEntityId });
             });
 
             // 기본 데이터 삽입

@@ -85,7 +85,12 @@ namespace ProjectVG.Common.Constants
         PROVIDER_USER_ID_INVALID,
         SESSION_EXPIRED,
         RATE_LIMIT_EXCEEDED,
-        RESOURCE_QUOTA_EXCEEDED
+        RESOURCE_QUOTA_EXCEEDED,
+        
+        // 토큰 관련 오류
+        INSUFFICIENT_TOKEN_BALANCE,
+        TOKEN_TRANSACTION_FAILED,
+        TOKEN_GRANT_FAILED
     }
 
     public static class ErrorCodeExtensions
@@ -175,7 +180,12 @@ namespace ProjectVG.Common.Constants
             { ErrorCode.PROVIDER_USER_ID_INVALID, "유효하지 않은 제공자 사용자 ID입니다" },
             { ErrorCode.SESSION_EXPIRED, "세션이 만료되었습니다" },
             { ErrorCode.RATE_LIMIT_EXCEEDED, "요청 한도를 초과했습니다" },
-            { ErrorCode.RESOURCE_QUOTA_EXCEEDED, "리소스 할당량을 초과했습니다" }
+            { ErrorCode.RESOURCE_QUOTA_EXCEEDED, "리소스 할당량을 초과했습니다" },
+            
+            // 토큰 관련 오류
+            { ErrorCode.INSUFFICIENT_TOKEN_BALANCE, "토큰 잔액이 부족합니다" },
+            { ErrorCode.TOKEN_TRANSACTION_FAILED, "토큰 거래에 실패했습니다" },
+            { ErrorCode.TOKEN_GRANT_FAILED, "토큰 지급에 실패했습니다" }
         };
 
         public static string GetMessage(this ErrorCode errorCode)

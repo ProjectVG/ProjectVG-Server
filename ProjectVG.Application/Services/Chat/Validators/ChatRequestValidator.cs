@@ -1,6 +1,7 @@
 using ProjectVG.Infrastructure.Persistence.Session;
 using ProjectVG.Application.Services.Users;
 using ProjectVG.Application.Services.Character;
+using ProjectVG.Application.Services.Token;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Chat;
 
@@ -11,17 +12,23 @@ namespace ProjectVG.Application.Services.Chat.Validators
         private readonly ISessionStorage _sessionStorage;
         private readonly IUserService _userService;
         private readonly ICharacterService _characterService;
+        private readonly ITokenManagementService _tokenManagementService;
         private readonly ILogger<ChatRequestValidator> _logger;
+
+        // 채팅 기본 예상 비용 (실제 비용은 처리 후 결정됨)
+        private const decimal ESTIMATED_CHAT_COST = 10m;
 
         public ChatRequestValidator(
             ISessionStorage sessionStorage,
             IUserService userService,
             ICharacterService characterService,
+            ITokenManagementService tokenManagementService,
             ILogger<ChatRequestValidator> logger)
         {
             _sessionStorage = sessionStorage;
             _userService = userService;
             _characterService = characterService;
+            _tokenManagementService = tokenManagementService;
             _logger = logger;
         }
 
@@ -40,6 +47,16 @@ namespace ProjectVG.Application.Services.Chat.Validators
                 _logger.LogWarning("캐릭터 ID 검증 실패: {CharacterId}", command.CharacterId);
                 throw new NotFoundException(ErrorCode.CHARACTER_NOT_FOUND, command.CharacterId);
             }
+
+            // 토큰 잔액 검증 - 예상 비용으로 미리 확인
+            var hasSufficientTokens = await _tokenManagementService.HasSufficientTokensAsync(command.UserId, ESTIMATED_CHAT_COST);
+            if (!hasSufficientTokens) {
+                _logger.LogWarning("토큰 부족: {UserId}, 필요 토큰: {RequiredTokens}", command.UserId, ESTIMATED_CHAT_COST);
+                var balance = await _tokenManagementService.GetTokenBalanceAsync(command.UserId);
+                throw new ValidationException(ErrorCode.INSUFFICIENT_TOKEN_BALANCE);
+            }
+
+            _logger.LogDebug("채팅 요청 검증 완료: {UserId}, {CharacterId}", command.UserId, command.CharacterId);
         }
     }
 }

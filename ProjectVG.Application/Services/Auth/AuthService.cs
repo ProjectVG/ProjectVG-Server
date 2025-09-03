@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.User;
 using ProjectVG.Application.Services.Users;
+using ProjectVG.Application.Services.Token;
 using ProjectVG.Infrastructure.Auth;
 using ProjectVG.Common.Exceptions;
 using ProjectVG.Common.Constants;
@@ -12,12 +13,18 @@ namespace ProjectVG.Application.Services.Auth
     {
         private readonly IUserService _userService;
         private readonly ITokenService _tokenService;
+        private readonly ITokenManagementService _tokenManagementService;
         private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IUserService userService, ITokenService tokenService, ILogger<AuthService> logger)
+        public AuthService(
+            IUserService userService, 
+            ITokenService tokenService,
+            ITokenManagementService tokenManagementService,
+            ILogger<AuthService> logger)
         {
             _userService = userService;
             _tokenService = tokenService;
+            _tokenManagementService = tokenManagementService;
             _logger = logger;
         }
 
@@ -88,6 +95,9 @@ namespace ProjectVG.Application.Services.Auth
             {
                 user = user with { Provider = provider, ProviderId = providerUserId };
             }
+
+            // 첫 로그인 토큰 지급 시도
+            await _tokenManagementService.GrantInitialTokensAsync(user.Id);
 
             var tokens = await _tokenService.GenerateTokensAsync(user.Id);
             
