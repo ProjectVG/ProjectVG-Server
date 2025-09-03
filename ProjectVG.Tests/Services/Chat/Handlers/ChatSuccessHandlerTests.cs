@@ -5,6 +5,7 @@ using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Application.Services.Chat.Handlers;
 using ProjectVG.Application.Services.WebSocket;
+using ProjectVG.Application.Services.Token;
 using Xunit;
 
 namespace ProjectVG.Tests.Services.Chat.Handlers
@@ -13,13 +14,15 @@ namespace ProjectVG.Tests.Services.Chat.Handlers
     {
         private readonly Mock<ILogger<ChatSuccessHandler>> _mockLogger;
         private readonly Mock<IWebSocketManager> _mockWebSocketService;
+        private readonly Mock<ITokenManagementService> _mockTokenManagementService;
         private readonly ChatSuccessHandler _handler;
 
         public ChatSuccessHandlerTests()
         {
             _mockLogger = new Mock<ILogger<ChatSuccessHandler>>();
             _mockWebSocketService = new Mock<IWebSocketManager>();
-            _handler = new ChatSuccessHandler(_mockLogger.Object, _mockWebSocketService.Object);
+            _mockTokenManagementService = new Mock<ITokenManagementService>();
+            _handler = new ChatSuccessHandler(_mockLogger.Object, _mockWebSocketService.Object, _mockTokenManagementService.Object);
         }
 
         [Fact]

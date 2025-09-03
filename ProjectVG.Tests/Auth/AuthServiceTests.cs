@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using ProjectVG.Application.Services.Auth;
 using ProjectVG.Application.Services.Users;
+using ProjectVG.Application.Services.Token;
 using ProjectVG.Infrastructure.Auth;
 using ProjectVG.Common.Models;
 using ProjectVG.Application.Models.User;
@@ -18,17 +19,20 @@ namespace ProjectVG.Tests.Auth
         private readonly AuthService _authService;
         private readonly Mock<IUserService> _mockUserService;
         private readonly Mock<ITokenService> _mockTokenService;
+        private readonly Mock<ITokenManagementService> _mockTokenManagementService;
         private readonly Mock<ILogger<AuthService>> _mockLogger;
 
         public AuthServiceTests()
         {
             _mockUserService = new Mock<IUserService>();
             _mockTokenService = new Mock<ITokenService>();
+            _mockTokenManagementService = new Mock<ITokenManagementService>();
             _mockLogger = new Mock<ILogger<AuthService>>();
 
             _authService = new AuthService(
                 _mockUserService.Object,
                 _mockTokenService.Object,
+                _mockTokenManagementService.Object,
                 _mockLogger.Object
             );
         }
@@ -50,6 +54,7 @@ namespace ProjectVG.Tests.Auth
             };
 
             _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
+            _mockTokenManagementService.Setup(x => x.GrantInitialTokensAsync(userId)).ReturnsAsync(true);
 
             // Act
             var result = await _authService.LoginWithOAuthAsync(provider, accessToken);
@@ -64,6 +69,7 @@ namespace ProjectVG.Tests.Auth
             result.User.Status.Should().Be(AccountStatus.Active);
 
             _mockTokenService.Verify(x => x.GenerateTokensAsync(userId), Times.Once);
+            _mockTokenManagementService.Verify(x => x.GrantInitialTokensAsync(userId), Times.Once);
         }
 
         [Fact]
@@ -165,6 +171,7 @@ namespace ProjectVG.Tests.Auth
             _mockUserService.Setup(x => x.TryGetByProviderAsync("guest", guestId)).ReturnsAsync((UserDto?)null);
             _mockUserService.Setup(x => x.CreateUserAsync(It.IsAny<UserCreateCommand>())).ReturnsAsync(createdUser);
             _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
+            _mockTokenManagementService.Setup(x => x.GrantInitialTokensAsync(userId)).ReturnsAsync(true);
 
             // Act
             var result = await _authService.LoginWithOAuthAsync(provider, guestId);
@@ -181,6 +188,7 @@ namespace ProjectVG.Tests.Auth
             _mockUserService.Verify(x => x.TryGetByProviderAsync("guest", guestId), Times.Once);
             _mockUserService.Verify(x => x.CreateUserAsync(It.IsAny<UserCreateCommand>()), Times.Once);
             _mockTokenService.Verify(x => x.GenerateTokensAsync(userId), Times.Once);
+            _mockTokenManagementService.Verify(x => x.GrantInitialTokensAsync(userId), Times.Once);
         }
 
         [Fact]
@@ -209,6 +217,7 @@ namespace ProjectVG.Tests.Auth
 
             _mockUserService.Setup(x => x.TryGetByProviderAsync("guest", guestId)).ReturnsAsync(existingUser);
             _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
+            _mockTokenManagementService.Setup(x => x.GrantInitialTokensAsync(userId)).ReturnsAsync(false);
 
             // Act
             var result = await _authService.LoginWithOAuthAsync(provider, guestId);
@@ -221,6 +230,7 @@ namespace ProjectVG.Tests.Auth
             _mockUserService.Verify(x => x.TryGetByProviderAsync("guest", guestId), Times.Once);
             _mockUserService.Verify(x => x.CreateUserAsync(It.IsAny<UserCreateCommand>()), Times.Never);
             _mockTokenService.Verify(x => x.GenerateTokensAsync(userId), Times.Once);
+            _mockTokenManagementService.Verify(x => x.GrantInitialTokensAsync(userId), Times.Once);
         }
 
         [Fact]
@@ -351,6 +361,182 @@ namespace ProjectVG.Tests.Auth
             // Assert
             result.Should().BeFalse();
         }
+
+        #region Token Granting Tests
+
+        [Fact]
+        public async Task LoginWithOAuthAsync_NewUser_ShouldGrantInitialTokensAndLogSuccess()
+        {
+            // Arrange
+            var provider = "guest";
+            var guestId = "new_guest_user";
+            var userId = Guid.NewGuid();
+            var createdUser = new UserDto
+            {
+                Id = userId,
+                Username = $"guest_{guestId}",
+                Email = $"guest_{guestId}@guest.local",
+                Provider = provider,
+                ProviderId = guestId,
+                Status = AccountStatus.Active
+            };
+            var tokenResponse = new TokenResponse
+            {
+                AccessToken = "access.token.here",
+                RefreshToken = "refresh.token.here",
+                AccessTokenExpiresAt = DateTime.UtcNow.AddMinutes(15),
+                RefreshTokenExpiresAt = DateTime.UtcNow.AddMinutes(1440)
+            };
+
+            _mockUserService.Setup(x => x.TryGetByProviderAsync(provider, guestId)).ReturnsAsync((UserDto?)null);
+            _mockUserService.Setup(x => x.CreateUserAsync(It.IsAny<UserCreateCommand>())).ReturnsAsync(createdUser);
+            _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
+            _mockTokenManagementService.Setup(x => x.GrantInitialTokensAsync(userId)).ReturnsAsync(true);
+
+            // Act
+            var result = await _authService.LoginWithOAuthAsync(provider, guestId);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.User.Should().Be(createdUser);
+
+            // Verify token granting was attempted
+            _mockTokenManagementService.Verify(x => x.GrantInitialTokensAsync(userId), Times.Once);
+
+            // Verify success logging
+            _mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Initial tokens (5000) granted successfully") && 
+                                                v.ToString()!.Contains(userId.ToString())),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task LoginWithOAuthAsync_ExistingUser_ShouldNotGrantTokensAndLogAlreadyGranted()
+        {
+            // Arrange
+            var provider = "guest";
+            var guestId = "existing_guest_user";
+            var userId = Guid.NewGuid();
+            var existingUser = new UserDto
+            {
+                Id = userId,
+                Username = $"guest_{guestId}",
+                Email = $"guest_{guestId}@guest.local",
+                Provider = provider,
+                ProviderId = guestId,
+                Status = AccountStatus.Active
+            };
+            var tokenResponse = new TokenResponse
+            {
+                AccessToken = "access.token.here",
+                RefreshToken = "refresh.token.here",
+                AccessTokenExpiresAt = DateTime.UtcNow.AddMinutes(15),
+                RefreshTokenExpiresAt = DateTime.UtcNow.AddMinutes(1440)
+            };
+
+            _mockUserService.Setup(x => x.TryGetByProviderAsync(provider, guestId)).ReturnsAsync(existingUser);
+            _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
+            _mockTokenManagementService.Setup(x => x.GrantInitialTokensAsync(userId)).ReturnsAsync(false);
+
+            // Act
+            var result = await _authService.LoginWithOAuthAsync(provider, guestId);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.User.Should().Be(existingUser);
+
+            // Verify token granting was attempted
+            _mockTokenManagementService.Verify(x => x.GrantInitialTokensAsync(userId), Times.Once);
+
+            // Verify already granted logging
+            _mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Initial tokens already granted or grant failed") && 
+                                                v.ToString()!.Contains(userId.ToString())),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task LoginWithOAuthAsync_TokenGrantingFails_ShouldStillCompleteLoginAndLogFailure()
+        {
+            // Arrange
+            var provider = "google";
+            var providerId = "google_user_123";
+            var userId = Guid.Parse("12345678-1234-1234-1234-123456789012");
+            var tokenResponse = new TokenResponse
+            {
+                AccessToken = "access.token.here",
+                RefreshToken = "refresh.token.here",
+                AccessTokenExpiresAt = DateTime.UtcNow.AddMinutes(15),
+                RefreshTokenExpiresAt = DateTime.UtcNow.AddMinutes(1440)
+            };
+
+            _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
+            _mockTokenManagementService.Setup(x => x.GrantInitialTokensAsync(userId)).ReturnsAsync(false);
+
+            // Act
+            var result = await _authService.LoginWithOAuthAsync(provider, providerId);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Tokens.Should().Be(tokenResponse);
+
+            // Verify token granting was attempted
+            _mockTokenManagementService.Verify(x => x.GrantInitialTokensAsync(userId), Times.Once);
+
+            // Verify failure logging
+            _mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Initial tokens already granted or grant failed") && 
+                                                v.ToString()!.Contains(userId.ToString())),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task LoginWithOAuthAsync_TokenGrantingThrowsException_ShouldNotFailLoginProcess()
+        {
+            // Arrange
+            var provider = "test";
+            var accessToken = Guid.NewGuid().ToString();
+            var userId = Guid.Parse(accessToken);
+            var tokenResponse = new TokenResponse
+            {
+                AccessToken = "access.token.here",
+                RefreshToken = "refresh.token.here",
+                AccessTokenExpiresAt = DateTime.UtcNow.AddMinutes(15),
+                RefreshTokenExpiresAt = DateTime.UtcNow.AddMinutes(1440)
+            };
+
+            _mockTokenService.Setup(x => x.GenerateTokensAsync(userId)).ReturnsAsync(tokenResponse);
+            _mockTokenManagementService.Setup(x => x.GrantInitialTokensAsync(userId))
+                .ThrowsAsync(new Exception("Token granting service unavailable"));
+
+            // Act & Assert - Should not throw exception
+            var result = await _authService.LoginWithOAuthAsync(provider, accessToken);
+
+            // Verify login still completed successfully
+            result.Should().NotBeNull();
+            result.Tokens.Should().Be(tokenResponse);
+            result.User!.Id.Should().Be(userId);
+
+            // Verify token granting was attempted
+            _mockTokenManagementService.Verify(x => x.GrantInitialTokensAsync(userId), Times.Once);
+        }
+
+        #endregion
 
     }
 }
