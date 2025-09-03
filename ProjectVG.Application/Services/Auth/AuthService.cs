@@ -11,7 +11,7 @@ using System;
 
 namespace ProjectVG.Application.Services.Auth
 {
-    public class AuthService : IUserAuthService
+    public class AuthService : IAuthService
     {
         private readonly IUserService _userService;
         private readonly ITokenService _tokenService;
@@ -30,16 +30,7 @@ namespace ProjectVG.Application.Services.Auth
             _logger = logger;
         }
 
-        public async Task<AuthResult> SignInWithOAuthAsync(string provider, string providerUserId)
-        {
-            return provider switch {
-                "guest" => await GuestLoginAsync(providerUserId),
-                "google" or "apple" => await OAuth2LoginAsync(provider, providerUserId),
-                _ => throw new ValidationException(ErrorCode.OAUTH2_PROVIDER_NOT_SUPPORTED)
-            };
-        }
-
-        private async Task<AuthResult> GuestLoginAsync(string guestId)
+        public async Task<AuthResult> GuestLoginAsync(string guestId)
         {
             if (string.IsNullOrEmpty(guestId)) {
                 throw new ValidationException(ErrorCode.GUEST_ID_INVALID);
@@ -64,42 +55,6 @@ namespace ProjectVG.Application.Services.Auth
             }
 
             return await FinalizeLoginAsync(user, "guest");
-        }
-
-        private async Task<AuthResult> OAuth2LoginAsync(string provider, string providerUserId)
-        {
-            if (string.IsNullOrEmpty(providerUserId)) {
-                throw new ValidationException(ErrorCode.PROVIDER_USER_ID_INVALID);
-            }
-
-            var user = await _userService.TryGetByProviderAsync(provider, providerUserId);
-
-            if (user == null) {
-                string uuid = GenerateGuestUuid(providerUserId);
-                var createCommand = new UserCreateCommand(
-                    Username: $"임시 유저 이름",
-                    Email: $"guest@guest{uuid}.local",
-                    ProviderId: providerUserId,
-                    Provider: provider
-                );
-
-
-                user = new UserDto {
-                    
-
-                    Id = Guid.NewGuid(),
-                    Username = $"{provider}_user_{providerUserId}",
-                    Email = $"{providerUserId}@{provider}.oauth",
-                    Status = AccountStatus.Active,
-                    Provider = provider,
-                    ProviderId = providerUserId
-                };
-            }
-
-            _logger.LogInformation("새 OAuth 사용자 생성됨: UserId={UserId}, Provider={Provider}, ProviderId={ProviderId}",
-                user.Id, provider, providerUserId);
-
-            return await FinalizeLoginAsync(user, provider);
         }
 
         private async Task<AuthResult> FinalizeLoginAsync(UserDto user, string provider)
@@ -144,7 +99,7 @@ namespace ProjectVG.Application.Services.Auth
             };
         }
 
-        public async Task<bool> LogoutAsync(string refreshToken)
+        public async Task<bool> LogoutAsync(string? refreshToken)
         {
             if (string.IsNullOrEmpty(refreshToken)) {
                 throw new ValidationException(ErrorCode.TOKEN_MISSING, "리프레시 토큰이 필요합니다");

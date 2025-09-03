@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ProjectVG.Application.Services.Auth;
+using ProjectVG.Common.Constants;
+using ProjectVG.Common.Exceptions;
 
 namespace ProjectVG.Api.Controllers
 {
@@ -7,9 +9,9 @@ namespace ProjectVG.Api.Controllers
     [Route("api/v1/auth")]
     public class AuthController : ControllerBase
     {
-        private readonly IUserAuthService _authService;
+        private readonly IAuthService _authService;
 
-        public AuthController(IUserAuthService authService)
+        public AuthController(IAuthService authService)
         {
             _authService = authService;
         }
@@ -49,7 +51,7 @@ namespace ProjectVG.Api.Controllers
                 throw new ValidationException(ErrorCode.GUEST_ID_INVALID);
             }
 
-            var result = await _authService.SignInWithOAuthAsync("guest", guestId);
+            var result = await _authService.GuestLoginAsync(guestId);
 
             return Ok(new {
                 success = true,

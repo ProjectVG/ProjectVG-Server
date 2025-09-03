@@ -7,12 +7,12 @@ namespace ProjectVG.Application.Services.Auth
     /// 인증 및 토큰 관리 서비스
     /// JWT 토큰 생성, 검증, 갱신 및 OAuth 로그인 처리를 담당
     /// </summary>
-    public interface IUserAuthService
+    public interface IAuthService
     {
         /// <summary>
-        /// OAuth 제공자를 통한 로그인 처리
+        /// Guest 로그인 처리
         /// </summary>
-        Task<AuthResult> SignInWithOAuthAsync(string provider, string providerUserId);
+        Task<AuthResult> GuestLoginAsync(string guestId);
 
         /// <summary>
         /// 리프레시 토큰을 사용하여 새로운 액세스 토큰 발급
@@ -23,6 +23,14 @@ namespace ProjectVG.Application.Services.Auth
         /// 사용자 로그아웃 처리 (리프레시 토큰 무효화)
         /// </summary>
         Task<bool> LogoutAsync(string? refreshToken);
+    }
+
+    public interface IOAuth2AuthService
+    {
+        /// <summary>
+        /// OAuth2 제공자를 통한 로그인 처리
+        /// </summary>
+        Task<AuthResult> OAuth2LoginAsync(string provider, string providerUserId, string email);
     }
 
     /// <summary>

@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
@@ -15,10 +14,11 @@ namespace ProjectVG.Application.Services.Auth
     /// </summary>
     public class OAuth2Service : IOAuth2Service
     {
-        private readonly HttpClient _httpClient;
         private readonly ILogger<OAuth2Service> _logger;
         private readonly OAuth2ProviderSettings _settings;
-        private readonly IUserAuthService _authService;
+        private readonly IOAuth2CodeValidator _codeValidator;
+        private readonly IOAuth2UserService _userService;
+        private readonly IOAuth2AccountManager _accountManager;
         private readonly IOAuth2ProviderFactory _providerFactory;
         private readonly IDistributedCache _cache;
 
@@ -31,17 +31,19 @@ namespace ProjectVG.Application.Services.Auth
         private static readonly TimeSpan TokenDataTTL = TimeSpan.FromMinutes(5);
 
         public OAuth2Service(
-            IHttpClientFactory httpClientFactory,
             ILogger<OAuth2Service> logger,
             IOptions<OAuth2ProviderSettings> settings,
-            IUserAuthService authService,
+            IOAuth2CodeValidator codeValidator,
+            IOAuth2UserService userService,
+            IOAuth2AccountManager accountManager,
             IOAuth2ProviderFactory providerFactory,
             IDistributedCache cache)
         {
-            _httpClient = httpClientFactory.CreateClient();
             _logger = logger;
             _settings = settings.Value;
-            _authService = authService;
+            _codeValidator = codeValidator;
+            _userService = userService;
+            _accountManager = accountManager;
             _providerFactory = providerFactory;
             _cache = cache;
         }
@@ -93,7 +95,7 @@ namespace ProjectVG.Application.Services.Auth
                 throw new ValidationException(ErrorCode.OAUTH2_REQUEST_NOT_FOUND);
             }
 
-            var tokenResponse = await ExchangeAuthorizationCodeAsync(
+            var tokenResponse = await _codeValidator.ValidateAndExchangeCodeAsync(
                 code,
                 authRequest.ClientId,
                 authRequest.RedirectUri,
@@ -106,13 +108,13 @@ namespace ProjectVG.Application.Services.Auth
             await DeleteOAuth2RequestAsync(state);
 
             var providerName = GetProviderNameFromClientId(authRequest.ClientId);
-            var userInfo = await GetUserInfoAsync(tokenResponse.Tokens!.AccessToken, providerName);
+            var userInfo = await _userService.GetUserInfoAsync(tokenResponse.Tokens!.AccessToken, providerName);
 
             if (string.IsNullOrEmpty(userInfo.Id)) {
                 throw new ValidationException(ErrorCode.OAUTH2_USER_INFO_FAILED);
             }
 
-            var authResult = await _authService.SignInWithOAuthAsync(providerName, userInfo.Id);
+            var authResult = await _accountManager.ProcessOAuth2LoginAsync(providerName, userInfo);
 
             var tokenData = new OAuth2TokenData {
                 AccessToken = authResult.Tokens!.AccessToken,
@@ -131,77 +133,6 @@ namespace ProjectVG.Application.Services.Auth
             };
         }
 
-        public async Task<TokenResponse> ExchangeAuthorizationCodeAsync(string code, string clientId, string redirectUri, string codeVerifier = "")
-        {
-            var providerSettings = GetProviderByClientId(clientId);
-            if (providerSettings == null) {
-                throw new ValidationException(ErrorCode.OAUTH2_CLIENT_ID_INVALID);
-            }
-
-            var providerName = GetProviderName(clientId);
-            var provider = _providerFactory.GetProvider(providerName);
-
-            var parameters = new Dictionary<string, string>
-            {
-                { "grant_type", "authorization_code" },
-                { "code", code },
-                { "redirect_uri", redirectUri },
-                { "client_id", providerSettings.ClientId },
-                { "client_secret", providerSettings.ClientSecret }
-            };
-
-            if (!string.IsNullOrEmpty(codeVerifier)) {
-                parameters.Add("code_verifier", codeVerifier);
-            }
-
-            var content = new FormUrlEncodedContent(parameters);
-            var response = await _httpClient.PostAsync(provider.TokenEndpoint, content);
-
-            if (response.IsSuccessStatusCode) {
-                var json = await response.Content.ReadAsStringAsync();
-                var tokenData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
-
-                return new TokenResponse {
-                    Success = true,
-                    Tokens = new Tokens {
-                        AccessToken = tokenData!["access_token"].GetString()!,
-                        RefreshToken = tokenData["refresh_token"].GetString()!,
-                        ExpiresIn = tokenData["expires_in"].GetInt32(),
-                        TokenType = tokenData["token_type"].GetString()!
-                    }
-                };
-            }
-
-            var errorContent = await response.Content.ReadAsStringAsync();
-            _logger.LogError("OAuth2 토큰 교환 실패: {Error}", errorContent);
-            throw new ExternalServiceException(
-                "OAuth2",
-                provider.TokenEndpoint,
-                $"OAuth2 토큰 교환 실패: {errorContent}",
-                ErrorCode.OAUTH2_TOKEN_EXCHANGE_FAILED
-            );
-        }
-
-        public async Task<OAuth2UserInfo> GetUserInfoAsync(string accessToken, string providerName)
-        {
-            var provider = _providerFactory.GetProvider(providerName);
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            var response = await _httpClient.GetAsync(provider.UserInfoEndpoint);
-            if (response.IsSuccessStatusCode) {
-                var json = await response.Content.ReadAsStringAsync();
-                return provider.ParseUserInfo(json);
-            }
-
-            var errorContent = await response.Content.ReadAsStringAsync();
-            _logger.LogError("OAuth2 사용자 정보 조회 실패: {Error}", errorContent);
-            throw new ExternalServiceException(
-                "OAuth2",
-                provider.UserInfoEndpoint,
-                $"OAuth2 사용자 정보 조회 실패: {errorContent}",
-                ErrorCode.OAUTH2_USER_INFO_FAILED
-            );
-        }
 
         public async Task<OAuth2AuthRequest> StoreOAuth2RequestAsync(string state, OAuth2AuthRequest request)
         {
@@ -306,16 +237,6 @@ namespace ProjectVG.Application.Services.Auth
             }
         }
 
-        private OAuth2Settings? GetProviderByClientId(string clientId)
-        {
-            return _settings.Providers.Values.FirstOrDefault(p => p.ClientId == clientId);
-        }
-
-        private string GetProviderName(string clientId)
-        {
-            var provider = _settings.Providers.FirstOrDefault(p => p.Value.ClientId == clientId);
-            return provider.Key ?? "google";
-        }
 
         private string GetProviderNameFromClientId(string clientId)
         {
