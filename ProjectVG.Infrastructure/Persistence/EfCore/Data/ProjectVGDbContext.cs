@@ -91,8 +91,9 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).ValueGeneratedOnAdd();
-                entity.Property(e => e.Content).IsRequired().HasMaxLength(4000);
-                entity.Property(e => e.MetadataJson).HasMaxLength(4000);
+                entity.Property(e => e.Content).IsRequired().HasMaxLength(10000);
+                entity.Property(e => e.Role).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.ConversationId).HasMaxLength(100);
 
                 // 외래키 관계 설정 (UserId, CharacterId는 필수)
                 entity.HasOne<User>()
@@ -107,11 +108,13 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired();
 
-                // 복합 인덱스: UserId + CharacterId + Timestamp
+                // 인덱스 설정
                 entity.HasIndex(e => new { e.UserId, e.CharacterId, e.Timestamp });
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.CharacterId);
                 entity.HasIndex(e => e.Timestamp);
+                entity.HasIndex(e => e.ConversationId);
+                entity.HasIndex(e => e.Role);
             });
 
             // 기본 데이터 삽입

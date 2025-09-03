@@ -253,10 +253,11 @@ namespace ProjectVG.Tests.Application.TestUtilities
         public static ConversationHistory CreateConversationHistory(
             Guid? userId = null,
             Guid? characterId = null,
-            ChatRole role = ChatRole.User,
+            string role = "user",
             string content = "Test message",
             Guid? id = null,
-            DateTime? timestamp = null)
+            DateTime? timestamp = null,
+            string? conversationId = null)
         {
             return new ConversationHistory
             {
@@ -267,8 +268,7 @@ namespace ProjectVG.Tests.Application.TestUtilities
                 Content = content,
                 CreatedAt = DateTime.UtcNow,
                 Timestamp = timestamp ?? DateTime.UtcNow,
-                MetadataJson = "{}",
-                IsDeleted = false
+                ConversationId = conversationId
             };
         }
 

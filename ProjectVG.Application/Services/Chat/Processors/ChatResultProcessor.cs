@@ -29,8 +29,8 @@ namespace ProjectVG.Application.Services.Chat.Processors
 
         public async Task PersistResultsAsync(ChatProcessContext context)
         {
-            await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.User, context.UserMessage);
-            await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.Assistant, context.Response);
+            await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.User, context.UserMessage, context.UserRequestAt, context.RequestId.ToString());
+            await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.Assistant, context.Response, DateTime.UtcNow, context.RequestId.ToString());
             await PersistMemoryAsync(context);
 
             _logger.LogDebug("채팅 결과 저장 완료: 세션 {UserId}, 사용자 {UserId}", context.RequestId, context.UserId);

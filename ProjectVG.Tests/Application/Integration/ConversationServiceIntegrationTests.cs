@@ -38,7 +38,7 @@ namespace ProjectVG.Tests.Application.Integration
             var role = ChatRole.User;
 
             // Act
-            var addedMessage = await _conversationService.AddMessageAsync(userId, characterId, role, content);
+            var addedMessage = await _conversationService.AddMessageAsync(userId, characterId, role, content, DateTime.UtcNow);
 
             // Assert
             addedMessage.Should().NotBeNull();
@@ -51,10 +51,10 @@ namespace ProjectVG.Tests.Application.Integration
         }
 
         [Theory]
-        [InlineData(ChatRole.User)]
-        [InlineData(ChatRole.Assistant)]
-        [InlineData(ChatRole.System)]
-        public async Task AddMessageAsync_WithDifferentRoles_ShouldPersistCorrectly(ChatRole role)
+        [InlineData("user")]
+        [InlineData("assistant")]
+        [InlineData("system")]
+        public async Task AddMessageAsync_WithDifferentRoles_ShouldPersistCorrectly(string role)
         {
             // Arrange
             await _fixture.ClearDatabaseAsync();
@@ -62,7 +62,7 @@ namespace ProjectVG.Tests.Application.Integration
             var content = $"Message from {role}";
 
             // Act
-            var addedMessage = await _conversationService.AddMessageAsync(userId, characterId, role, content);
+            var addedMessage = await _conversationService.AddMessageAsync(userId, characterId, role, content, DateTime.UtcNow);
 
             // Assert
             addedMessage.Role.Should().Be(role);

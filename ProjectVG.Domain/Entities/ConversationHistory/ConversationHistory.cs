@@ -8,8 +8,8 @@ namespace ProjectVG.Domain.Entities.ConversationHistorys
     /// 
     /// 대화 관리:
     /// - 사용자와 AI 캐릭터 간의 대화 기록
-    /// - 역할별 메시지 구분 (User, Assistant, System)
-    /// - 메타데이터를 통한 추가 정보 저장
+    /// - 역할별 메시지 구분 (user, assistant, system)
+    /// - 실제 사용자 요청 시간 기록
     /// </summary>
     public class ConversationHistory : BaseEntity
     {
@@ -29,9 +29,9 @@ namespace ProjectVG.Domain.Entities.ConversationHistorys
         public Guid UserId { get; set; }
         
         /// <summary>
-        /// 채팅 역할 (User, Assistant, System)
+        /// 채팅 역할 (user, assistant, system - 소문자 문자열)
         /// </summary>
-        public ChatRole Role { get; set; }
+        public string Role { get; set; } = string.Empty;
         
         /// <summary>
         /// 대화 내용
@@ -39,18 +39,14 @@ namespace ProjectVG.Domain.Entities.ConversationHistorys
         public string Content { get; set; } = string.Empty;
         
         /// <summary>
-        /// 대화 발생 시각
+        /// 사용자가 실제 요청한 시각 (서버 시간이 아닌 클라이언트 기준 시간)
         /// </summary>
-        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        public DateTime Timestamp { get; set; }
         
         /// <summary>
-        /// 추가 메타데이터 (JSON으로 저장)
+        /// 대화 세션 ID (하나의 대화에서 여러 메시지를 그룹화하기 위한 ID, nullable)
+        /// OpenAI의 requestId 등을 저장
         /// </summary>
-        public string MetadataJson { get; set; } = "{}";
-        
-        /// <summary>
-        /// 삭제 여부
-        /// </summary>
-        public bool IsDeleted { get; set; } = false;
+        public string? ConversationId { get; set; }
     }
 } 
