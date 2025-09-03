@@ -1,48 +1,54 @@
 using ProjectVG.Domain.Common;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 
 namespace ProjectVG.Domain.Entities.Characters
 {
     /// <summary>
     /// AI 캐릭터 - Hybrid 구조 (고정 컬럼 + JSON 설정)
     /// </summary>
+    [Table("Characters")]
     public class Character : BaseEntity
     {
-        /// <summary> 캐릭터 고유 ID </summary>
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
         
-        /// <summary> 캐릭터 이름 </summary>
+        [Required]
+        [StringLength(100)]
         public string Name { get; set; } = string.Empty;
 
-        /// <summary> 캐릭터 설명 </summary>
+        [StringLength(1000)]
         public string Description { get; set; } = string.Empty;
 
-        /// <summary> 캐릭터 이미지 URL </summary>
+        [StringLength(500)]
         public string ImageUrl { get; set; } = string.Empty;
 
-        /// <summary> 활성화 여부 </summary>
+        [Required]
         public bool IsActive { get; set; } = true;
         
-        /// <summary> 캐릭터 보이스 ID </summary>
+        [StringLength(100)]
         public string VoiceId { get; set; } = string.Empty;
         
-        /// <summary> 캐릭터를 생성한 사용자 ID (nullable - 시스템 캐릭터 허용) </summary>
+        /// <summary> 사용자 ID (null이면 시스템 캐릭터) </summary>
         public Guid? UserId { get; set; }
         
-        /// <summary> 캐릭터를 생성한 사용자 (네비게이션 속성) </summary>
         public virtual Users.User? User { get; set; }
         
-        /// <summary> 캐릭터 공개 여부 (true: 공개, false: 비공개) </summary>
+        [Required]
         public bool IsPublic { get; set; } = true;
         
-        /// <summary> 설정 모드 (개별 설정 vs SystemPrompt) </summary>
+        [Required]
         public CharacterConfigMode ConfigMode { get; set; } = CharacterConfigMode.Individual;
         
-        /// <summary> 개별 설정 JSON 데이터 (DB 저장용) </summary>
+        /// <summary> JSON 데이터 (IndividualConfig 속성과 연동) </summary>
+        [Column(TypeName = "nvarchar(max)")]
         public string? IndividualConfigJson { get; set; }
         
-        /// <summary> SystemPrompt 직접 입력 (최대 5000자) </summary>
+        /// <summary> 직접 입력 SystemPrompt (최대 5000자) </summary>
+        [StringLength(5000)]
         public string? SystemPrompt { get; set; }
         
         /// <summary>
