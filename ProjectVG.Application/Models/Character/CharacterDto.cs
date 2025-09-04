@@ -2,32 +2,40 @@ using ProjectVG.Domain.Entities.Characters;
 
 namespace ProjectVG.Application.Models.Character
 {
-    public class CharacterDto
+    public record CharacterDto
     {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string Role { get; set; } = string.Empty;
-        public bool IsActive { get; set; } = true;
-        public string Personality { get; set; } = string.Empty;
-        public string SpeechStyle { get; set; } = string.Empty;
-        public string Summary { get; set; } = string.Empty;
-        public string UserAlias { get; set; } = string.Empty;
-        public string VoiceId { get; set; } = string.Empty;
-
+        public Guid Id { get; init; }
+        public string Name { get; init; } = string.Empty;
+        public string Description { get; init; } = string.Empty;
+        public string ImageUrl { get; init; } = string.Empty;
+        public bool IsActive { get; init; } = true;
+        public string VoiceId { get; init; } = string.Empty;
+        
+        public CharacterConfigMode ConfigMode { get; init; }
+        public IndividualConfig? IndividualConfig { get; init; }
+        public string? SystemPrompt { get; init; }
+        
+        public string EffectiveSystemPrompt { get; init; } = string.Empty;
+        
+        public Guid? CreatedByUserId { get; init; }
+        public string? CreatedByUsername { get; init; }
+        public bool IsPublic { get; init; }
 
         public CharacterDto(Domain.Entities.Characters.Character character)
         {
             Id = character.Id;
             Name = character.Name;
             Description = character.Description;
-            Role = character.Role;            
+            ImageUrl = character.ImageUrl;
             IsActive = character.IsActive;
-            Personality = character.Personality;
-            SpeechStyle = character.SpeechStyle;
-            UserAlias = character.UserAlias;
-            Summary = character.Summary;
             VoiceId = character.VoiceId;
+            ConfigMode = character.ConfigMode;
+            IndividualConfig = character.IndividualConfig;
+            SystemPrompt = character.SystemPrompt;
+            EffectiveSystemPrompt = character.GetEffectiveSystemPrompt();
+            CreatedByUserId = character.UserId;
+            CreatedByUsername = character.User?.Username;
+            IsPublic = character.IsPublic;
         }
     }
 }

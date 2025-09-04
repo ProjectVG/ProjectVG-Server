@@ -1,53 +1,61 @@
 using ProjectVG.Domain.Common;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace ProjectVG.Domain.Entities.Users
 {
     /// <summary>
-    /// 사용자 엔티티
-    /// 
-    /// ID 관리:
-    /// - Id: 내부 DB용 GUID
-    /// - UID: 외부 노출용 12자리 고유 ID (인덱스 설정)
-    /// 
-    /// OAuth2 지원:
-    /// - ProviderId, Provider: OAuth2 로그인 시에만 사용
+    /// 사용자 엔티티 (OAuth2 및 크래딧 시스템 지원)
     /// </summary>
+    [Table("Users")]
     public class User : BaseEntity
     {
-        /// <summary>
-        /// 내부용 고유 ID (GUID)
-        /// </summary>
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
         
         /// <summary>
-        /// 외부 노출용 고유 ID (12자리)
+        /// 외부 노출용 12자리 고유 ID
         /// </summary>
+        [Required]
+        [StringLength(16)]
         public string UID { get; set; } = string.Empty;
         
-        /// <summary>
-        /// OAuth2 Provider ID
-        /// </summary>
+        [Required]
+        [StringLength(255)]
         public string ProviderId { get; set; } = string.Empty;
         
-        /// <summary>
-        /// OAuth2 Provider (google, github 등)
-        /// </summary>
+        [Required]
+        [StringLength(50)]
         public string Provider { get; set; } = string.Empty;
         
-        /// <summary>
-        /// 사용자 이메일
-        /// </summary>
+        [Required]
+        [StringLength(255)]
         public string Email { get; set; } = string.Empty;
         
-        /// <summary>
-        /// 사용자 표시명
-        /// </summary>
+        [Required]
+        [StringLength(50)]
         public string Username { get; set; } = string.Empty;
         
-        /// <summary>
-        /// 계정 상태
-        /// </summary>
+        [Required]
         public AccountStatus Status { get; set; } = AccountStatus.Active;
+        
+        [Precision(18, 2)]
+        public decimal CreditBalance { get; set; } = 0;
+        
+        [Precision(18, 2)]
+        public decimal TotalCreditsEarned { get; set; } = 0;
+        
+        [Precision(18, 2)]
+        public decimal TotalCreditsSpent { get; set; } = 0;
+        
+        public bool InitialCreditsGranted { get; set; } = false;
+
+        [Timestamp]
+        public byte[] RowVersion { get; set; } = new byte[0];
+
+        public virtual ICollection<Characters.Character> Characters { get; set; } = new List<Characters.Character>();
     }
 } 

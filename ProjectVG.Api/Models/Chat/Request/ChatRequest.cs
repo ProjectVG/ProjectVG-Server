@@ -1,23 +1,22 @@
 using System.Text.Json.Serialization;
-using ProjectVG.Application.Models.Chat;
 
-namespace ProjectVG.Application.Models.API.Request
+namespace ProjectVG.Api.Models.Chat.Request
 {
-    public class ChatRequest
+    public record ChatRequest
     {
         [JsonPropertyName("message")]
-        public string Message { get; set; } = string.Empty;
+        public string Message { get; init; } = string.Empty;
 
         [JsonPropertyName("character_id")]
-        public Guid CharacterId { get; set; }
+        public Guid CharacterId { get; init; }
 
         [JsonPropertyName("action")]
-        public string? Action { get; set; }
+        public string? Action { get; init; }
 
         [JsonPropertyName("use_tts")]
-        public bool UseTTS { get; set; } = true;
+        public bool UseTTS { get; init; } = true;
 
         [JsonPropertyName("request_at")]
-        public DateTime RequestAt { get; set; }
+        public DateTime RequestAt { get; init; }
     }
 }

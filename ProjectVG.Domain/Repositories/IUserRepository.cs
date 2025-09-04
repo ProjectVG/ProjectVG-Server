@@ -1,6 +1,6 @@
 using ProjectVG.Domain.Entities.Users;
 
-namespace ProjectVG.Infrastructure.Persistence.Repositories.Users
+namespace ProjectVG.Domain.Repositories
 {
     public interface IUserRepository
     {
@@ -15,4 +15,4 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Users
         Task<User> UpdateAsync(User user);
         Task DeleteAsync(Guid id);
     }
-} 
+}

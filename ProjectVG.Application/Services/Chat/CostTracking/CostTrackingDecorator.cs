@@ -1,6 +1,4 @@
 using ProjectVG.Application.Models.Chat;
-using ProjectVG.Application.Services.Chat.CostTracking;
-using ProjectVG.Domain.Entities.ConversationHistorys;
 
 namespace ProjectVG.Application.Services.Chat.CostTracking
 {

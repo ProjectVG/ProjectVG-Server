@@ -9,6 +9,7 @@ using ProjectVG.Application.Services.Chat.Validators;
 using ProjectVG.Application.Services.Chat.Handlers;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.Session;
+using ProjectVG.Application.Services.Credit;
 using ProjectVG.Application.Services.Users;
 using ProjectVG.Application.Services.WebSocket;
 
@@ -20,7 +21,11 @@ namespace ProjectVG.Application
         {
             // Auth Services
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IOAuth2AuthService, OAuth2AuthService>();
             services.AddScoped<IOAuth2Service, OAuth2Service>();
+            services.AddScoped<IOAuth2CodeValidator, OAuth2CodeValidator>();
+            services.AddScoped<IOAuth2UserService, OAuth2UserService>();
+            services.AddScoped<IOAuth2AccountManager, OAuth2AccountManager>();
             services.AddScoped<IOAuth2ProviderFactory, OAuth2ProviderFactory>();
 
             // User Services
@@ -28,6 +33,9 @@ namespace ProjectVG.Application
 
             // Character Services
             services.AddScoped<ICharacterService, CharacterService>();
+
+            // Credit Management Services
+            services.AddScoped<ICreditManagementService, CreditManagementService>();
 
             // Chat Services - Core
             services.AddScoped<IChatService, ChatService>();

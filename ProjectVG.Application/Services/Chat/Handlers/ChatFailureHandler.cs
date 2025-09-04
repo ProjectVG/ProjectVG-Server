@@ -1,8 +1,6 @@
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Application.Services.WebSocket;
-using ProjectVG.Application.Services.Conversation;
-using ProjectVG.Infrastructure.Integrations.MemoryClient;
 
 namespace ProjectVG.Application.Services.Chat.Handlers
 {
@@ -26,7 +24,7 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                 await _webSocketService.SendAsync(context.UserId.ToString(), errorResponse);
             }
             catch (Exception ex) {
-                _logger.LogError(ex, "오류 메시지 전송 실패: 세션 {UserId}", context.SessionId);
+                _logger.LogError(ex, "오류 메시지 전송 실패: 세션 {UserId}", context.RequestId);
             }
         }
     }

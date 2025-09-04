@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using ProjectVG.Application.Services.Auth;
 using ProjectVG.Common.Configuration;
+using ProjectVG.Common.Constants;
+using ProjectVG.Common.Exceptions;
 
 namespace ProjectVG.Api.Controllers
 {
@@ -85,6 +87,7 @@ namespace ProjectVG.Api.Controllers
             return Redirect(result.RedirectUrl!);
         }
 
+
         [HttpGet("oauth2/token")]
         public async Task<IActionResult> GetOAuth2Token([FromQuery] string state)
         {
@@ -93,16 +96,14 @@ namespace ProjectVG.Api.Controllers
                 throw new ValidationException(ErrorCode.REQUIRED_PARAMETER_MISSING);
             }
 
-            var tokenData = await _oauth2Service.GetTokenDataAsync(state);
+            var tokenData = await _oauth2Service.ConsumeTokenDataAsync(state);
             if (tokenData == null)
             {
                 throw new ValidationException(ErrorCode.OAUTH2_REQUEST_NOT_FOUND);
             }
 
-            await _oauth2Service.DeleteTokenDataAsync(state);
-
-            Response.Headers.Append("X-Access-Token", tokenData.AccessToken);
-            Response.Headers.Append("X-Refresh-Token", tokenData.RefreshToken);
+            Response.Headers.Append("X-Access-Credit", tokenData.AccessToken);
+            Response.Headers.Append("X-Refresh-Credit", tokenData.RefreshToken);
             Response.Headers.Append("X-Expires-In", tokenData.ExpiresIn.ToString());
             Response.Headers.Append("X-UID", tokenData.UID);
 

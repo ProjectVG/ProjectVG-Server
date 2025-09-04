@@ -1,12 +1,15 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 using ProjectVG.Infrastructure.Integrations.LLMClient;
 using ProjectVG.Infrastructure.Integrations.MemoryClient;
 using ProjectVG.Infrastructure.Integrations.TextToSpeechClient;
 using ProjectVG.Infrastructure.Persistence.EfCore;
+using ProjectVG.Domain.Repositories;
 using ProjectVG.Infrastructure.Persistence.Repositories.Characters;
 using ProjectVG.Infrastructure.Persistence.Repositories.Conversation;
+using ProjectVG.Infrastructure.Persistence.Repositories.Credit;
 using ProjectVG.Infrastructure.Persistence.Repositories.Users;
 using ProjectVG.Infrastructure.Persistence.Session;
 using ProjectVG.Infrastructure.Auth;
@@ -50,7 +53,11 @@ namespace ProjectVG.Infrastructure
         private static void AddDatabaseServices(IServiceCollection services, IConfiguration configuration)
         {
             services.AddDbContext<ProjectVGDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"), 
+                    sqlOptions => sqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 3,
+                        maxRetryDelay: TimeSpan.FromSeconds(10),
+                        errorNumbersToAdd: null)));
         }
 
         /// <summary>
@@ -92,6 +99,7 @@ namespace ProjectVG.Infrastructure
             services.AddScoped<ICharacterRepository, SqlServerCharacterRepository>();
             services.AddScoped<IConversationRepository, SqlServerConversationRepository>();
             services.AddScoped<IUserRepository, SqlServerUserRepository>();
+            services.AddScoped<ICreditTransactionRepository, SqlServerCreditTransactionRepository>();
             services.AddSingleton<ISessionStorage, InMemorySessionStorage>();
         }
 
@@ -143,31 +151,42 @@ namespace ProjectVG.Infrastructure
         }
 
         /// <summary>
-        /// Redis 서비스 (개발 환경에서는 In-Memory 사용)
+        /// Redis 및 분산 캐시 서비스
         /// </summary>
         private static void AddRedisServices(IServiceCollection services, IConfiguration configuration)
         {
             var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+            var redisConnectionString = configuration.GetConnectionString("Redis") ?? 
+                                      Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING") ?? 
+                                      "localhost:6380";
             
-            if (environment.Equals("Production", StringComparison.OrdinalIgnoreCase))
+            // Redis 연결 시도 (환경 무관하게 시도)
+            try
             {
-                // 프로덕션에서는 Redis 사용
-                var redisConnectionString = configuration.GetConnectionString("Redis") ?? Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING") ?? "localhost:6379";
+                // Redis 연결 테스트
+                var options = ConfigurationOptions.Parse(redisConnectionString);
+                options.AbortOnConnectFail = false;
+                options.ConnectRetry = 3;
+                options.ConnectTimeout = 5000;
+                options.ReconnectRetryPolicy = new ExponentialRetry(5000);
                 
-                services.AddSingleton<IConnectionMultiplexer>(sp => 
+                var multiplexer = ConnectionMultiplexer.Connect(options);
+                
+                // Redis 사용 가능한 경우
+                services.AddSingleton<IConnectionMultiplexer>(multiplexer);
+                services.AddStackExchangeRedisCache(opt =>
                 {
-                    var options = ConfigurationOptions.Parse(redisConnectionString);
-                    options.AbortOnConnectFail = false;
-                    options.ConnectRetry = 5;
-                    options.ReconnectRetryPolicy = new ExponentialRetry(5000);
-                    return ConnectionMultiplexer.Connect(options);
+                    opt.ConnectionMultiplexerFactory = () => Task.FromResult<IConnectionMultiplexer>(multiplexer);
                 });
-                
                 services.AddScoped<IRefreshTokenStorage, RedisRefreshTokenStorage>();
+                
+                Console.WriteLine($"Redis 연결 성공: {redisConnectionString}");
             }
-            else
+            catch (Exception ex)
             {
-                // 개발 환경에서는 In-Memory 사용
+                // Redis 연결 실패 시 In-Memory 대체
+                Console.WriteLine($"Redis 연결 실패, In-Memory로 대체: {ex.Message}");
+                services.AddDistributedMemoryCache();
                 services.AddScoped<IRefreshTokenStorage, InMemoryRefreshTokenStorage>();
             }
         }

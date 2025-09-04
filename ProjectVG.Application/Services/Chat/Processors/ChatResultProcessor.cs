@@ -1,5 +1,4 @@
 using ProjectVG.Application.Models.Chat;
-using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.WebSocket;
 using ProjectVG.Infrastructure.Integrations.MemoryClient;
@@ -29,11 +28,11 @@ namespace ProjectVG.Application.Services.Chat.Processors
 
         public async Task PersistResultsAsync(ChatProcessContext context)
         {
-            await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.User, context.UserMessage);
-            await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.Assistant, context.Response);
+            await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.User, context.UserMessage, context.UserRequestAt, context.RequestId.ToString());
+            await _conversationService.AddMessageAsync(context.UserId, context.CharacterId, ChatRole.Assistant, context.Response, DateTime.UtcNow, context.RequestId.ToString());
             await PersistMemoryAsync(context);
 
-            _logger.LogDebug("채팅 결과 저장 완료: 세션 {UserId}, 사용자 {UserId}", context.SessionId, context.UserId);
+            _logger.LogDebug("채팅 결과 저장 완료: 세션 {UserId}, 사용자 {UserId}", context.RequestId, context.UserId);
         }
 
         private async Task PersistMemoryAsync(ChatProcessContext context)
@@ -53,7 +52,7 @@ namespace ProjectVG.Application.Services.Chat.Processors
                 Context = new Dictionary<string, object>
                 {
                     { "character_id", context.CharacterId },
-                    { "session_id", context.SessionId },
+                    { "session_id", context.RequestId },
                     { "conversation_turn", DateTime.UtcNow.Ticks },
                     { "user_message", context.UserMessage },
                     { "response_type", "chat_response" },
@@ -77,7 +76,7 @@ namespace ProjectVG.Application.Services.Chat.Processors
                 Context = new Dictionary<string, object>
                 {
                     { "character_id", context.CharacterId },
-                    { "session_id", context.SessionId },
+                    { "session_id", context.RequestId },
                     { "conversation_turn", DateTime.UtcNow.Ticks - 1 },
                     { "message_type", "user_input" },
                     { "timestamp", DateTime.UtcNow.ToString("o") }

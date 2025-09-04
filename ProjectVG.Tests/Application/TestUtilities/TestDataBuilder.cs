@@ -4,6 +4,7 @@ using ProjectVG.Application.Models.User;
 using ProjectVG.Application.Services.Users;
 using ProjectVG.Domain.Entities.ConversationHistorys;
 using ProjectVG.Domain.Entities.Users;
+using ProjectVG.Domain.Entities.Characters;
 
 namespace ProjectVG.Tests.Application.TestUtilities
 {
@@ -11,76 +12,190 @@ namespace ProjectVG.Tests.Application.TestUtilities
     {
         #region Character Test Data
 
-        public static ProjectVG.Domain.Entities.Characters.Character CreateCharacterEntity(
+        public static ProjectVG.Domain.Entities.Characters.Character CreateCharacterEntityWithIndividualConfig(
             string name = "TestCharacter",
             Guid? id = null,
             string description = "Test character description",
-            string role = "Assistant",
             bool isActive = true,
-            string personality = "Friendly and helpful",
-            string speechStyle = "Casual",
-            string summary = "Test character summary",
-            string userAlias = "User",
-            string voiceId = "test-voice")
+            string voiceId = "test-voice",
+            string? role = "Assistant",
+            string? personality = "Friendly and helpful",
+            string? speechStyle = "Casual",
+            string? summary = "Test character summary",
+            string? userAlias = "User",
+            string? imageUrl = null)
         {
-            return new ProjectVG.Domain.Entities.Characters.Character
+            var character = new ProjectVG.Domain.Entities.Characters.Character
             {
                 Id = id ?? Guid.NewGuid(),
                 Name = name,
                 Description = description,
-                Role = role,
                 IsActive = isActive,
+                VoiceId = voiceId,
+                ImageUrl = imageUrl
+            };
+            
+            var individualConfig = new IndividualConfig
+            {
+                Role = role,
                 Personality = personality,
                 SpeechStyle = speechStyle,
                 Summary = summary,
-                UserAlias = userAlias,
-                VoiceId = voiceId
+                UserAlias = userAlias
             };
+            
+            character.SetIndividualConfig(individualConfig);
+            return character;
         }
-
-        public static CharacterDto CreateCharacterDto(
+        
+        public static ProjectVG.Domain.Entities.Characters.Character CreateCharacterEntityWithSystemPrompt(
             string name = "TestCharacter",
             Guid? id = null,
             string description = "Test character description",
-            string role = "Assistant",
             bool isActive = true,
-            string personality = "Friendly and helpful",
-            string speechStyle = "Casual",
-            string summary = "Test character summary",
-            string userAlias = "User",
-            string voiceId = "test-voice")
+            string voiceId = "test-voice",
+            string systemPrompt = "You are a friendly and helpful assistant.",
+            string? imageUrl = null)
         {
-            var entity = CreateCharacterEntity(name, id, description, role, isActive, personality, speechStyle, summary, userAlias, voiceId);
+            var character = new ProjectVG.Domain.Entities.Characters.Character
+            {
+                Id = id ?? Guid.NewGuid(),
+                Name = name,
+                Description = description,
+                IsActive = isActive,
+                VoiceId = voiceId,
+                ImageUrl = imageUrl
+            };
+            
+            character.SetSystemPrompt(systemPrompt);
+            return character;
+        }
+
+        public static CharacterDto CreateCharacterDtoWithIndividualConfig(
+            string name = "TestCharacter",
+            Guid? id = null,
+            string description = "Test character description",
+            bool isActive = true,
+            string voiceId = "test-voice",
+            string? role = "Assistant",
+            string? personality = "Friendly and helpful",
+            string? speechStyle = "Casual",
+            string? summary = "Test character summary",
+            string? userAlias = "User",
+            string? imageUrl = null)
+        {
+            var entity = CreateCharacterEntityWithIndividualConfig(name, id, description, isActive, voiceId, role, personality, speechStyle, summary, userAlias, imageUrl);
+            return new CharacterDto(entity);
+        }
+        
+        public static CharacterDto CreateCharacterDtoWithSystemPrompt(
+            string name = "TestCharacter",
+            Guid? id = null,
+            string description = "Test character description",
+            bool isActive = true,
+            string voiceId = "test-voice",
+            string systemPrompt = "You are a friendly and helpful assistant.",
+            string? imageUrl = null)
+        {
+            var entity = CreateCharacterEntityWithSystemPrompt(name, id, description, isActive, voiceId, systemPrompt, imageUrl);
             return new CharacterDto(entity);
         }
 
-        public static CreateCharacterCommand CreateCreateCharacterCommand(
+        public static CreateCharacterWithFieldsCommand CreateCreateCharacterWithFieldsCommand(
             string name = "TestCharacter",
             string description = "Test character description",
-            string role = "Assistant",
-            bool isActive = true)
+            bool isActive = true,
+            string voiceId = "test-voice",
+            string? role = "Assistant",
+            string? personality = "Friendly and helpful",
+            string? speechStyle = "Casual",
+            string? summary = "Test character summary",
+            string? userAlias = "User",
+            string? imageUrl = null)
         {
-            return new CreateCharacterCommand
+            return new CreateCharacterWithFieldsCommand
             {
                 Name = name,
                 Description = description,
-                Role = role,
-                IsActive = isActive
+                IsActive = isActive,
+                VoiceId = voiceId,
+                ImageUrl = imageUrl ?? string.Empty,
+                IndividualConfig = new IndividualConfig
+                {
+                    Role = role,
+                    Personality = personality,
+                    SpeechStyle = speechStyle,
+                    Summary = summary,
+                    UserAlias = userAlias
+                }
+            };
+        }
+        
+        public static CreateCharacterWithSystemPromptCommand CreateCreateCharacterWithSystemPromptCommand(
+            string name = "TestCharacter",
+            string description = "Test character description",
+            bool isActive = true,
+            string voiceId = "test-voice",
+            string systemPrompt = "You are a friendly and helpful assistant.",
+            string? imageUrl = null)
+        {
+            return new CreateCharacterWithSystemPromptCommand
+            {
+                Name = name,
+                Description = description,
+                IsActive = isActive,
+                VoiceId = voiceId,
+                ImageUrl = imageUrl ?? string.Empty,
+                SystemPrompt = systemPrompt
             };
         }
 
-        public static UpdateCharacterCommand CreateUpdateCharacterCommand(
+        public static UpdateCharacterToIndividualCommand CreateUpdateCharacterToIndividualCommand(
+            Guid id,
             string name = "UpdatedCharacter",
             string description = "Updated character description",
-            string role = "Updated role",
-            bool isActive = true)
+            string voiceId = "test-voice",
+            string? role = "Updated role",
+            string? personality = "Updated personality",
+            string? speechStyle = "Updated speech style",
+            string? summary = "Updated summary",
+            string? userAlias = "User",
+            string? imageUrl = null)
         {
-            return new UpdateCharacterCommand
+            return new UpdateCharacterToIndividualCommand
             {
+                Id = id,
                 Name = name,
                 Description = description,
-                Role = role,
-                IsActive = isActive
+                VoiceId = voiceId,
+                ImageUrl = imageUrl ?? string.Empty,
+                IndividualConfig = new IndividualConfig
+                {
+                    Role = role,
+                    Personality = personality,
+                    SpeechStyle = speechStyle,
+                    Summary = summary,
+                    UserAlias = userAlias
+                }
+            };
+        }
+        
+        public static UpdateCharacterToSystemPromptCommand CreateUpdateCharacterToSystemPromptCommand(
+            Guid id,
+            string name = "UpdatedCharacter",
+            string description = "Updated character description",
+            string voiceId = "test-voice",
+            string systemPrompt = "You are an updated friendly and helpful assistant.",
+            string? imageUrl = null)
+        {
+            return new UpdateCharacterToSystemPromptCommand
+            {
+                Id = id,
+                Name = name,
+                Description = description,
+                VoiceId = voiceId,
+                ImageUrl = imageUrl ?? string.Empty,
+                SystemPrompt = systemPrompt
             };
         }
 
@@ -138,10 +253,11 @@ namespace ProjectVG.Tests.Application.TestUtilities
         public static ConversationHistory CreateConversationHistory(
             Guid? userId = null,
             Guid? characterId = null,
-            ChatRole role = ChatRole.User,
+            string role = "user",
             string content = "Test message",
             Guid? id = null,
-            DateTime? timestamp = null)
+            DateTime? timestamp = null,
+            string? conversationId = null)
         {
             return new ConversationHistory
             {
@@ -152,8 +268,7 @@ namespace ProjectVG.Tests.Application.TestUtilities
                 Content = content,
                 CreatedAt = DateTime.UtcNow,
                 Timestamp = timestamp ?? DateTime.UtcNow,
-                MetadataJson = "{}",
-                IsDeleted = false
+                ConversationId = conversationId
             };
         }
 
@@ -211,7 +326,7 @@ namespace ProjectVG.Tests.Application.TestUtilities
             List<string>? memoryContext = null)
         {
             var actualCommand = command ?? CreateChatRequestCommand();
-            var actualCharacter = character ?? CreateCharacterDto();
+            var actualCharacter = character ?? CreateCharacterDtoWithIndividualConfig();
             var actualHistory = conversationHistory ?? CreateConversationHistoryList(actualCommand.UserId, actualCommand.CharacterId);
             var actualMemory = memoryContext ?? new List<string> { "Previous context 1", "Previous context 2" };
 

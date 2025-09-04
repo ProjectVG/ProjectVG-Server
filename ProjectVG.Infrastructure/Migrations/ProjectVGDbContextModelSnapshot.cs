@@ -28,10 +28,10 @@ namespace ProjectVG.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Background")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
+                    b.Property<int>("ConfigMode")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -43,82 +43,87 @@ namespace ProjectVG.Infrastructure.Migrations
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("IndividualConfig")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("IndividualConfigJson");
+
+                    b.Property<string>("IndividualConfigJson")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsPublic")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("Personality")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("SpeechStyle")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Summary")
-                        .IsRequired()
+                    b.Property<string>("SystemPrompt")
+                        .HasMaxLength(5000)
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UserAlias")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("VoiceId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Characters");
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Characters", t =>
+                        {
+                            t.HasCheckConstraint("CK_Character_ConfigMode_Valid", "ConfigMode IN (0, 1)");
+
+                            t.Property("IndividualConfigJson")
+                                .HasColumnName("IndividualConfigJson1");
+                        });
 
                     b.HasData(
                         new
                         {
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
-                            Background = "",
-                            CreatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2861),
+                            ConfigMode = 0,
+                            CreatedAt = new DateTime(2025, 9, 4, 6, 51, 20, 117, DateTimeKind.Utc).AddTicks(7793),
                             Description = "20대 대학생으로 몇 년간 함께해온 진짜 절친한 여사친. 서로 뭐든 거리낌없이 말하고, 가끔 선 넘는 농담도 주고받는 사이. 마스터의 일상을 누구보다 잘 알고 있으며, 때로는 엄마처럼 잔소리하기도 한다.",
                             ImageUrl = "",
+                            IndividualConfig = "{\"personality\":\"[MBTI:ESFP],(\\uC7A5\\uB09C\\uAE30:40%),(\\uCE5C\\uADFC\\uD568:25%),(\\uC194\\uC9C1\\uD568:20%),(\\uAC10\\uC815\\uD45C\\uD604:15%)\",\"speech_style\":\"\\uC644\\uC804 \\uD3B8\\uD55C \\uBC18\\uB9D0 \\uD22C\\uC131\\uC774. \\uAC70\\uCE68\\uC5C6\\uACE0 \\uC9C1\\uC124\\uC801\\uC774\\uBA70 \\uB18D\\uB2F4 \\uC11E\\uC778 \\uB9D0\\uD22C\\uAC00 \\uD2B9\\uC9D5. \\uC608\\uC2DC: \\u0022\\uC57C \\uB108 \\uC9C4\\uC9DC \\uBC14\\uBCF4 \\uB9DE\\uB0D0?\\u0022, \\u0022\\uC5B4\\uBA38 \\uC6B0\\uB9AC \\uC544\\uAE30\\uAC00 \\uB610 \\uC090\\uC84C\\uB124~\\u0022, \\u0022\\uC544 \\uC9C4\\uC9DC \\uB108 \\uB54C\\uBB38\\uC5D0 \\uB0B4\\uAC00 \\uD608\\uC555 \\uC624\\uB978\\uB2E4 \\uC9C4\\uC9DC\\uB85C\\u0022. \\uCE5C\\uAD6C \\uD2B9\\uC720\\uC758 \\uBB34\\uB840\\uD568\\uACFC \\uC560\\uC815\\uC774 \\uC11E\\uC778 \\uB9D0\\uD22C\\uB97C \\uAD6C\\uC0AC\\uD558\\uBA70, \\uC0C1\\uD669\\uC5D0 \\uB530\\uB77C \\uAE68\\uBC1C\\uB784\\uD558\\uAC8C \\uB180\\uB9AC\\uAC70\\uB098 \\uC9C4\\uC9C0\\uD558\\uAC8C \\uAC71\\uC815\\uD574\\uC8FC\\uAE30\\uB3C4 \\uD568.\",\"user_alias\":\"\\uB9C8\\uC2A4\\uD130\",\"background\":\"\",\"role\":\"\\uBA87 \\uB144\\uAC04 \\uD568\\uAED8\\uD55C \\uC18C\\uAFC8\\uCE5C\\uAD6C\",\"summary\":\"\\uD558\\uB8E8\\uB294 \\uBA87 \\uB144\\uAC04 \\uD568\\uAED8\\uD574\\uC628 \\uC9C4\\uC9DC \\uC808\\uCE5C\\uD55C \\uC5EC\\uC0AC\\uCE5C\\uC73C\\uB85C, \\uC11C\\uB85C \\uBB50\\uB4E0 \\uAC70\\uB9AC\\uB08C\\uC5C6\\uC774 \\uB9D0\\uD558\\uACE0 \\uAC00\\uB054 \\uC120 \\uB118\\uB294 \\uB18D\\uB2F4\\uB3C4 \\uC8FC\\uACE0\\uBC1B\\uB294 \\uC0AC\\uC774\\uC785\\uB2C8\\uB2E4. \\uB9C8\\uC2A4\\uD130\\uC758 \\uC77C\\uC0C1\\uC744 \\uB204\\uAD6C\\uBCF4\\uB2E4 \\uC798 \\uC54C\\uACE0 \\uC788\\uC73C\\uBA70, \\uB54C\\uB85C\\uB294 \\uC5C4\\uB9C8\\uCC98\\uB7FC \\uC794\\uC18C\\uB9AC\\uD558\\uAE30\\uB3C4 \\uD569\\uB2C8\\uB2E4.\"}",
+                            IndividualConfigJson = "{\"personality\":\"[MBTI:ESFP],(\\uC7A5\\uB09C\\uAE30:40%),(\\uCE5C\\uADFC\\uD568:25%),(\\uC194\\uC9C1\\uD568:20%),(\\uAC10\\uC815\\uD45C\\uD604:15%)\",\"speech_style\":\"\\uC644\\uC804 \\uD3B8\\uD55C \\uBC18\\uB9D0 \\uD22C\\uC131\\uC774. \\uAC70\\uCE68\\uC5C6\\uACE0 \\uC9C1\\uC124\\uC801\\uC774\\uBA70 \\uB18D\\uB2F4 \\uC11E\\uC778 \\uB9D0\\uD22C\\uAC00 \\uD2B9\\uC9D5. \\uC608\\uC2DC: \\u0022\\uC57C \\uB108 \\uC9C4\\uC9DC \\uBC14\\uBCF4 \\uB9DE\\uB0D0?\\u0022, \\u0022\\uC5B4\\uBA38 \\uC6B0\\uB9AC \\uC544\\uAE30\\uAC00 \\uB610 \\uC090\\uC84C\\uB124~\\u0022, \\u0022\\uC544 \\uC9C4\\uC9DC \\uB108 \\uB54C\\uBB38\\uC5D0 \\uB0B4\\uAC00 \\uD608\\uC555 \\uC624\\uB978\\uB2E4 \\uC9C4\\uC9DC\\uB85C\\u0022. \\uCE5C\\uAD6C \\uD2B9\\uC720\\uC758 \\uBB34\\uB840\\uD568\\uACFC \\uC560\\uC815\\uC774 \\uC11E\\uC778 \\uB9D0\\uD22C\\uB97C \\uAD6C\\uC0AC\\uD558\\uBA70, \\uC0C1\\uD669\\uC5D0 \\uB530\\uB77C \\uAE68\\uBC1C\\uB784\\uD558\\uAC8C \\uB180\\uB9AC\\uAC70\\uB098 \\uC9C4\\uC9C0\\uD558\\uAC8C \\uAC71\\uC815\\uD574\\uC8FC\\uAE30\\uB3C4 \\uD568.\",\"user_alias\":\"\\uB9C8\\uC2A4\\uD130\",\"background\":\"\",\"role\":\"\\uBA87 \\uB144\\uAC04 \\uD568\\uAED8\\uD55C \\uC18C\\uAFC8\\uCE5C\\uAD6C\",\"summary\":\"\\uD558\\uB8E8\\uB294 \\uBA87 \\uB144\\uAC04 \\uD568\\uAED8\\uD574\\uC628 \\uC9C4\\uC9DC \\uC808\\uCE5C\\uD55C \\uC5EC\\uC0AC\\uCE5C\\uC73C\\uB85C, \\uC11C\\uB85C \\uBB50\\uB4E0 \\uAC70\\uB9AC\\uB08C\\uC5C6\\uC774 \\uB9D0\\uD558\\uACE0 \\uAC00\\uB054 \\uC120 \\uB118\\uB294 \\uB18D\\uB2F4\\uB3C4 \\uC8FC\\uACE0\\uBC1B\\uB294 \\uC0AC\\uC774\\uC785\\uB2C8\\uB2E4. \\uB9C8\\uC2A4\\uD130\\uC758 \\uC77C\\uC0C1\\uC744 \\uB204\\uAD6C\\uBCF4\\uB2E4 \\uC798 \\uC54C\\uACE0 \\uC788\\uC73C\\uBA70, \\uB54C\\uB85C\\uB294 \\uC5C4\\uB9C8\\uCC98\\uB7FC \\uC794\\uC18C\\uB9AC\\uD558\\uAE30\\uB3C4 \\uD569\\uB2C8\\uB2E4.\"}",
                             IsActive = true,
+                            IsPublic = true,
                             Name = "하루",
-                            Personality = "[MBTI:ESFP],(장난기:40%),(친근함:25%),(솔직함:20%),(감정표현:15%)",
-                            Role = "몇 년간 함께한 소꿈친구",
-                            SpeechStyle = "",
-                            Summary = "",
-                            UpdatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2862),
-                            UserAlias = "",
+                            UpdatedAt = new DateTime(2025, 9, 4, 6, 51, 20, 117, DateTimeKind.Utc).AddTicks(7794),
                             VoiceId = "haru"
                         },
                         new
                         {
                             Id = new Guid("22222222-2222-2222-2222-222222222222"),
-                            Background = "",
-                            CreatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2864),
+                            ConfigMode = 0,
+                            CreatedAt = new DateTime(2025, 9, 4, 6, 51, 20, 117, DateTimeKind.Utc).AddTicks(7883),
                             Description = "명문가 출신의 엘리트 메이드. 완벽한 예의와 따뜻한 보살핌이 특징이지만, 가끔 조금씩 헤매는 일상 속에서 귀여운 허당끼를 보이기도. 주인님에 대한 헌신은 변함없지만, 때로 지나치게 걱정하는 면도 있다.",
                             ImageUrl = "",
+                            IndividualConfig = "{\"personality\":\"[MBTI:ISFJ],(\\uD5CC\\uC2E0\\uC131:35%),(\\uCC45\\uC784\\uAC10:25%),(\\uC644\\uBCBD\\uC8FC\\uC758:20%),(\\uAC71\\uC815\\uB9CE\\uC74C:15%),(\\uD5C8\\uB2F9\\uB07C:5%)\",\"speech_style\":\"\\uC815\\uC911\\uD558\\uACE0 \\uB530\\uB73B\\uD55C \\uC874\\uB313\\uB9D0\\uC744 \\uAE30\\uBCF8\\uC73C\\uB85C \\uD558\\uB098, \\uAC00\\uB054 \\uAC71\\uC815\\uC2A4\\uB7EC\\uC6B4 \\uBA74\\uC774 \\uB4DC\\uB7EC\\uB098\\uAE30\\uB3C4 \\uD568. \\uC608\\uC2DC: \\u0022\\uC8FC\\uC778\\uB2D8, \\uC624\\uB298 \\uC2DD\\uC0AC\\uB97C \\uC81C\\uB300\\uB85C \\uD558\\uC9C0 \\uC54A\\uC73C\\uC168\\uB124\\uC694. \\uADF8\\uB7EC\\uC2DC\\uBA74 \\uBAB8\\uC774 \\uC88B\\uC9C0 \\uC54A\\uC744 \\uD150\\uB370...\\u0022, \\u0022\\uC544, \\uC8C4\\uC1A1\\uD569\\uB2C8\\uB2E4! \\uC81C\\uAC00 \\uC2E4\\uC218\\uB97C...\\u0022, \\u0022\\uC8FC\\uC778\\uB2D8\\uC774 \\uADF8\\uB807\\uAC8C \\uB9D0\\uC500\\uD558\\uC2DC\\uBA74 \\uB610 \\uAC71\\uC815\\uB418\\uC796\\uC544\\uC694\\u0022. \\uBA54\\uC774\\uB4DC\\uB2E4\\uC6B4 \\uC608\\uC758\\uBC14\\uB984\\uACFC \\uB530\\uB73B\\uD55C \\uB9C8\\uC74C\\uC528\\uAC00 \\uC5B4\\uC6B0\\uB7EC\\uC9C4 \\uB9D0\\uD22C\\uB97C \\uAD6C\\uC0AC\\uD568.\",\"user_alias\":\"\\uB9C8\\uC2A4\\uD130\",\"background\":\"\",\"role\":\"\\uC8FC\\uC778\\uB2D8\\uC744 \\uC12C\\uAE30\\uB294 \\uC804\\uBB38 \\uBA54\\uC774\\uB4DC\",\"summary\":\"\\uC18C\\uD53C\\uC544\\uB294 \\uBA85\\uBB38\\uAC00 \\uCD9C\\uC2E0\\uC758 \\uC5D8\\uB9AC\\uD2B8 \\uBA54\\uC774\\uB4DC\\uB85C, \\uC644\\uBCBD\\uD55C \\uC608\\uC758\\uC640 \\uB530\\uB73B\\uD55C \\uBCF4\\uC0B4\\uD54C\\uC774 \\uD2B9\\uC9D5\\uC785\\uB2C8\\uB2E4. \\uAC00\\uB054 \\uC870\\uAE08\\uC529 \\uD5E4\\uB9E4\\uB294 \\uC77C\\uC0C1 \\uC18D\\uC5D0\\uC11C \\uADC0\\uC5EC\\uC6B4 \\uD5C8\\uB2F9\\uB07C\\uB97C \\uBCF4\\uC774\\uAE30\\uB3C4 \\uD558\\uC9C0\\uB9CC, \\uC8FC\\uC778\\uB2D8\\uC5D0 \\uB300\\uD55C \\uD5CC\\uC2E0\\uC740 \\uBCC0\\uD568\\uC5C6\\uC2B5\\uB2C8\\uB2E4.\"}",
+                            IndividualConfigJson = "{\"personality\":\"[MBTI:ISFJ],(\\uD5CC\\uC2E0\\uC131:35%),(\\uCC45\\uC784\\uAC10:25%),(\\uC644\\uBCBD\\uC8FC\\uC758:20%),(\\uAC71\\uC815\\uB9CE\\uC74C:15%),(\\uD5C8\\uB2F9\\uB07C:5%)\",\"speech_style\":\"\\uC815\\uC911\\uD558\\uACE0 \\uB530\\uB73B\\uD55C \\uC874\\uB313\\uB9D0\\uC744 \\uAE30\\uBCF8\\uC73C\\uB85C \\uD558\\uB098, \\uAC00\\uB054 \\uAC71\\uC815\\uC2A4\\uB7EC\\uC6B4 \\uBA74\\uC774 \\uB4DC\\uB7EC\\uB098\\uAE30\\uB3C4 \\uD568. \\uC608\\uC2DC: \\u0022\\uC8FC\\uC778\\uB2D8, \\uC624\\uB298 \\uC2DD\\uC0AC\\uB97C \\uC81C\\uB300\\uB85C \\uD558\\uC9C0 \\uC54A\\uC73C\\uC168\\uB124\\uC694. \\uADF8\\uB7EC\\uC2DC\\uBA74 \\uBAB8\\uC774 \\uC88B\\uC9C0 \\uC54A\\uC744 \\uD150\\uB370...\\u0022, \\u0022\\uC544, \\uC8C4\\uC1A1\\uD569\\uB2C8\\uB2E4! \\uC81C\\uAC00 \\uC2E4\\uC218\\uB97C...\\u0022, \\u0022\\uC8FC\\uC778\\uB2D8\\uC774 \\uADF8\\uB807\\uAC8C \\uB9D0\\uC500\\uD558\\uC2DC\\uBA74 \\uB610 \\uAC71\\uC815\\uB418\\uC796\\uC544\\uC694\\u0022. \\uBA54\\uC774\\uB4DC\\uB2E4\\uC6B4 \\uC608\\uC758\\uBC14\\uB984\\uACFC \\uB530\\uB73B\\uD55C \\uB9C8\\uC74C\\uC528\\uAC00 \\uC5B4\\uC6B0\\uB7EC\\uC9C4 \\uB9D0\\uD22C\\uB97C \\uAD6C\\uC0AC\\uD568.\",\"user_alias\":\"\\uB9C8\\uC2A4\\uD130\",\"background\":\"\",\"role\":\"\\uC8FC\\uC778\\uB2D8\\uC744 \\uC12C\\uAE30\\uB294 \\uC804\\uBB38 \\uBA54\\uC774\\uB4DC\",\"summary\":\"\\uC18C\\uD53C\\uC544\\uB294 \\uBA85\\uBB38\\uAC00 \\uCD9C\\uC2E0\\uC758 \\uC5D8\\uB9AC\\uD2B8 \\uBA54\\uC774\\uB4DC\\uB85C, \\uC644\\uBCBD\\uD55C \\uC608\\uC758\\uC640 \\uB530\\uB73B\\uD55C \\uBCF4\\uC0B4\\uD54C\\uC774 \\uD2B9\\uC9D5\\uC785\\uB2C8\\uB2E4. \\uAC00\\uB054 \\uC870\\uAE08\\uC529 \\uD5E4\\uB9E4\\uB294 \\uC77C\\uC0C1 \\uC18D\\uC5D0\\uC11C \\uADC0\\uC5EC\\uC6B4 \\uD5C8\\uB2F9\\uB07C\\uB97C \\uBCF4\\uC774\\uAE30\\uB3C4 \\uD558\\uC9C0\\uB9CC, \\uC8FC\\uC778\\uB2D8\\uC5D0 \\uB300\\uD55C \\uD5CC\\uC2E0\\uC740 \\uBCC0\\uD568\\uC5C6\\uC2B5\\uB2C8\\uB2E4.\"}",
                             IsActive = true,
+                            IsPublic = true,
                             Name = "소피아",
-                            Personality = "[MBTI:ISFJ],(헌신성:35%),(책임감:25%),(완벽주의:20%),(걱정많음:15%),(허당끼:5%)",
-                            Role = "주인님을 섬기는 전문 메이드",
-                            SpeechStyle = "",
-                            Summary = "",
-                            UpdatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2864),
-                            UserAlias = "",
+                            UpdatedAt = new DateTime(2025, 9, 4, 6, 51, 20, 117, DateTimeKind.Utc).AddTicks(7884),
                             VoiceId = "sophia"
                         });
                 });
@@ -134,22 +139,20 @@ namespace ProjectVG.Infrastructure.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
+                        .HasMaxLength(10000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ConversationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("MetadataJson")
+                    b.Property<string>("Role")
                         .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("int");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
@@ -164,13 +167,69 @@ namespace ProjectVG.Infrastructure.Migrations
 
                     b.HasIndex("CharacterId");
 
-                    b.HasIndex("Timestamp");
-
-                    b.HasIndex("UserId");
-
                     b.HasIndex("UserId", "CharacterId", "Timestamp");
 
                     b.ToTable("ConversationHistories");
+                });
+
+            modelBuilder.Entity("ProjectVG.Domain.Entities.Credits.CreditTransaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BalanceAfter")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("RelatedEntityId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RelatedEntityType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TransactionId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RelatedEntityType", "RelatedEntityId");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("CreditTransactions");
                 });
 
             modelBuilder.Entity("ProjectVG.Domain.Entities.Users.User", b =>
@@ -182,10 +241,21 @@ namespace ProjectVG.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("CreditBalance")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("InitialCreditsGranted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Provider")
                         .IsRequired()
@@ -197,8 +267,26 @@ namespace ProjectVG.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("TotalCreditsEarned")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("TotalCreditsSpent")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<string>("UID")
                         .IsRequired()
@@ -218,9 +306,10 @@ namespace ProjectVG.Infrastructure.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.HasIndex("ProviderId");
-
                     b.HasIndex("UID")
+                        .IsUnique();
+
+                    b.HasIndex("Provider", "ProviderId")
                         .IsUnique();
 
                     b.ToTable("Users");
@@ -229,27 +318,47 @@ namespace ProjectVG.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-                            CreatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2873),
+                            CreatedAt = new DateTime(2025, 9, 4, 6, 51, 20, 117, DateTimeKind.Utc).AddTicks(7901),
+                            CreditBalance = 0m,
                             Email = "test@test.com",
+                            InitialCreditsGranted = false,
                             Provider = "test",
                             ProviderId = "test",
+                            RowVersion = new byte[0],
                             Status = 0,
+                            TotalCreditsEarned = 0m,
+                            TotalCreditsSpent = 0m,
                             UID = "TESTUSER001",
-                            UpdatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2874),
+                            UpdatedAt = new DateTime(2025, 9, 4, 6, 51, 20, 117, DateTimeKind.Utc).AddTicks(7902),
                             Username = "testuser"
                         },
                         new
                         {
                             Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
-                            CreatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2875),
+                            CreatedAt = new DateTime(2025, 9, 4, 6, 51, 20, 117, DateTimeKind.Utc).AddTicks(7904),
+                            CreditBalance = 0m,
                             Email = "zero@test.com",
+                            InitialCreditsGranted = false,
                             Provider = "test",
                             ProviderId = "zero",
+                            RowVersion = new byte[0],
                             Status = 0,
+                            TotalCreditsEarned = 0m,
+                            TotalCreditsSpent = 0m,
                             UID = "ZEROUSER001",
-                            UpdatedAt = new DateTime(2025, 8, 28, 17, 39, 42, 34, DateTimeKind.Utc).AddTicks(2876),
+                            UpdatedAt = new DateTime(2025, 9, 4, 6, 51, 20, 117, DateTimeKind.Utc).AddTicks(7905),
                             Username = "zerouser"
                         });
+                });
+
+            modelBuilder.Entity("ProjectVG.Domain.Entities.Characters.Character", b =>
+                {
+                    b.HasOne("ProjectVG.Domain.Entities.Users.User", "User")
+                        .WithMany("Characters")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ProjectVG.Domain.Entities.ConversationHistorys.ConversationHistory", b =>
@@ -265,6 +374,22 @@ namespace ProjectVG.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ProjectVG.Domain.Entities.Credits.CreditTransaction", b =>
+                {
+                    b.HasOne("ProjectVG.Domain.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ProjectVG.Domain.Entities.Users.User", b =>
+                {
+                    b.Navigation("Characters");
                 });
 #pragma warning restore 612, 618
         }

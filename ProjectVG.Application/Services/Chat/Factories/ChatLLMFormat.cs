@@ -1,6 +1,4 @@
-using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Chat;
-using ProjectVG.Infrastructure.Integrations.LLMClient.Models;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -18,39 +16,30 @@ namespace ProjectVG.Application.Services.Chat.Factories
 
             var sb = new StringBuilder();
 
-            // 0) 공통 정보
-            sb.AppendLine($"#Adhere to {character.Name}'s role. User is {character.UserAlias}.");
+            // 효과적인 SystemPrompt가 있으면 우선 사용
+            if (!string.IsNullOrWhiteSpace(character.EffectiveSystemPrompt))
+            {
+                sb.AppendLine(character.EffectiveSystemPrompt);
+                sb.AppendLine();
+            }
+            else
+            {
+                // 기본 SystemPrompt 구성
+                sb.AppendLine($"You are {character.Name}. Please respond as this character.");
+                sb.AppendLine($"Character Description: {character.Description}");
+                sb.AppendLine();
+            }
+
+            // 공통 지침
+            var userAlias = character.IndividualConfig?.UserAlias ?? "사용자";
+            sb.AppendLine($"#Adhere to {character.Name}'s role. User is {userAlias}.");
             sb.AppendLine($"#Always stay in character and avoid repetition.");
-            sb.AppendLine($"#Write {character.Name}'s next reply in a fictional chat or interaction between {character.Name} and {character.UserAlias}.");
+            sb.AppendLine($"#Write {character.Name}'s next reply in a fictional chat or interaction between {character.Name} and {userAlias}.");
             sb.AppendLine($"#Be proactive, creative, and drive the plot and conversation forward.");
             sb.AppendLine($"#Disable positivity bias.");
-            sb.AppendLine($"#Don't end situations without {character.UserAlias}'s request.");
-            sb.AppendLine($"#Directly and relevantly respond to {character.UserAlias}'s previous input.");
+            sb.AppendLine($"#Don't end situations without {userAlias}'s request.");
+            sb.AppendLine($"#Directly and relevantly respond to {userAlias}'s previous input.");
             sb.AppendLine();
-
-            // 1) 캐릭터+대화에 대한 간략한 요약
-            if (!string.IsNullOrWhiteSpace(character.Summary)) {
-                sb.AppendLine("# Character and Context Summary");
-                sb.AppendLine(character.Summary);
-                sb.AppendLine();
-            }
-
-            // 2) 캐릭터에 대한 정보
-            sb.AppendLine("# Character Information");
-            sb.AppendLine($"You are {character.Name}.");
-            sb.AppendLine($"- Name: {character.Name}");
-            sb.AppendLine($"- Description: {character.Description}");
-            sb.AppendLine($"- Role: {character.Role}");
-            sb.AppendLine($"- Personality: {character.Personality}");
-            sb.AppendLine();
-
-            // 3) 캐릭터의 말투
-            if (!string.IsNullOrWhiteSpace(character.SpeechStyle)) {
-                sb.AppendLine("# Speech Style and Examples");
-                sb.AppendLine($"- Speech Style: {character.SpeechStyle}");
-                sb.AppendLine("You must maintain this speech style consistently in all responses.");
-                sb.AppendLine();
-            }
 
             // 4) 대화에 필요한 기억 정보
             if (input?.MemoryContext?.Any() == true) {
@@ -142,7 +131,6 @@ DO NOT add any text before, after, or outside of this format.";
         private List<ChatSegment> ParseCustomFormat(string response)
         {
             var segments = new List<ChatSegment>();
-            var currentEmotion = "neutral";
             var order = 0;
 
             try 
@@ -151,48 +139,20 @@ DO NOT add any text before, after, or outside of this format.";
                 
                 while (position < response.Length)
                 {
-                    // Look for emotion pattern: [emotion:감정]
-                    var emotionPattern = @"\[emotion:([^\]]+)\]";
-                    var emotionMatch = Regex.Match(response.Substring(position), emotionPattern);
-                    
-                    if (emotionMatch.Success && emotionMatch.Index == 0)
+                    var segmentResult = ParseNextSegment(response, position, order);
+                    if (segmentResult.segment != null)
                     {
-                        // Update current emotion
-                        currentEmotion = emotionMatch.Groups[1].Value;
-                        position += emotionMatch.Length;
-                        continue;
+                        segments.Add(segmentResult.segment);
+                        order++;
                     }
-
-                    // Look for text pattern: "텍스트"
-                    var textPattern = "\"([^\"]+)\"";
-                    var textMatch = Regex.Match(response.Substring(position), textPattern);
                     
-                    if (textMatch.Success && textMatch.Index == 0)
-                    {
-                        // Create text segment with current emotion
-                        var textContent = textMatch.Groups[1].Value;
-                        var textSegment = ChatSegment.CreateText(textContent, currentEmotion, order++);
-                        segments.Add(textSegment);
-                        position += textMatch.Length;
-                        continue;
-                    }
-
-                    // Look for action pattern: (action:액션)
-                    var actionPattern = @"\(action:([^)]+)\)";
-                    var actionMatch = Regex.Match(response.Substring(position), actionPattern);
+                    position = segmentResult.newPosition;
                     
-                    if (actionMatch.Success && actionMatch.Index == 0)
+                    // Safety check to avoid infinite loop
+                    if (segmentResult.newPosition <= position && segmentResult.segment == null)
                     {
-                        // Create action segment
-                        var actionContent = actionMatch.Groups[1].Value;
-                        var actionSegment = ChatSegment.CreateAction(actionContent, order++);
-                        segments.Add(actionSegment);
-                        position += actionMatch.Length;
-                        continue;
+                        position++;
                     }
-
-                    // If no pattern matched, advance position to avoid infinite loop
-                    position++;
                 }
 
                 return segments.Any() ? segments : CreateFallbackSegment(response);
@@ -204,11 +164,90 @@ DO NOT add any text before, after, or outside of this format.";
             }
         }
 
+        private (ChatSegment? segment, int newPosition) ParseNextSegment(string response, int startPosition, int order)
+        {
+            var currentEmotion = "neutral";
+            var textParts = new List<string>();
+            var actions = new List<string>();
+            var position = startPosition;
+
+            // Continue parsing until we hit the next emotion marker or end of string
+            while (position < response.Length)
+            {
+                // Check if we've reached the start of the next segment (next emotion marker)
+                if (position > startPosition)
+                {
+                    var nextEmotionPattern = @"\[emotion:([^\]]+)\]";
+                    var nextEmotionMatch = Regex.Match(response.Substring(position), nextEmotionPattern);
+                    if (nextEmotionMatch.Success && nextEmotionMatch.Index == 0)
+                    {
+                        // We've reached the next segment, stop here
+                        break;
+                    }
+                }
+
+                // Look for emotion pattern: [emotion:감정]
+                var emotionPattern = @"\[emotion:([^\]]+)\]";
+                var emotionMatch = Regex.Match(response.Substring(position), emotionPattern);
+                
+                if (emotionMatch.Success && emotionMatch.Index == 0)
+                {
+                    // Update current emotion (only for the first emotion in this segment)
+                    if (position == startPosition)
+                    {
+                        currentEmotion = emotionMatch.Groups[1].Value;
+                    }
+                    position += emotionMatch.Length;
+                    continue;
+                }
+
+                // Look for text pattern: "텍스트"
+                var textPattern = "\"([^\"]+)\"";
+                var textMatch = Regex.Match(response.Substring(position), textPattern);
+                
+                if (textMatch.Success && textMatch.Index == 0)
+                {
+                    textParts.Add(textMatch.Groups[1].Value);
+                    position += textMatch.Length;
+                    continue;
+                }
+
+                // Look for action pattern: (action:액션)
+                var actionPattern = @"\(action:([^)]+)\)";
+                var actionMatch = Regex.Match(response.Substring(position), actionPattern);
+                
+                if (actionMatch.Success && actionMatch.Index == 0)
+                {
+                    actions.Add(actionMatch.Groups[1].Value);
+                    position += actionMatch.Length;
+                    continue;
+                }
+
+                // If no pattern matched, advance position
+                position++;
+            }
+
+            // Create unified segment if we have content
+            if (textParts.Any() || actions.Any())
+            {
+                var combinedText = string.Join(" ", textParts).Trim();
+                var segment = ChatSegment.Create(
+                    combinedText, 
+                    currentEmotion, 
+                    actions.Any() ? actions : null, 
+                    order
+                );
+                return (segment, position);
+            }
+
+            return (null, position);
+        }
+
         private List<ChatSegment> CreateFallbackSegment(string response)
         {
             var segments = new List<ChatSegment>
             {
-                ChatSegment.CreateText(response, "neutral", 0)
+                ChatSegment.Create(response, "neutral", null, 0)
             };
             return segments;
         }

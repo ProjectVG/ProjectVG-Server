@@ -8,6 +8,9 @@ const ENDPOINT = `${currentHost}:${serverPort}`;
 const WS_URL = `ws://${ENDPOINT}/ws`;
 const HTTP_URL = `http://${ENDPOINT}/api/v1/chat`;
 const LOGIN_URL = `http://${ENDPOINT}/api/v1/auth/guest-login`;
+const CHARACTER_BASE_URL = `http://${ENDPOINT}/api/v1/character`;
+const CONVERSATION_BASE_URL = `http://${ENDPOINT}/api/v1/conversation`;
+const TOKEN_BASE_URL = `http://${ENDPOINT}/api/v1/credits`;
 const SERVER_MESSAGE_TYPE = "json";
 let ws = null;
 let reconnectAttempts = 0;
@@ -20,6 +23,7 @@ const statusBox = document.getElementById('status');
 const loginStatus = document.getElementById('login-status');
 const wsStatus = document.getElementById('ws-status');
 const sessionIdDisplay = document.getElementById('session-id');
+const creditBalanceDisplay = document.getElementById('credit-balance');
 const serverInfo = document.getElementById('server-info');
 const chatLog = document.getElementById('chat-log');
 const userInput = document.getElementById('user-input');
@@ -31,9 +35,80 @@ const loginBtn = document.getElementById('login-btn');
 const loginSection = document.getElementById('login-section');
 const includeAudioCheckbox = document.getElementById('include-audio');
 
+// 캐릭터 관리 관련 DOM 요소들
+const tabNavigation = document.getElementById('tab-navigation');
+const tabButtons = document.querySelectorAll('.tab-btn');
+const chatSection = document.getElementById('chat-section');
+const characterManagement = document.getElementById('character-management');
+const refreshCharactersBtn = document.getElementById('refresh-characters');
+
+// 캐릭터 탭 관련
+const characterTabButtons = document.querySelectorAll('.character-tab-btn');
+const myCharactersSection = document.getElementById('my-characters');
+const publicCharactersSection = document.getElementById('public-characters');
+const characterCreateSection = document.getElementById('character-create');
+const historySection = document.getElementById('history-section');
+
+// 캐릭터 리스트 관련
+const myCharacterList = document.getElementById('my-character-list');
+const publicCharacterList = document.getElementById('public-character-list');
+
+// 대화 기록 관련 DOM 요소들
+const historyCharacterSelect = document.getElementById('history-character-select');
+const historyPageSize = document.getElementById('history-page-size');
+const clearHistoryBtn = document.getElementById('clear-history-btn');
+const historyContent = document.getElementById('history-content');
+const historyLoading = document.getElementById('history-loading');
+const historyEmpty = document.getElementById('history-empty');
+const historyList = document.getElementById('history-list');
+const historyPagination = document.getElementById('history-pagination');
+const prevPageBtn = document.getElementById('prev-page-btn');
+const nextPageBtn = document.getElementById('next-page-btn');
+const pageInfo = document.getElementById('page-info');
+const mySortOrder = document.getElementById('my-sort-order');
+const publicSortOrder = document.getElementById('public-sort-order');
+
+// 캐릭터 생성 폼 관련
+const createNameInput = document.getElementById('create-name');
+const createDescriptionInput = document.getElementById('create-description');
+const createImageUrlInput = document.getElementById('create-image-url');
+const createVoiceIdInput = document.getElementById('create-voice-id');
+const createIsPublicCheckbox = document.getElementById('create-is-public');
+const configTabs = document.querySelectorAll('.config-tab');
+const individualConfigForm = document.getElementById('individual-config');
+const promptConfigForm = document.getElementById('prompt-config');
+const createCharacterBtn = document.getElementById('create-character-btn');
+const resetFormBtn = document.getElementById('reset-form-btn');
+
+// 개별 설정 폼 요소들
+const configRole = document.getElementById('config-role');
+const configPersonality = document.getElementById('config-personality');
+const configSpeechStyle = document.getElementById('config-speech-style');
+const configUserAlias = document.getElementById('config-user-alias');
+const configSummary = document.getElementById('config-summary');
+const configBackground = document.getElementById('config-background');
+
+// 시스템 프롬프트 폼 요소들
+const configSystemPrompt = document.getElementById('config-system-prompt');
+const promptCharCount = document.getElementById('prompt-char-count');
+
 const audioQueue = [];
 let isPlayingAudio = false;
 let serverConfig = null;
+
+// 캐릭터 관리 상태 변수들
+let currentTab = 'chat';
+let currentCharacterTab = 'list';
+let currentConfigMode = 'individual';
+let myCharacters = [];
+let publicCharacters = [];
+let selectedCharacterId = null;
+
+// 대화 기록 관련 상태 변수들
+let historyCharacters = [];
+let currentHistoryPage = 1;
+let totalHistoryPages = 1;
+let selectedHistoryCharacterId = null;
 
 // 서버 정보 표시
 serverInfo.textContent = ENDPOINT;
@@ -86,9 +161,16 @@ async function guestLogin() {
         updateSessionId(userId);
         
         loginSection.style.display = 'none';
+        tabNavigation.style.display = 'block';
+        
+        // 토큰 잔액 로드
+        await loadTokenBalance();
         
         // 로그인 성공 후 WebSocket 연결 시작
         connectWebSocket();
+        
+        // 캐릭터 목록 로드
+        loadCharacters();
       } else {
         throw new Error(data.message || '로그인 실패');
       }
@@ -311,8 +393,18 @@ function connectWebSocket() {
               }
             }
 
+            // 토큰 정보 업데이트 처리
+            if (chatData.credits_used !== undefined || chatData.credits_remaining !== undefined) {
+              updateTokenDisplay(chatData.credits_used, chatData.credits_remaining);
+            }
+
             if (messageText) {
               appendLog(messageText);
+              
+              // 토큰 사용량 표시 추가
+              if (chatData.credits_used) {
+                appendLog(`<small style='color:#9e9e9e'>[토큰 사용: ${chatData.credits_used}, 잔액: ${chatData.credits_remaining || 'N/A'}]</small>`);
+              }
             }
 
             // 메타데이터 표시 (개발용)
@@ -501,6 +593,796 @@ characterSelect.onchange = () => {
   chatLog.innerHTML = "";
   appendLog(`<i>[캐릭터 변경됨: ${characterSelect.options[characterSelect.selectedIndex].text}]</i>`);
 };
+
+// ========== 캐릭터 관리 기능 ==========
+
+// 탭 전환 기능
+function switchTab(tabName) {
+  currentTab = tabName;
+  
+  // 탭 버튼 활성화 상태 변경
+  tabButtons.forEach(btn => {
+    if (btn.dataset.tab === tabName) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // 탭 콘텐츠 표시/숨김
+  if (tabName === 'chat') {
+    chatSection.style.display = 'block';
+    characterManagement.style.display = 'none';
+    historySection.style.display = 'none';
+  } else if (tabName === 'characters') {
+    chatSection.style.display = 'none';
+    characterManagement.style.display = 'block';
+    historySection.style.display = 'none';
+  } else if (tabName === 'history') {
+    chatSection.style.display = 'none';
+    characterManagement.style.display = 'none';
+    historySection.style.display = 'block';
+    loadHistoryPage();
+  }
+}
+
+// 캐릭터 탭 전환 기능
+function switchCharacterTab(tabName) {
+  currentCharacterTab = tabName;
+  
+  // 캐릭터 탭 버튼 활성화 상태 변경
+  characterTabButtons.forEach(btn => {
+    if (btn.dataset.tab === tabName) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // 캐릭터 탭 콘텐츠 표시/숨김
+  const tabContents = document.querySelectorAll('.character-tab-content');
+  tabContents.forEach(content => {
+    content.style.display = 'none';
+  });
+
+  if (tabName === 'list') {
+    myCharactersSection.style.display = 'block';
+  } else if (tabName === 'public') {
+    publicCharactersSection.style.display = 'block';
+  } else if (tabName === 'create') {
+    characterCreateSection.style.display = 'block';
+  }
+}
+
+// 설정 모드 탭 전환
+function switchConfigMode(mode) {
+  currentConfigMode = mode;
+  
+  configTabs.forEach(tab => {
+    if (tab.dataset.mode === mode) {
+      tab.classList.add('active');
+    } else {
+      tab.classList.remove('active');
+    }
+  });
+
+  if (mode === 'individual') {
+    individualConfigForm.style.display = 'block';
+    promptConfigForm.style.display = 'none';
+  } else if (mode === 'prompt') {
+    individualConfigForm.style.display = 'none';
+    promptConfigForm.style.display = 'block';
+  }
+}
+
+// 캐릭터 목록 로드
+async function loadCharacters() {
+  try {
+    // 내 캐릭터 로드
+    await loadMyCharacters();
+    
+    // 공개 캐릭터 로드
+    await loadPublicCharacters();
+    
+    // 채팅용 캐릭터 드롭다운 업데이트
+    updateCharacterSelect();
+    
+  } catch (error) {
+    console.error('캐릭터 목록 로드 실패:', error);
+    appendLog(`<span style='color:red'>[캐릭터 로드 실패] ${error.message}</span>`);
+  }
+}
+
+// 내 캐릭터 로드
+async function loadMyCharacters() {
+  if (!authToken) return;
+  
+  const sortOrder = mySortOrder?.value || 'latest';
+  
+  try {
+    const response = await fetch(`${CHARACTER_BASE_URL}/my?orderBy=${sortOrder}`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+
+    if (response.ok) {
+      myCharacters = await response.json();
+      renderCharacterList(myCharacters, myCharacterList, true);
+      updateHistoryCharacterSelect(); // 대화 기록 캐릭터 목록 업데이트
+    } else {
+      console.error('내 캐릭터 로드 실패:', response.status);
+    }
+  } catch (error) {
+    console.error('내 캐릭터 로드 오류:', error);
+  }
+}
+
+// 공개 캐릭터 로드
+async function loadPublicCharacters() {
+  const sortOrder = publicSortOrder?.value || 'latest';
+  
+  try {
+    const response = await fetch(`${CHARACTER_BASE_URL}/public?orderBy=${sortOrder}`);
+
+    if (response.ok) {
+      publicCharacters = await response.json();
+      renderCharacterList(publicCharacters, publicCharacterList, false);
+    } else {
+      console.error('공개 캐릭터 로드 실패:', response.status);
+    }
+  } catch (error) {
+    console.error('공개 캐릭터 로드 오류:', error);
+  }
+}
+
+// 캐릭터 리스트 렌더링
+function renderCharacterList(characters, container, isMyCharacters = false) {
+  if (!container) return;
+  
+  if (characters.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <h4>${isMyCharacters ? '아직 만든 캐릭터가 없습니다' : '공개 캐릭터가 없습니다'}</h4>
+        <p>${isMyCharacters ? '새 캐릭터를 만들어보세요!' : '나중에 다시 확인해주세요.'}</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = characters.map(character => {
+    const isSystem = !character.created_by_user_id;
+    const isOwner = character.created_by_user_id === userId;
+    const badgeClass = isSystem ? 'badge-system' : 
+                      character.is_public ? 'badge-public' : 'badge-private';
+    const badgeText = isSystem ? 'SYSTEM' : 
+                      character.is_public ? 'PUBLIC' : 'PRIVATE';
+    
+    const createdDate = new Date(character.created_at || character.createdAt || Date.now());
+    const dateStr = createdDate.toLocaleDateString('ko-KR');
+    
+    return `
+      <div class="character-card ${selectedCharacterId === character.id ? 'selected' : ''}" 
+           onclick="selectCharacter('${character.id}', '${character.name}')">
+        <div class="character-header">
+          <h4 class="character-name">${character.name}</h4>
+          <div class="character-badges">
+            <span class="character-badge ${badgeClass}">${badgeText}</span>
+          </div>
+        </div>
+        <div class="character-description">${character.description || '설명이 없습니다.'}</div>
+        <div class="character-meta">
+          <span class="character-creator">
+            ${isSystem ? '시스템' : character.created_by_username || 'Unknown'}
+          </span>
+          <span class="character-date">${dateStr}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// 캐릭터 선택
+function selectCharacter(characterId, characterName) {
+  selectedCharacterId = characterId;
+  
+  // 채팅 탭으로 전환
+  switchTab('chat');
+  
+  // 캐릭터 드롭다운 업데이트
+  characterSelect.value = characterId;
+  
+  // 채팅 로그 초기화
+  chatLog.innerHTML = "";
+  appendLog(`<i>[캐릭터 선택됨: ${characterName}]</i>`);
+  
+  // 캐릭터 카드 선택 상태 업데이트
+  updateCharacterCardSelection();
+}
+
+// 캐릭터 카드 선택 상태 업데이트
+function updateCharacterCardSelection() {
+  const allCards = document.querySelectorAll('.character-card');
+  allCards.forEach(card => {
+    card.classList.remove('selected');
+  });
+  
+  const selectedCards = document.querySelectorAll(`[onclick*="${selectedCharacterId}"]`);
+  selectedCards.forEach(card => {
+    card.classList.add('selected');
+  });
+}
+
+// 채팅용 캐릭터 드롭다운 업데이트
+function updateCharacterSelect() {
+  if (!characterSelect) return;
+  
+  // 기존 옵션 제거
+  characterSelect.innerHTML = '<option value="">캐릭터를 선택하세요</option>';
+  
+  // 내 캐릭터 추가
+  if (myCharacters.length > 0) {
+    const myGroup = document.createElement('optgroup');
+    myGroup.label = '내 캐릭터';
+    myCharacters.forEach(character => {
+      const option = document.createElement('option');
+      option.value = character.id;
+      option.textContent = character.name;
+      myGroup.appendChild(option);
+    });
+    characterSelect.appendChild(myGroup);
+  }
+  
+  // 공개 캐릭터 추가 (내 캐릭터가 아닌 것만)
+  const publicNotMine = publicCharacters.filter(char => 
+    char.created_by_user_id !== userId
+  );
+  
+  if (publicNotMine.length > 0) {
+    const publicGroup = document.createElement('optgroup');
+    publicGroup.label = '공개 캐릭터';
+    publicNotMine.forEach(character => {
+      const option = document.createElement('option');
+      option.value = character.id;
+      option.textContent = character.name + 
+        (character.created_by_user_id ? '' : ' (시스템)');
+      publicGroup.appendChild(option);
+    });
+    characterSelect.appendChild(publicGroup);
+  }
+}
+
+// 캐릭터 생성 폼 리셋
+function resetCreateForm() {
+  createNameInput.value = '';
+  createDescriptionInput.value = '';
+  createImageUrlInput.value = '';
+  createVoiceIdInput.value = '';
+  createIsPublicCheckbox.checked = true;
+  
+  // 개별 설정 폼 리셋
+  configRole.value = '';
+  configPersonality.value = '';
+  configSpeechStyle.value = '';
+  configUserAlias.value = '';
+  configSummary.value = '';
+  configBackground.value = '';
+  
+  // 시스템 프롬프트 폼 리셋
+  configSystemPrompt.value = '';
+  updatePromptCharCount();
+  
+  // 설정 모드를 개별 설정으로 리셋
+  switchConfigMode('individual');
+}
+
+// 프롬프트 글자 수 업데이트
+function updatePromptCharCount() {
+  const count = configSystemPrompt.value.length;
+  promptCharCount.textContent = count;
+  
+  const counter = promptCharCount.parentElement;
+  counter.classList.remove('warning', 'error');
+  
+  if (count > 4500) {
+    counter.classList.add('error');
+  } else if (count > 4000) {
+    counter.classList.add('warning');
+  }
+}
+
+// 캐릭터 생성
+async function createCharacter() {
+  if (!authToken) {
+    alert('로그인이 필요합니다.');
+    return;
+  }
+  
+  // 폼 검증
+  const name = createNameInput.value.trim();
+  if (!name) {
+    alert('캐릭터 이름을 입력하세요.');
+    createNameInput.focus();
+    return;
+  }
+  
+  if (name.length > 100) {
+    alert('캐릭터 이름은 100자를 초과할 수 없습니다.');
+    createNameInput.focus();
+    return;
+  }
+  
+  const description = createDescriptionInput.value.trim();
+  if (description.length > 1000) {
+    alert('설명은 1000자를 초과할 수 없습니다.');
+    createDescriptionInput.focus();
+    return;
+  }
+  
+  createCharacterBtn.disabled = true;
+  createCharacterBtn.textContent = '생성 중...';
+  
+  try {
+    let payload = {
+      name: name,
+      description: description,
+      image_url: createImageUrlInput.value.trim(),
+      voice_id: createVoiceIdInput.value.trim(),
+      is_public: createIsPublicCheckbox.checked
+    };
+    
+    let endpoint, contentType = 'application/json';
+    
+    if (currentConfigMode === 'individual') {
+      // 개별 설정 모드
+      endpoint = `${CHARACTER_BASE_URL}/individual`;
+      payload.individual_config = {
+        role: configRole.value.trim(),
+        personality: configPersonality.value.trim(),
+        speech_style: configSpeechStyle.value.trim(),
+        user_alias: configUserAlias.value.trim(),
+        summary: configSummary.value.trim(),
+        background: configBackground.value.trim()
+      };
+    } else {
+      // 시스템 프롬프트 모드
+      endpoint = `${CHARACTER_BASE_URL}/systemprompt`;
+      const systemPrompt = configSystemPrompt.value.trim();
+      
+      if (!systemPrompt) {
+        alert('시스템 프롬프트를 입력하세요.');
+        configSystemPrompt.focus();
+        return;
+      }
+      
+      if (systemPrompt.length > 5000) {
+        alert('시스템 프롬프트는 5000자를 초과할 수 없습니다.');
+        configSystemPrompt.focus();
+        return;
+      }
+      
+      payload.system_prompt = systemPrompt;
+    }
+    
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': contentType,
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      appendLog(`<b>[캐릭터 생성 성공]</b> ${result.name}`);
+      
+      // 폼 리셋
+      resetCreateForm();
+      
+      // 캐릭터 목록 새로고침
+      await loadCharacters();
+      
+      // 내 캐릭터 탭으로 이동
+      switchCharacterTab('list');
+      
+    } else {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+    
+  } catch (error) {
+    console.error('캐릭터 생성 실패:', error);
+    alert(`캐릭터 생성 실패: ${error.message}`);
+  } finally {
+    createCharacterBtn.disabled = false;
+    createCharacterBtn.textContent = '캐릭터 생성';
+  }
+}
+
+// ========== 이벤트 리스너 설정 ==========
+
+// 탭 전환 이벤트
+tabButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    switchTab(btn.dataset.tab);
+  });
+});
+
+// 캐릭터 탭 전환 이벤트
+characterTabButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    switchCharacterTab(btn.dataset.tab);
+  });
+});
+
+// 설정 모드 탭 전환 이벤트
+configTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    switchConfigMode(tab.dataset.mode);
+  });
+});
+
+// 캐릭터 새로고침 버튼
+if (refreshCharactersBtn) {
+  refreshCharactersBtn.addEventListener('click', loadCharacters);
+}
+
+// 정렬 순서 변경 이벤트
+if (mySortOrder) {
+  mySortOrder.addEventListener('change', loadMyCharacters);
+}
+
+if (publicSortOrder) {
+  publicSortOrder.addEventListener('change', loadPublicCharacters);
+}
+
+// 캐릭터 생성 폼 이벤트
+if (createCharacterBtn) {
+  createCharacterBtn.addEventListener('click', createCharacter);
+}
+
+if (resetFormBtn) {
+  resetFormBtn.addEventListener('click', resetCreateForm);
+}
+
+// 프롬프트 글자 수 카운터
+if (configSystemPrompt) {
+  configSystemPrompt.addEventListener('input', updatePromptCharCount);
+}
+
+// ========== 대화 기록 관련 함수들 ==========
+
+// 대화 기록 캐릭터 목록 업데이트
+function updateHistoryCharacterSelect() {
+  if (!historyCharacterSelect) return;
+  
+  // 기존 옵션 제거 (첫 번째 "모든 캐릭터" 옵션 제외)
+  while (historyCharacterSelect.children.length > 1) {
+    historyCharacterSelect.removeChild(historyCharacterSelect.lastChild);
+  }
+  
+  // 내 캐릭터들을 드롭다운에 추가
+  myCharacters.forEach(character => {
+    const option = document.createElement('option');
+    option.value = character.id;
+    option.textContent = character.name;
+    historyCharacterSelect.appendChild(option);
+  });
+  
+  // 선택된 캐릭터가 있으면 설정
+  if (selectedHistoryCharacterId) {
+    historyCharacterSelect.value = selectedHistoryCharacterId;
+  }
+}
+
+// 대화 기록 로드
+async function loadHistoryPage(page = 1) {
+  if (!authToken) {
+    showHistoryEmpty('로그인이 필요합니다.');
+    return;
+  }
+  
+  showHistoryLoading();
+  
+  try {
+    const characterId = historyCharacterSelect.value;
+    const pageSize = historyPageSize.value || 10;
+    
+    if (!characterId) {
+      showHistoryEmpty('캐릭터를 선택해주세요.');
+      return;
+    }
+    
+    const url = `${CONVERSATION_BASE_URL}/${characterId}?page=${page}&pageSize=${pageSize}`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.messages || data.messages.length === 0) {
+      showHistoryEmpty('대화 기록이 없습니다.');
+      return;
+    }
+    
+    currentHistoryPage = data.currentPage;
+    totalHistoryPages = data.totalPages;
+    
+    renderHistoryList(data.messages, data);
+    updateHistoryPagination();
+    showHistoryContent();
+    
+  } catch (error) {
+    console.error('대화 기록 로드 실패:', error);
+    
+    let errorMessage = '대화 기록을 불러오는 중 오류가 발생했습니다.';
+    
+    if (error.message.includes('401')) {
+      errorMessage = '로그인이 필요합니다. 다시 로그인해주세요.';
+    } else if (error.message.includes('403')) {
+      errorMessage = '접근 권한이 없습니다.';
+    } else if (error.message.includes('404')) {
+      errorMessage = '선택한 캐릭터의 대화 기록이 없습니다.';
+    } else if (error.message.includes('500')) {
+      errorMessage = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    }
+    
+    showHistoryEmpty(errorMessage);
+  }
+}
+
+// 대화 기록 렌더링
+function renderHistoryList(messages, paginationData) {
+  if (!historyList) return;
+  
+  // 대화 세션별로 그룹화
+  const conversations = groupMessagesByConversation(messages);
+  
+  historyList.innerHTML = conversations.map(conversation => {
+    const characterName = getCharacterName(conversation.characterId);
+    const timestamp = new Date(conversation.timestamp).toLocaleString('ko-KR');
+    
+    return `
+      <div class="history-conversation">
+        <div class="history-conversation-header">
+          <div class="history-character-name">${characterName}</div>
+          <div class="history-timestamp">${timestamp}</div>
+        </div>
+        <div class="history-messages">
+          ${conversation.messages.map(message => `
+            <div class="history-message ${message.role}">
+              <div class="history-message-role">${message.role}</div>
+              <div class="history-message-content">${escapeHtml(message.content)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// 메시지를 대화별로 그룹화
+function groupMessagesByConversation(messages) {
+  const conversations = new Map();
+  
+  messages.forEach(message => {
+    const conversationId = message.conversationId || `${message.characterId}-${message.timestamp}`;
+    
+    if (!conversations.has(conversationId)) {
+      conversations.set(conversationId, {
+        conversationId,
+        characterId: message.characterId,
+        timestamp: message.timestamp,
+        messages: []
+      });
+    }
+    
+    conversations.get(conversationId).messages.push(message);
+  });
+  
+  return Array.from(conversations.values()).sort((a, b) => 
+    new Date(b.timestamp) - new Date(a.timestamp)
+  );
+}
+
+// 캐릭터 이름 가져오기
+function getCharacterName(characterId) {
+  const character = myCharacters.find(c => c.id === characterId);
+  return character ? character.name : '알 수 없는 캐릭터';
+}
+
+// 대화 기록 삭제
+async function deleteHistory(characterId) {
+  if (!authToken || !characterId) return;
+  
+  if (!confirm('정말로 이 캐릭터와의 모든 대화 기록을 삭제하시겠습니까?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${CONVERSATION_BASE_URL}/${characterId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      alert('대화 기록이 삭제되었습니다.');
+      loadHistoryPage(currentHistoryPage);
+    } else {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('대화 기록 삭제 실패:', error);
+    alert('대화 기록 삭제 중 오류가 발생했습니다.');
+  }
+}
+
+// UI 상태 관리 함수들
+function showHistoryLoading() {
+  if (historyLoading) historyLoading.style.display = 'block';
+  if (historyEmpty) historyEmpty.style.display = 'none';
+  if (historyList) historyList.style.display = 'none';
+  if (historyPagination) historyPagination.style.display = 'none';
+}
+
+function showHistoryEmpty(message = '대화 기록이 없습니다.') {
+  if (historyLoading) historyLoading.style.display = 'none';
+  if (historyEmpty) {
+    historyEmpty.style.display = 'block';
+    historyEmpty.innerHTML = `<span>${message}</span>`;
+  }
+  if (historyList) historyList.style.display = 'none';
+  if (historyPagination) historyPagination.style.display = 'none';
+  if (clearHistoryBtn) clearHistoryBtn.style.display = 'none';
+}
+
+function showHistoryContent() {
+  if (historyLoading) historyLoading.style.display = 'none';
+  if (historyEmpty) historyEmpty.style.display = 'none';
+  if (historyList) historyList.style.display = 'block';
+  if (historyPagination) historyPagination.style.display = 'flex';
+  if (clearHistoryBtn) clearHistoryBtn.style.display = historyCharacterSelect.value ? 'block' : 'none';
+}
+
+// 페이지네이션 업데이트
+function updateHistoryPagination() {
+  if (!pageInfo) return;
+  
+  pageInfo.textContent = `${currentHistoryPage} / ${totalHistoryPages}`;
+  
+  if (prevPageBtn) {
+    prevPageBtn.disabled = currentHistoryPage <= 1;
+  }
+  
+  if (nextPageBtn) {
+    nextPageBtn.disabled = currentHistoryPage >= totalHistoryPages;
+  }
+}
+
+// HTML 이스케이프
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ========== 대화 기록 이벤트 리스너들 ==========
+
+// 대화 기록 캐릭터 선택 변경
+if (historyCharacterSelect) {
+  historyCharacterSelect.addEventListener('change', () => {
+    selectedHistoryCharacterId = historyCharacterSelect.value;
+    currentHistoryPage = 1;
+    loadHistoryPage();
+  });
+}
+
+// 대화 기록 페이지 크기 변경
+if (historyPageSize) {
+  historyPageSize.addEventListener('change', () => {
+    currentHistoryPage = 1;
+    loadHistoryPage();
+  });
+}
+
+// 대화 기록 삭제 버튼
+if (clearHistoryBtn) {
+  clearHistoryBtn.addEventListener('click', () => {
+    const characterId = historyCharacterSelect.value;
+    if (characterId) {
+      deleteHistory(characterId);
+    }
+  });
+}
+
+// 페이지네이션 버튼들
+if (prevPageBtn) {
+  prevPageBtn.addEventListener('click', () => {
+    if (currentHistoryPage > 1) {
+      loadHistoryPage(currentHistoryPage - 1);
+    }
+  });
+}
+
+if (nextPageBtn) {
+  nextPageBtn.addEventListener('click', () => {
+    if (currentHistoryPage < totalHistoryPages) {
+      loadHistoryPage(currentHistoryPage + 1);
+    }
+  });
+}
+
+// ========== 토큰 관리 기능 ==========
+
+// 토큰 잔액 로드
+async function loadTokenBalance() {
+  if (!authToken) {
+    creditBalanceDisplay.textContent = '-';
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${TOKEN_BASE_URL}/balance`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      const balance = data.balance || data.tokenBalance || 0;
+      creditBalanceDisplay.textContent = balance.toLocaleString();
+      
+      // 낮은 잔액 경고
+      if (balance < 1000) {
+        creditBalanceDisplay.style.color = '#f44336'; // 빨간색
+      } else if (balance < 5000) {
+        creditBalanceDisplay.style.color = '#ff9800'; // 주황색
+      } else {
+        creditBalanceDisplay.style.color = '#28a745'; // 녹색
+      }
+    } else {
+      console.error('토큰 잔액 로드 실패:', response.status);
+      creditBalanceDisplay.textContent = 'Error';
+    }
+  } catch (error) {
+    console.error('토큰 잔액 로드 오류:', error);
+    creditBalanceDisplay.textContent = 'Error';
+  }
+}
+
+// 토큰 디스플레이 업데이트
+function updateTokenDisplay(creditsUsed, creditsRemaining) {
+  if (creditsRemaining !== undefined && creditsRemaining !== null) {
+    creditBalanceDisplay.textContent = creditsRemaining.toLocaleString();
+    
+    // 잔액에 따른 색상 변경
+    if (creditsRemaining < 1000) {
+      creditBalanceDisplay.style.color = '#f44336'; // 빨간색
+    } else if (creditsRemaining < 5000) {
+      creditBalanceDisplay.style.color = '#ff9800'; // 주황색
+    } else {
+      creditBalanceDisplay.style.color = '#28a745'; // 녹색
+    }
+    
+    // 낮은 잔액 경고
+    if (creditsRemaining < 500) {
+      appendLog(`<span style='color:#f44336'><b>[경고]</b> 토큰 잔액이 부족합니다 (잔액: ${creditsRemaining})</span>`);
+    }
+  }
+}
 
 // 초기화 - 로그인을 기다림
 appendLog('<b>[시작]</b> 게스트 ID를 입력하고 로그인하세요.');

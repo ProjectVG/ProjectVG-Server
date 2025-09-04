@@ -1,7 +1,5 @@
 using ProjectVG.Application.Services.Chat.Factories;
-using ProjectVG.Domain.Entities.ConversationHistorys;
 using ProjectVG.Infrastructure.Integrations.LLMClient;
-using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Chat;
 
 namespace ProjectVG.Application.Services.Chat.Preprocessors

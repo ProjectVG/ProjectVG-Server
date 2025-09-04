@@ -1,10 +1,10 @@
 namespace ProjectVG.Common.Models.Session
 {
-	public class SessionInfo
+	public record SessionInfo
 	{
-		public string SessionId { get; set; } = string.Empty;
-		public string? UserId { get; set; }
-		public DateTime ConnectedAt { get; set; } = DateTime.UtcNow;
+		public required string SessionId { get; init; }
+		public string? UserId { get; init; }
+		public DateTime ConnectedAt { get; init; } = DateTime.UtcNow;
 	}
 }
 

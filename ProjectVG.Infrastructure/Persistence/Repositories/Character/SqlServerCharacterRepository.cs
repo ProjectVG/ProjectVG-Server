@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ProjectVG.Domain.Entities.Characters;
+using ProjectVG.Domain.Repositories;
 using ProjectVG.Infrastructure.Persistence.EfCore;
 
 namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
@@ -34,7 +35,6 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
             character.Id = Guid.NewGuid();
             character.CreatedAt = DateTime.UtcNow;
             character.UpdatedAt = DateTime.UtcNow;
-            character.IsActive = true;
 
             _context.Characters.Add(character);
             await _context.SaveChangesAsync();
@@ -53,10 +53,13 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
 
             existingCharacter.Name = character.Name;
             existingCharacter.Description = character.Description;
-            existingCharacter.Role = character.Role;
-            existingCharacter.Personality = character.Personality;
-            existingCharacter.Background = character.Background;
+            existingCharacter.ImageUrl = character.ImageUrl;
+            existingCharacter.VoiceId = character.VoiceId;
             existingCharacter.IsActive = character.IsActive;
+            existingCharacter.IsPublic = character.IsPublic;
+            existingCharacter.ConfigMode = character.ConfigMode;
+            existingCharacter.IndividualConfigJson = character.IndividualConfigJson;
+            existingCharacter.SystemPrompt = character.SystemPrompt;
             existingCharacter.Update();
 
             await _context.SaveChangesAsync();
@@ -76,6 +79,22 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
             character.Update();
             await _context.SaveChangesAsync();
 
+        }
+
+        public async Task<IEnumerable<Character>> GetByUserIdAsync(Guid userId)
+        {
+            return await _context.Characters
+                .Include(c => c.User)
+                .Where(c => c.UserId == userId && c.IsActive)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Character>> GetPublicCharactersAsync()
+        {
+            return await _context.Characters
+                .Include(c => c.User)
+                .Where(c => c.IsPublic && c.IsActive)
+                .ToListAsync();
         }
     }
 }

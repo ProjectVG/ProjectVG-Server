@@ -3,6 +3,8 @@ using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Models.Character;
 using ProjectVG.Api.Models.Character.Request;
 using ProjectVG.Api.Models.Character.Response;
+using ProjectVG.Api.Filters;
+using System.Security.Claims;
 
 namespace ProjectVG.Api.Controllers
 {
@@ -17,6 +19,16 @@ namespace ProjectVG.Api.Controllers
         {
             _characterService = characterService;
             _logger = logger;
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst("user_id")?.Value;
+            if (Guid.TryParse(userIdClaim, out var userId))
+            {
+                return userId;
+            }
+            return null;
         }
 
         [HttpGet]
@@ -35,29 +47,81 @@ namespace ProjectVG.Api.Controllers
             return Ok(response);
         }
 
-        [HttpPost]
-        public async Task<ActionResult<CharacterResponse>> CreateCharacter([FromBody] CreateCharacterRequest request)
+        [HttpPost("individual")]
+        [JwtAuthentication]
+        public async Task<ActionResult<CharacterResponse>> CreateCharacterWithFields([FromBody] CreateCharacterWithFieldsRequest request)
         {
-            var command = request.ToCreateCharacterCommand();
-            var characterDto = await _characterService.CreateCharacterAsync(command);
+            var userId = GetCurrentUserId();
+            var command = request.ToCommand(userId);
+            var characterDto = await _characterService.CreateCharacterWithFieldsAsync(command);
             var response = CharacterResponse.ToResponseDto(characterDto);
             return CreatedAtAction(nameof(GetCharacterById), new { id = response.Id }, response);
         }
 
-        [HttpPut("{id}")]
-        public async Task<ActionResult<CharacterResponse>> UpdateCharacter(Guid id, [FromBody] UpdateCharacterRequest request)
+        [HttpPost("systemprompt")]
+        [JwtAuthentication]
+        public async Task<ActionResult<CharacterResponse>> CreateCharacterWithSystemPrompt([FromBody] CreateCharacterWithSystemPromptRequest request)
         {
-            var command = request.ToUpdateCharacterCommand();
-            var characterDto = await _characterService.UpdateCharacterAsync(id, command);
+            var userId = GetCurrentUserId();
+            var command = request.ToCommand(userId);
+            var characterDto = await _characterService.CreateCharacterWithSystemPromptAsync(command);
+            var response = CharacterResponse.ToResponseDto(characterDto);
+            return CreatedAtAction(nameof(GetCharacterById), new { id = response.Id }, response);
+        }
+
+        [HttpPut("{id}/individual")]
+        public async Task<ActionResult<CharacterResponse>> UpdateCharacterToIndividual(Guid id, [FromBody] UpdateCharacterToIndividualRequest request)
+        {
+            var command = request.ToCommand(id);
+            var characterDto = await _characterService.UpdateCharacterToIndividualAsync(command);
+            var response = CharacterResponse.ToResponseDto(characterDto);
+            return Ok(response);
+        }
+
+        [HttpPut("{id}/systemprompt")]
+        public async Task<ActionResult<CharacterResponse>> UpdateCharacterToSystemPrompt(Guid id, [FromBody] UpdateCharacterToSystemPromptRequest request)
+        {
+            var command = request.ToCommand(id);
+            var characterDto = await _characterService.UpdateCharacterToSystemPromptAsync(command);
             var response = CharacterResponse.ToResponseDto(characterDto);
             return Ok(response);
         }
 
         [HttpDelete("{id}")]
+        [JwtAuthentication]
         public async Task<ActionResult> DeleteCharacter(Guid id)
         {
-            await _characterService.DeleteCharacterAsync(id);
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            await _characterService.DeleteCharacterAsync(id, userId.Value);
             return NoContent();
+        }
+
+        [HttpGet("my")]
+        [JwtAuthentication]
+        public async Task<ActionResult<IEnumerable<CharacterResponse>>> GetMyCharacters([FromQuery] string orderBy = "latest")
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            var characterDtos = await _characterService.GetMyCharactersAsync(userId.Value, orderBy);
+            var responses = characterDtos.Select(CharacterResponse.ToResponseDto);
+            return Ok(responses);
+        }
+
+        [HttpGet("public")]
+        public async Task<ActionResult<IEnumerable<CharacterResponse>>> GetPublicCharacters([FromQuery] string orderBy = "latest")
+        {
+            var characterDtos = await _characterService.GetPublicCharactersAsync(orderBy);
+            var responses = characterDtos.Select(CharacterResponse.ToResponseDto);
+            return Ok(responses);
         }
     }
 } 

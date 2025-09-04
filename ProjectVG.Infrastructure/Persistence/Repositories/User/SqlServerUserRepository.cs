@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Infrastructure.Persistence.EfCore;
 using ProjectVG.Domain.Entities.Users;
+using ProjectVG.Domain.Repositories;
 using ProjectVG.Common.Exceptions;
 using ProjectVG.Common.Constants;
 

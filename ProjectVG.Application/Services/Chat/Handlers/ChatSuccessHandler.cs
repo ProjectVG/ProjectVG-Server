@@ -1,6 +1,7 @@
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Application.Services.WebSocket;
+using ProjectVG.Application.Services.Credit;
 
 
 namespace ProjectVG.Application.Services.Chat.Handlers
@@ -9,36 +10,114 @@ namespace ProjectVG.Application.Services.Chat.Handlers
     {
         private readonly ILogger<ChatSuccessHandler> _logger;
         private readonly IWebSocketManager _webSocketService;
+        private readonly ICreditManagementService _tokenManagementService;
 
         public ChatSuccessHandler(
         ILogger<ChatSuccessHandler> logger,
-        IWebSocketManager webSocketService)
+        IWebSocketManager webSocketService,
+        ICreditManagementService tokenManagementService)
         {
             _logger = logger;
             _webSocketService = webSocketService;
+            _tokenManagementService = tokenManagementService;
         }
 
         public async Task HandleAsync(ChatProcessContext context)
         {
-            foreach (var segment in context.Segments.OrderBy(s => s.Order)) {
-                if (segment.IsEmpty) continue;
+            try
+            {
+                var validSegments = context.Segments
+                    .Where(s => !s.IsEmpty)
+                    .OrderBy(s => s.Order)
+                    .ToList();
 
-                var integratedMessage = new IntegratedChatMessage {
-                    SessionId = context.SessionId,
-                    Text = segment.Content,
-                    AudioFormat = segment.AudioContentType ?? "wav",
-                    AudioLength = segment.AudioLength,
-                    Timestamp = DateTime.UtcNow
-                };
+                if (!validSegments.Any())
+                {
+                    _logger.LogWarning("채팅 처리 결과에 유효한 세그먼트가 없습니다: 요청 {RequestId}", context.RequestId);
+                    return;
+                }
 
-                integratedMessage.SetAudioData(segment.AudioData);
+                var requestId = context.RequestId.ToString();
+                var userId = context.UserId.ToString();
 
-                var wsMessage = new WebSocketMessage("chat", integratedMessage);
-                await _webSocketService.SendAsync(context.UserId.ToString(), wsMessage);
+                // 토큰 차감 및 잔액 정보 수집
+                decimal? tokensUsed = null;
+                decimal? tokensRemaining = null;
+                
+                if (context.Cost > 0)
+                {
+                    var tokenDeductionResult = await DeductTokensForChatAsync(context);
+                    if (tokenDeductionResult.Success)
+                    {
+                        tokensUsed = (decimal)context.Cost;
+                        tokensRemaining = tokenDeductionResult.BalanceAfter;
+                    }
+                }
+
+                foreach (var segment in validSegments)
+                {
+                    try
+                    {
+                        var message = ChatProcessResultMessage.FromSegment(segment, requestId)
+                            .WithCreditInfo(tokensUsed, tokensRemaining);
+                        var wsMessage = new WebSocketMessage("chat", message);
+                        
+                        await _webSocketService.SendAsync(userId, wsMessage);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "세그먼트 전송 실패: 사용자 {UserId}, 세그먼트 순서 {Order}", 
+                            userId, segment.Order);
+                        throw;
+                    }
+                }
+
+                _logger.LogDebug("채팅 결과 전송 완료: 요청 {RequestId}, 세그먼트 {SegmentCount}개, 토큰 사용: {CreditsUsed}, 잔액: {CreditsRemaining}",
+                    context.RequestId, validSegments.Count, tokensUsed, tokensRemaining);
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "채팅 결과 전송 중 오류 발생: 요청 {RequestId}", context.RequestId);
+                throw;
+            }
+        }
 
-            _logger.LogDebug("채팅 결과 전송 완료: 세션 {UserId}, 세그먼트 {SegmentCount}개",
-                context.SessionId, context.Segments.Count(s => !s.IsEmpty));
+        /// <summary>
+        /// 채팅 처리를 위한 토큰 차감
+        /// </summary>
+        private async Task<CreditTransactionResult> DeductTokensForChatAsync(ChatProcessContext context)
+        {
+            try
+            {
+                var transactionId = $"CHAT_{context.RequestId}_{DateTime.UtcNow:yyyyMMddHHmmss}";
+                var result = await _tokenManagementService.DeductCreditsAsync(
+                    context.UserId,
+                    (decimal)context.Cost,
+                    transactionId,
+                    "CHAT_USAGE",
+                    $"채팅 사용료 - 캐릭터: {context.CharacterId}",
+                    context.RequestId.ToString(),
+                    "ChatSession"
+                );
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("채팅 토큰 차감 완료: {UserId}, 차감 토큰: {Cost}, 잔액: {Balance}",
+                        context.UserId, context.Cost, result.BalanceAfter);
+                }
+                else
+                {
+                    _logger.LogError("채팅 토큰 차감 실패: {UserId}, 에러: {Error}",
+                        context.UserId, result.ErrorMessage);
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "채팅 토큰 차감 처리 중 예외 발생: {RequestId}", context.RequestId);
+                return CreditTransactionResult.CreateFailure($"토큰 차감 처리 중 예외 발생: {ex.Message}");
+            }
         }
     }
 }

@@ -42,22 +42,12 @@ namespace ProjectVG.Application.Services.Auth
         Task DeleteTokenDataAsync(string state);
 
         /// <summary>
-        /// OAuth2 인증 코드를 액세스 토큰으로 교환
+        /// 상태값으로 저장된 OAuth2 토큰 데이터를 원자적으로 소비 (조회 후 삭제)
         /// </summary>
-        /// <param name="code">인증 코드</param>
-        /// <param name="clientId">클라이언트 ID</param>
-        /// <param name="redirectUri">리다이렉트 URI</param>
-        /// <param name="codeVerifier">PKCE code verifier (선택적)</param>
-        /// <returns>토큰 교환 결과</returns>
-        Task<TokenResponse> ExchangeAuthorizationCodeAsync(string code, string clientId, string redirectUri, string codeVerifier = "");
-        
-        /// <summary>
-        /// OAuth2 제공자에서 사용자 정보 조회
-        /// </summary>
-        /// <param name="accessToken">OAuth2 액세스 토큰</param>
-        /// <param name="provider">제공자명 (google, apple)</param>
-        /// <returns>사용자 정보</returns>
-        Task<OAuth2UserInfo> GetUserInfoAsync(string accessToken, string provider);
+        /// <param name="state">상태값</param>
+        /// <returns>토큰 데이터 (없으면 null)</returns>
+        Task<OAuth2TokenData?> ConsumeTokenDataAsync(string state);
+
         
         /// <summary>
         /// OAuth2 요청 정보 저장 (임시 저장소)

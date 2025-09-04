@@ -1,6 +1,6 @@
 using ProjectVG.Domain.Entities.Characters;
 
-namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
+namespace ProjectVG.Domain.Repositories
 {
     public interface ICharacterRepository
     {
@@ -9,5 +9,7 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
         Task<Character> CreateAsync(Character character);
         Task<Character> UpdateAsync(Character character);
         Task DeleteAsync(Guid id);
+        Task<IEnumerable<Character>> GetByUserIdAsync(Guid userId);
+        Task<IEnumerable<Character>> GetPublicCharactersAsync();
     }
-} 
+}

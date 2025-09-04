@@ -5,7 +5,7 @@ using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Common.Constants;
 using ProjectVG.Common.Exceptions;
 using ProjectVG.Domain.Entities.ConversationHistorys;
-using ProjectVG.Infrastructure.Persistence.Repositories.Conversation;
+using ProjectVG.Domain.Repositories;
 using Xunit;
 
 namespace ProjectVG.Tests.Application.Services.Conversation
@@ -35,7 +35,7 @@ namespace ProjectVG.Tests.Application.Services.Conversation
             // Arrange
             var userId = Guid.NewGuid();
             var characterId = Guid.NewGuid();
-            var role = ChatRole.User;
+            var role = "user";
             var content = "Hello, how are you?";
 
             var expectedMessage = CreateTestConversationHistory(userId, characterId, role, content);
@@ -44,7 +44,7 @@ namespace ProjectVG.Tests.Application.Services.Conversation
                 .ReturnsAsync(expectedMessage);
 
             // Act
-            var result = await _conversationService.AddMessageAsync(userId, characterId, role, content);
+            var result = await _conversationService.AddMessageAsync(userId, characterId, role, content, DateTime.UtcNow);
 
             // Assert
             result.Should().NotBeNull();
@@ -71,11 +71,11 @@ namespace ProjectVG.Tests.Application.Services.Conversation
             // Arrange
             var userId = Guid.NewGuid();
             var characterId = Guid.NewGuid();
-            var role = ChatRole.User;
+            var role = "user";
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => _conversationService.AddMessageAsync(userId, characterId, role, content)
+                () => _conversationService.AddMessageAsync(userId, characterId, role, content, DateTime.UtcNow)
             );
 
             exception.ErrorCode.Should().Be(ErrorCode.MESSAGE_EMPTY);
@@ -88,12 +88,12 @@ namespace ProjectVG.Tests.Application.Services.Conversation
             // Arrange
             var userId = Guid.NewGuid();
             var characterId = Guid.NewGuid();
-            var role = ChatRole.User;
-            var longContent = new string('x', 1001); // Exceeds 1000 character limit
+            var role = "user";
+            var longContent = new string('x', 10001); // Exceeds 10000 character limit
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => _conversationService.AddMessageAsync(userId, characterId, role, longContent)
+                () => _conversationService.AddMessageAsync(userId, characterId, role, longContent, DateTime.UtcNow)
             );
 
             exception.ErrorCode.Should().Be(ErrorCode.MESSAGE_TOO_LONG);
@@ -101,10 +101,10 @@ namespace ProjectVG.Tests.Application.Services.Conversation
         }
 
         [Theory]
-        [InlineData(ChatRole.User)]
-        [InlineData(ChatRole.Assistant)]
-        [InlineData(ChatRole.System)]
-        public async Task AddMessageAsync_WithDifferentRoles_ShouldAddMessageCorrectly(ChatRole role)
+        [InlineData("user")]
+        [InlineData("assistant")]
+        [InlineData("system")]
+        public async Task AddMessageAsync_WithDifferentRoles_ShouldAddMessageCorrectly(string role)
         {
             // Arrange
             var userId = Guid.NewGuid();
@@ -117,7 +117,7 @@ namespace ProjectVG.Tests.Application.Services.Conversation
                 .ReturnsAsync(expectedMessage);
 
             // Act
-            var result = await _conversationService.AddMessageAsync(userId, characterId, role, content);
+            var result = await _conversationService.AddMessageAsync(userId, characterId, role, content, DateTime.UtcNow);
 
             // Assert
             result.Should().NotBeNull();
@@ -130,8 +130,8 @@ namespace ProjectVG.Tests.Application.Services.Conversation
             // Arrange
             var userId = Guid.NewGuid();
             var characterId = Guid.NewGuid();
-            var role = ChatRole.User;
-            var maxContent = new string('x', 1000); // Exactly 1000 characters
+            var role = "user";
+            var maxContent = new string('x', 10000); // Exactly 10000 characters
 
             var expectedMessage = CreateTestConversationHistory(userId, characterId, role, maxContent);
 
@@ -139,7 +139,7 @@ namespace ProjectVG.Tests.Application.Services.Conversation
                 .ReturnsAsync(expectedMessage);
 
             // Act
-            var result = await _conversationService.AddMessageAsync(userId, characterId, role, maxContent);
+            var result = await _conversationService.AddMessageAsync(userId, characterId, role, maxContent, DateTime.UtcNow);
 
             // Assert
             result.Should().NotBeNull();
@@ -160,23 +160,23 @@ namespace ProjectVG.Tests.Application.Services.Conversation
 
             var expectedHistory = new List<ConversationHistory>
             {
-                CreateTestConversationHistory(userId, characterId, ChatRole.User, "Message 1"),
-                CreateTestConversationHistory(userId, characterId, ChatRole.Assistant, "Response 1"),
-                CreateTestConversationHistory(userId, characterId, ChatRole.User, "Message 2")
+                CreateTestConversationHistory(userId, characterId, "user", "Message 1"),
+                CreateTestConversationHistory(userId, characterId, "assistant", "Response 1"),
+                CreateTestConversationHistory(userId, characterId, "user", "Message 2")
             };
 
-            _mockConversationRepository.Setup(x => x.GetByUserIdAsync(userId, characterId, count))
+            _mockConversationRepository.Setup(x => x.GetConversationHistoryAsync(userId, characterId, 1, count))
                 .ReturnsAsync(expectedHistory);
 
             // Act
-            var result = await _conversationService.GetConversationHistoryAsync(userId, characterId, count);
+            var result = await _conversationService.GetConversationHistoryAsync(userId, characterId, 1, count);
 
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(3);
             result.Should().BeEquivalentTo(expectedHistory);
 
-            _mockConversationRepository.Verify(x => x.GetByUserIdAsync(userId, characterId, count), Times.Once);
+            _mockConversationRepository.Verify(x => x.GetConversationHistoryAsync(userId, characterId, 1, count), Times.Once);
         }
 
         [Fact]
@@ -187,7 +187,7 @@ namespace ProjectVG.Tests.Application.Services.Conversation
             var characterId = Guid.NewGuid();
 
             var expectedHistory = new List<ConversationHistory>();
-            _mockConversationRepository.Setup(x => x.GetByUserIdAsync(userId, characterId, 10))
+            _mockConversationRepository.Setup(x => x.GetConversationHistoryAsync(userId, characterId, 1, 10))
                 .ReturnsAsync(expectedHistory);
 
             // Act
@@ -195,7 +195,7 @@ namespace ProjectVG.Tests.Application.Services.Conversation
 
             // Assert
             result.Should().NotBeNull();
-            _mockConversationRepository.Verify(x => x.GetByUserIdAsync(userId, characterId, 10), Times.Once);
+            _mockConversationRepository.Verify(x => x.GetConversationHistoryAsync(userId, characterId, 1, 10), Times.Once);
         }
 
         [Theory]
@@ -210,11 +210,11 @@ namespace ProjectVG.Tests.Application.Services.Conversation
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => _conversationService.GetConversationHistoryAsync(userId, characterId, count)
+                () => _conversationService.GetConversationHistoryAsync(userId, characterId, 1, count)
             );
 
             exception.ErrorCode.Should().Be(ErrorCode.VALIDATION_FAILED);
-            _mockConversationRepository.Verify(x => x.GetByUserIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>()), Times.Never);
+            _mockConversationRepository.Verify(x => x.GetConversationHistoryAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
         }
 
         [Fact]
@@ -225,11 +225,11 @@ namespace ProjectVG.Tests.Application.Services.Conversation
             var characterId = Guid.NewGuid();
             var count = 10;
 
-            _mockConversationRepository.Setup(x => x.GetByUserIdAsync(userId, characterId, count))
+            _mockConversationRepository.Setup(x => x.GetConversationHistoryAsync(userId, characterId, 1, count))
                 .ReturnsAsync(new List<ConversationHistory>());
 
             // Act
-            var result = await _conversationService.GetConversationHistoryAsync(userId, characterId, count);
+            var result = await _conversationService.GetConversationHistoryAsync(userId, characterId, 1, count);
 
             // Assert
             result.Should().NotBeNull();
@@ -246,50 +246,50 @@ namespace ProjectVG.Tests.Application.Services.Conversation
             var userId = Guid.NewGuid();
             var characterId = Guid.NewGuid();
 
-            _mockConversationRepository.Setup(x => x.GetByUserIdAsync(userId, characterId, count))
+            _mockConversationRepository.Setup(x => x.GetConversationHistoryAsync(userId, characterId, 1, count))
                 .ReturnsAsync(new List<ConversationHistory>());
 
             // Act
-            await _conversationService.GetConversationHistoryAsync(userId, characterId, count);
+            await _conversationService.GetConversationHistoryAsync(userId, characterId, 1, count);
 
             // Assert
-            _mockConversationRepository.Verify(x => x.GetByUserIdAsync(userId, characterId, count), Times.Once);
+            _mockConversationRepository.Verify(x => x.GetConversationHistoryAsync(userId, characterId, 1, count), Times.Once);
         }
 
         #endregion
 
-        #region ClearConversationAsync Tests
+        #region DeleteConversationAsync Tests
 
         [Fact]
-        public async Task ClearConversationAsync_WithValidParameters_ShouldCallRepositoryClearSession()
+        public async Task DeleteConversationAsync_WithValidParameters_ShouldCallRepositoryDeleteConversation()
         {
             // Arrange
             var userId = Guid.NewGuid();
             var characterId = Guid.NewGuid();
 
-            _mockConversationRepository.Setup(x => x.ClearSessionAsync(userId, characterId))
+            _mockConversationRepository.Setup(x => x.DeleteConversationAsync(userId, characterId))
                 .Returns(Task.CompletedTask);
 
             // Act
-            await _conversationService.ClearConversationAsync(userId, characterId);
+            await _conversationService.DeleteConversationAsync(userId, characterId);
 
             // Assert
-            _mockConversationRepository.Verify(x => x.ClearSessionAsync(userId, characterId), Times.Once);
+            _mockConversationRepository.Verify(x => x.DeleteConversationAsync(userId, characterId), Times.Once);
         }
 
         [Fact]
-        public async Task ClearConversationAsync_WhenRepositoryThrowsException_ShouldPropagateException()
+        public async Task DeleteConversationAsync_WhenRepositoryThrowsException_ShouldPropagateException()
         {
             // Arrange
             var userId = Guid.NewGuid();
             var characterId = Guid.NewGuid();
 
-            _mockConversationRepository.Setup(x => x.ClearSessionAsync(userId, characterId))
+            _mockConversationRepository.Setup(x => x.DeleteConversationAsync(userId, characterId))
                 .ThrowsAsync(new Exception("Database error"));
 
             // Act & Assert
             await Assert.ThrowsAsync<Exception>(
-                () => _conversationService.ClearConversationAsync(userId, characterId)
+                () => _conversationService.DeleteConversationAsync(userId, characterId)
             );
         }
 
@@ -363,7 +363,7 @@ namespace ProjectVG.Tests.Application.Services.Conversation
             // Arrange
             var userId = Guid.NewGuid();
             var characterId = Guid.NewGuid();
-            var role = ChatRole.User;
+            var role = "user";
             var content = "Test message";
 
             _mockConversationRepository.Setup(x => x.AddAsync(It.IsAny<ConversationHistory>()))
@@ -371,7 +371,7 @@ namespace ProjectVG.Tests.Application.Services.Conversation
 
             // Act & Assert
             await Assert.ThrowsAsync<Exception>(
-                () => _conversationService.AddMessageAsync(userId, characterId, role, content)
+                () => _conversationService.AddMessageAsync(userId, characterId, role, content, DateTime.UtcNow)
             );
         }
 
@@ -382,7 +382,7 @@ namespace ProjectVG.Tests.Application.Services.Conversation
             var userId = Guid.NewGuid();
             var characterId = Guid.NewGuid();
 
-            _mockConversationRepository.Setup(x => x.GetByUserIdAsync(userId, characterId, It.IsAny<int>()))
+            _mockConversationRepository.Setup(x => x.GetConversationHistoryAsync(userId, characterId, It.IsAny<int>(), It.IsAny<int>()))
                 .ThrowsAsync(new Exception("Database connection failed"));
 
             // Act & Assert
@@ -413,7 +413,7 @@ namespace ProjectVG.Tests.Application.Services.Conversation
             // Arrange
             var userId = Guid.NewGuid();
             var characterId = Guid.NewGuid();
-            var role = ChatRole.User;
+            var role = "user";
             var content = "특수 문자 테스트: !@#$%^&*()_+{}[]|\\:;\"'<>?,./ 한글 테스트";
 
             var expectedMessage = CreateTestConversationHistory(userId, characterId, role, content);
@@ -422,7 +422,7 @@ namespace ProjectVG.Tests.Application.Services.Conversation
                 .ReturnsAsync(expectedMessage);
 
             // Act
-            var result = await _conversationService.AddMessageAsync(userId, characterId, role, content);
+            var result = await _conversationService.AddMessageAsync(userId, characterId, role, content, DateTime.UtcNow);
 
             // Assert
             result.Should().NotBeNull();
@@ -436,7 +436,7 @@ namespace ProjectVG.Tests.Application.Services.Conversation
         private static ConversationHistory CreateTestConversationHistory(
             Guid userId, 
             Guid characterId, 
-            ChatRole role, 
+            string role, 
             string content, 
             Guid? id = null)
         {
@@ -449,8 +449,7 @@ namespace ProjectVG.Tests.Application.Services.Conversation
                 Content = content,
                 CreatedAt = DateTime.UtcNow,
                 Timestamp = DateTime.UtcNow,
-                MetadataJson = "{}",
-                IsDeleted = false
+                ConversationId = null
             };
         }
 

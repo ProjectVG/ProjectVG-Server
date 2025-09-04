@@ -3,9 +3,9 @@ using ProjectVG.Domain.Entities.ConversationHistorys;
 
 namespace ProjectVG.Application.Models.Chat
 {
-    public class ChatProcessContext
+    public record ChatProcessContext
     {
-        public string SessionId { get; private set; } = string.Empty;
+        public Guid RequestId { get; } = Guid.NewGuid();
         public Guid UserId { get; private set; }
         public Guid CharacterId { get; private set; }
         public string UserMessage { get; private set; } = string.Empty;
@@ -23,6 +23,7 @@ namespace ProjectVG.Application.Models.Chat
 
         public ChatProcessContext(ChatRequestCommand command)
         {
+            RequestId = command.Id;
             UserId = command.UserId;
             CharacterId = command.CharacterId;
             UserMessage = command.UserPrompt;
@@ -37,11 +38,13 @@ namespace ProjectVG.Application.Models.Chat
             IEnumerable<ConversationHistory> conversationHistory,
             IEnumerable<string> memoryContext)
         {
+            RequestId = command.Id;
             UserId = command.UserId;
             CharacterId = command.CharacterId;
             UserMessage = command.UserPrompt;
             MemoryStore = command.UserId.ToString();
             UseTTS = command.UseTTS;
+            UserRequestAt = command.UserRequestAt;
             
             Character = character;
             ConversationHistory = conversationHistory;
@@ -74,7 +77,7 @@ namespace ProjectVG.Application.Models.Chat
             // Request 기본 정보
             sb.AppendLine($"[ChatProcessContext Debug Info]");
             sb.AppendLine($"=== REQUEST INFO ===");
-            sb.AppendLine($"SessionId: {SessionId}");
+            sb.AppendLine($"SessionId: {RequestId}");
             sb.AppendLine($"UserId: {UserId}");
             sb.AppendLine($"CharacterId: {CharacterId}");
             sb.AppendLine($"UserMessage: \"{UserMessage}\"");
@@ -125,7 +128,7 @@ namespace ProjectVG.Application.Models.Chat
                 for (int i = 0; i < Segments.Count; i++)
                 {
                     var segment = Segments[i];
-                    sb.AppendLine($"  [{i}] Type: {segment.Type}, Content: \"{segment.Content}\"");
+                    sb.AppendLine($"  [{i}] Content: \"{segment.Content}\", Emotion: {segment.Emotion}, Actions: [{(segment.Actions != null ? string.Join(", ", segment.Actions) : "")}]");
                 }
             }
             else

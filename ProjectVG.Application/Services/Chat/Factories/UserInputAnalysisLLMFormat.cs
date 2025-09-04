@@ -22,6 +22,16 @@ INTENT: [Korean sentence]
 Rules: 0=normal chat/questions, 1=meaningless/invalid
 
 Examples:
+Input: ""정말?""
+PROCESS_TYPE: 0
+INTENT: 감탄사
+
+Examples:
+Input: ""그렇지""
+PROCESS_TYPE: 0
+INTENT: 동의
+
+Examples:
 Input: ""한달전에 구매한 킥보드 생각나나?""
 PROCESS_TYPE: 0
 INTENT: 과거 경험에 대한 회상 질문

@@ -38,7 +38,7 @@ namespace ProjectVG.Tests.Application.Integration
             var role = ChatRole.User;
 
             // Act
-            var addedMessage = await _conversationService.AddMessageAsync(userId, characterId, role, content);
+            var addedMessage = await _conversationService.AddMessageAsync(userId, characterId, role, content, DateTime.UtcNow);
 
             // Assert
             addedMessage.Should().NotBeNull();
@@ -51,10 +51,10 @@ namespace ProjectVG.Tests.Application.Integration
         }
 
         [Theory]
-        [InlineData(ChatRole.User)]
-        [InlineData(ChatRole.Assistant)]
-        [InlineData(ChatRole.System)]
-        public async Task AddMessageAsync_WithDifferentRoles_ShouldPersistCorrectly(ChatRole role)
+        [InlineData("user")]
+        [InlineData("assistant")]
+        [InlineData("system")]
+        public async Task AddMessageAsync_WithDifferentRoles_ShouldPersistCorrectly(string role)
         {
             // Arrange
             await _fixture.ClearDatabaseAsync();
@@ -62,7 +62,7 @@ namespace ProjectVG.Tests.Application.Integration
             var content = $"Message from {role}";
 
             // Act
-            var addedMessage = await _conversationService.AddMessageAsync(userId, characterId, role, content);
+            var addedMessage = await _conversationService.AddMessageAsync(userId, characterId, role, content, DateTime.UtcNow);
 
             // Assert
             addedMessage.Role.Should().Be(role);
@@ -81,7 +81,7 @@ namespace ProjectVG.Tests.Application.Integration
 
             // Act & Assert
             await Assert.ThrowsAsync<ValidationException>(
-                () => _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, content));
+                () => _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, content, DateTime.UtcNow));
         }
 
         [Fact]
@@ -90,11 +90,11 @@ namespace ProjectVG.Tests.Application.Integration
             // Arrange
             await _fixture.ClearDatabaseAsync();
             var (userId, characterId) = await CreateUserAndCharacterAsync();
-            var longContent = new string('x', 1001); // Exceeds 1000 character limit
+            var longContent = new string('x', 10001); // Exceeds 10000 character limit
 
             // Act & Assert
             await Assert.ThrowsAsync<ValidationException>(
-                () => _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, longContent));
+                () => _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, longContent, DateTime.UtcNow));
         }
 
         [Fact]
@@ -103,15 +103,15 @@ namespace ProjectVG.Tests.Application.Integration
             // Arrange
             await _fixture.ClearDatabaseAsync();
             var (userId, characterId) = await CreateUserAndCharacterAsync();
-            var maxContent = new string('x', 1000); // Exactly 1000 characters
+            var maxContent = new string('x', 10000); // Exactly 10000 characters
 
             // Act
-            var addedMessage = await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, maxContent);
+            var addedMessage = await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, maxContent, DateTime.UtcNow);
 
             // Assert
             addedMessage.Should().NotBeNull();
             addedMessage.Content.Should().Be(maxContent);
-            addedMessage.Content.Length.Should().Be(1000);
+            addedMessage.Content.Length.Should().Be(10000);
         }
 
         #endregion
@@ -126,11 +126,11 @@ namespace ProjectVG.Tests.Application.Integration
             var (userId, characterId) = await CreateUserAndCharacterAsync();
             
             // Add messages with slight delays to ensure different timestamps
-            var message1 = await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, "First message");
+            var message1 = await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, "First message", DateTime.UtcNow);
             await Task.Delay(10);
-            var message2 = await _conversationService.AddMessageAsync(userId, characterId, ChatRole.Assistant, "Second message");
+            var message2 = await _conversationService.AddMessageAsync(userId, characterId, ChatRole.Assistant, "Second message", DateTime.UtcNow);
             await Task.Delay(10);
-            var message3 = await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, "Third message");
+            var message3 = await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, "Third message", DateTime.UtcNow);
 
             // Act
             var history = await _conversationService.GetConversationHistoryAsync(userId, characterId, 10);
@@ -155,7 +155,7 @@ namespace ProjectVG.Tests.Application.Integration
             // Add 5 messages
             for (int i = 1; i <= 5; i++)
             {
-                await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, $"Message {i}");
+                await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, $"Message {i}", DateTime.UtcNow);
                 await Task.Delay(10); // Ensure different timestamps
             }
 
@@ -192,7 +192,7 @@ namespace ProjectVG.Tests.Application.Integration
             // Add 15 messages
             for (int i = 1; i <= 15; i++)
             {
-                await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, $"Message {i}");
+                await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, $"Message {i}", DateTime.UtcNow);
             }
 
             // Act - Use default count
@@ -229,10 +229,10 @@ namespace ProjectVG.Tests.Application.Integration
             var char2 = await CreateCharacterAsync("Character2");
 
             // Add messages for different user-character combinations
-            await _conversationService.AddMessageAsync(user1.Id, char1.Id, ChatRole.User, "User1-Char1 Message");
-            await _conversationService.AddMessageAsync(user1.Id, char2.Id, ChatRole.User, "User1-Char2 Message");
-            await _conversationService.AddMessageAsync(user2.Id, char1.Id, ChatRole.User, "User2-Char1 Message");
-            await _conversationService.AddMessageAsync(user2.Id, char2.Id, ChatRole.User, "User2-Char2 Message");
+            await _conversationService.AddMessageAsync(user1.Id, char1.Id, ChatRole.User, "User1-Char1 Message", DateTime.UtcNow);
+            await _conversationService.AddMessageAsync(user1.Id, char2.Id, ChatRole.User, "User1-Char2 Message", DateTime.UtcNow);
+            await _conversationService.AddMessageAsync(user2.Id, char1.Id, ChatRole.User, "User2-Char1 Message", DateTime.UtcNow);
+            await _conversationService.AddMessageAsync(user2.Id, char2.Id, ChatRole.User, "User2-Char2 Message", DateTime.UtcNow);
 
             // Act
             var user1Char1History = await _conversationService.GetConversationHistoryAsync(user1.Id, char1.Id);
@@ -257,16 +257,16 @@ namespace ProjectVG.Tests.Application.Integration
             var (userId, characterId) = await CreateUserAndCharacterAsync();
             
             // Add multiple messages
-            await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, "Message 1");
-            await _conversationService.AddMessageAsync(userId, characterId, ChatRole.Assistant, "Response 1");
-            await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, "Message 2");
+            await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, "Message 1", DateTime.UtcNow);
+            await _conversationService.AddMessageAsync(userId, characterId, ChatRole.Assistant, "Response 1", DateTime.UtcNow);
+            await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, "Message 2", DateTime.UtcNow);
 
             // Verify messages exist
             var historyBefore = await _conversationService.GetConversationHistoryAsync(userId, characterId);
             historyBefore.Should().HaveCount(3);
 
             // Act
-            await _conversationService.ClearConversationAsync(userId, characterId);
+            await _conversationService.DeleteConversationAsync(userId, characterId);
 
             // Assert
             var historyAfter = await _conversationService.GetConversationHistoryAsync(userId, characterId);
@@ -281,7 +281,7 @@ namespace ProjectVG.Tests.Application.Integration
             var (userId, characterId) = await CreateUserAndCharacterAsync();
 
             // Act & Assert - Should not throw
-            await _conversationService.ClearConversationAsync(userId, characterId);
+            await _conversationService.DeleteConversationAsync(userId, characterId);
         }
 
         [Fact]
@@ -295,12 +295,12 @@ namespace ProjectVG.Tests.Application.Integration
             var char2 = await CreateCharacterAsync("Character2");
 
             // Add messages for different combinations
-            await _conversationService.AddMessageAsync(user1.Id, char1.Id, ChatRole.User, "User1-Char1");
-            await _conversationService.AddMessageAsync(user1.Id, char2.Id, ChatRole.User, "User1-Char2");
-            await _conversationService.AddMessageAsync(user2.Id, char1.Id, ChatRole.User, "User2-Char1");
+            await _conversationService.AddMessageAsync(user1.Id, char1.Id, ChatRole.User, "User1-Char1", DateTime.UtcNow);
+            await _conversationService.AddMessageAsync(user1.Id, char2.Id, ChatRole.User, "User1-Char2", DateTime.UtcNow);
+            await _conversationService.AddMessageAsync(user2.Id, char1.Id, ChatRole.User, "User2-Char1", DateTime.UtcNow);
 
             // Act - Clear only user1-char1 conversation
-            await _conversationService.ClearConversationAsync(user1.Id, char1.Id);
+            await _conversationService.DeleteConversationAsync(user1.Id, char1.Id);
 
             // Assert
             var user1Char1History = await _conversationService.GetConversationHistoryAsync(user1.Id, char1.Id);
@@ -326,7 +326,7 @@ namespace ProjectVG.Tests.Application.Integration
             // Add 5 messages
             for (int i = 1; i <= 5; i++)
             {
-                await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, $"Message {i}");
+                await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, $"Message {i}", DateTime.UtcNow);
             }
 
             // Act
@@ -358,14 +358,14 @@ namespace ProjectVG.Tests.Application.Integration
             var (userId, characterId) = await CreateUserAndCharacterAsync();
             
             // Add messages
-            await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, "Message 1");
-            await _conversationService.AddMessageAsync(userId, characterId, ChatRole.Assistant, "Response 1");
+            await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, "Message 1", DateTime.UtcNow);
+            await _conversationService.AddMessageAsync(userId, characterId, ChatRole.Assistant, "Response 1", DateTime.UtcNow);
 
             var countBefore = await _conversationService.GetMessageCountAsync(userId, characterId);
             countBefore.Should().Be(2);
 
             // Act
-            await _conversationService.ClearConversationAsync(userId, characterId);
+            await _conversationService.DeleteConversationAsync(userId, characterId);
             var countAfter = await _conversationService.GetMessageCountAsync(userId, characterId);
 
             // Assert
@@ -392,11 +392,11 @@ namespace ProjectVG.Tests.Application.Integration
 
             // Add conversation messages
             var userMessage = await _conversationService.AddMessageAsync(
-                userId, characterId, ChatRole.User, "Hello, how are you?");
+                userId, characterId, ChatRole.User, "Hello, how are you?", DateTime.UtcNow);
             var assistantMessage = await _conversationService.AddMessageAsync(
-                userId, characterId, ChatRole.Assistant, "I'm doing well, thank you for asking!");
+                userId, characterId, ChatRole.Assistant, "I'm doing well, thank you for asking!", DateTime.UtcNow);
             var followupMessage = await _conversationService.AddMessageAsync(
-                userId, characterId, ChatRole.User, "That's great to hear!");
+                userId, characterId, ChatRole.User, "That's great to hear!", DateTime.UtcNow);
 
             // Verify messages were added
             var countAfterAdding = await _conversationService.GetMessageCountAsync(userId, characterId);
@@ -412,7 +412,7 @@ namespace ProjectVG.Tests.Application.Integration
             messagesList.Should().Contain(m => m.Content == "That's great to hear!" && m.Role == ChatRole.User);
 
             // Clear conversation
-            await _conversationService.ClearConversationAsync(userId, characterId);
+            await _conversationService.DeleteConversationAsync(userId, characterId);
 
             // Verify conversation is cleared
             var countAfterClearing = await _conversationService.GetMessageCountAsync(userId, characterId);
@@ -434,16 +434,16 @@ namespace ProjectVG.Tests.Application.Integration
 
             // Create conversations for different user-character pairs
             // User1 with Character1
-            await _conversationService.AddMessageAsync(user1.Id, character1.Id, ChatRole.User, "User1 to Char1: Hello");
-            await _conversationService.AddMessageAsync(user1.Id, character1.Id, ChatRole.Assistant, "Char1 to User1: Hi there");
+            await _conversationService.AddMessageAsync(user1.Id, character1.Id, ChatRole.User, "User1 to Char1: Hello", DateTime.UtcNow);
+            await _conversationService.AddMessageAsync(user1.Id, character1.Id, ChatRole.Assistant, "Char1 to User1: Hi there", DateTime.UtcNow);
 
             // User1 with Character2
-            await _conversationService.AddMessageAsync(user1.Id, character2.Id, ChatRole.User, "User1 to Char2: Hey");
+            await _conversationService.AddMessageAsync(user1.Id, character2.Id, ChatRole.User, "User1 to Char2: Hey", DateTime.UtcNow);
 
             // User2 with Character1
-            await _conversationService.AddMessageAsync(user2.Id, character1.Id, ChatRole.User, "User2 to Char1: Good morning");
-            await _conversationService.AddMessageAsync(user2.Id, character1.Id, ChatRole.Assistant, "Char1 to User2: Good morning!");
-            await _conversationService.AddMessageAsync(user2.Id, character1.Id, ChatRole.User, "User2 to Char1: How's the weather?");
+            await _conversationService.AddMessageAsync(user2.Id, character1.Id, ChatRole.User, "User2 to Char1: Good morning", DateTime.UtcNow);
+            await _conversationService.AddMessageAsync(user2.Id, character1.Id, ChatRole.Assistant, "Char1 to User2: Good morning!", DateTime.UtcNow);
+            await _conversationService.AddMessageAsync(user2.Id, character1.Id, ChatRole.User, "User2 to Char1: How's the weather?", DateTime.UtcNow);
 
             // Verify counts for each conversation
             var user1Char1Count = await _conversationService.GetMessageCountAsync(user1.Id, character1.Id);
@@ -488,8 +488,8 @@ namespace ProjectVG.Tests.Application.Integration
         private async Task<ProjectVG.Application.Models.Character.CharacterDto> CreateCharacterAsync(
             string name = "TestCharacter")
         {
-            var createCommand = TestDataBuilder.CreateCreateCharacterCommand(name);
-            return await _characterService.CreateCharacterAsync(createCommand);
+            var createCommand = TestDataBuilder.CreateCreateCharacterWithFieldsCommand(name);
+            return await _characterService.CreateCharacterWithFieldsAsync(createCommand);
         }
 
         #endregion
