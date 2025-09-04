@@ -53,6 +53,9 @@ namespace ProjectVG.Domain.Entities.Users
         
         public bool InitialCreditsGranted { get; set; } = false;
 
+        [Timestamp]
+        public byte[] RowVersion { get; set; } = new byte[0];
+
         public virtual ICollection<Characters.Character> Characters { get; set; } = new List<Characters.Character>();
     }
 } 

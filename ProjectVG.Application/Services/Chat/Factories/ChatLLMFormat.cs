@@ -1,6 +1,4 @@
-using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Chat;
-using ProjectVG.Infrastructure.Integrations.LLMClient.Models;
 using System.Text;
 using System.Text.RegularExpressions;
 

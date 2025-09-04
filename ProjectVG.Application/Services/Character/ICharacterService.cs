@@ -49,7 +49,8 @@ namespace ProjectVG.Application.Services.Character
         /// 캐릭터를 삭제합니다
         /// </summary>
         /// <param name="id">캐릭터 ID</param>
-        Task DeleteCharacterAsync(Guid id);
+        /// <param name="userId">삭제를 요청하는 사용자 ID</param>
+        Task DeleteCharacterAsync(Guid id, Guid userId);
 
         /// <summary>
         /// 캐릭터가 존재하는지 확인합니다

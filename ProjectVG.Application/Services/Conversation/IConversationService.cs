@@ -45,8 +45,9 @@ namespace ProjectVG.Application.Services.Conversation
         /// 특정 대화 세션의 메시지들을 조회합니다
         /// </summary>
         /// <param name="conversationId">대화 세션 ID</param>
+        /// <param name="userId">사용자 ID (권한 확인용)</param>
         /// <returns>대화 기록 목록</returns>
-        Task<IEnumerable<ConversationHistory>> GetByConversationIdAsync(string conversationId);
+        Task<IEnumerable<ConversationHistory>> GetByConversationIdAsync(string conversationId, Guid userId);
 
         /// <summary>
         /// 특정 메시지를 삭제합니다

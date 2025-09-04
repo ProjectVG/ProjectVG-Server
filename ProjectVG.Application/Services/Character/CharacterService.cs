@@ -1,9 +1,5 @@
 using ProjectVG.Domain.Repositories;
-using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Character;
-using ProjectVG.Common.Exceptions;
-using ProjectVG.Common.Constants;
-using ProjectVG.Domain.Entities.Characters;
 
 namespace ProjectVG.Application.Services.Character
 {
@@ -119,15 +115,19 @@ namespace ProjectVG.Application.Services.Character
             return characterDto;
         }
 
-        public async Task DeleteCharacterAsync(Guid id)
+        public async Task DeleteCharacterAsync(Guid id, Guid userId)
         {
             var character = await _characterRepository.GetByIdAsync(id);
             if (character == null) {
                 throw new NotFoundException(ErrorCode.CHARACTER_NOT_FOUND, id);
             }
 
+            if (!character.IsOwnedBy(userId)) {
+                throw new ValidationException(ErrorCode.AUTHORIZATION_FAILED, $"User {userId} is not the owner of character {id}");
+            }
+
             await _characterRepository.DeleteAsync(id);
-            _logger.LogInformation("캐릭터 삭제 완료: ID {CharacterId}, 이름 {CharacterName}", id, character.Name);
+            _logger.LogInformation("캐릭터 삭제 완료: ID {CharacterId}, 이름 {CharacterName}, 소유자 {UserId}", id, character.Name, userId);
         }
 
         public async Task<bool> CharacterExistsAsync(Guid id)

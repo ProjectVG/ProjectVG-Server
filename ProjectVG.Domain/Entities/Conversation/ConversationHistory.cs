@@ -24,6 +24,7 @@ namespace ProjectVG.Domain.Entities.ConversationHistorys
         
         [Required]
         [StringLength(20)]
+        [RegularExpression("^(User|Assistant|System)$")]
         public string Role { get; set; } = string.Empty;
         
         [Required]

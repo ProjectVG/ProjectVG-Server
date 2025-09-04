@@ -1,11 +1,6 @@
-using Microsoft.Extensions.Logging;
-using ProjectVG.Application.Models.Auth;
 using ProjectVG.Application.Models.User;
 using ProjectVG.Application.Services.Credit;
 using ProjectVG.Application.Services.Users;
-using ProjectVG.Common.Constants;
-using ProjectVG.Common.Exceptions;
-using ProjectVG.Domain.Entities.Users;
 using ProjectVG.Infrastructure.Auth;
 
 namespace ProjectVG.Application.Services.Auth

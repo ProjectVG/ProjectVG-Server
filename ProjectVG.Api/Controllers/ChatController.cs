@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using ProjectVG.Application.Models.Chat;
-using ProjectVG.Application.Models.API.Request;
+using ProjectVG.Api.Models.Chat.Request;
 using ProjectVG.Application.Services.Chat;
 using System.Security.Claims;
 

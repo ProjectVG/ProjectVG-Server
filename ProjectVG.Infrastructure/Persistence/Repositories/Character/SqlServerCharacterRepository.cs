@@ -35,7 +35,6 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
             character.Id = Guid.NewGuid();
             character.CreatedAt = DateTime.UtcNow;
             character.UpdatedAt = DateTime.UtcNow;
-            character.IsActive = true;
 
             _context.Characters.Add(character);
             await _context.SaveChangesAsync();
@@ -57,6 +56,7 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Characters
             existingCharacter.ImageUrl = character.ImageUrl;
             existingCharacter.VoiceId = character.VoiceId;
             existingCharacter.IsActive = character.IsActive;
+            existingCharacter.IsPublic = character.IsPublic;
             existingCharacter.ConfigMode = character.ConfigMode;
             existingCharacter.IndividualConfigJson = character.IndividualConfigJson;
             existingCharacter.SystemPrompt = character.SystemPrompt;

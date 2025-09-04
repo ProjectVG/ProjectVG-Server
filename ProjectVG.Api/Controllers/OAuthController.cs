@@ -96,13 +96,11 @@ namespace ProjectVG.Api.Controllers
                 throw new ValidationException(ErrorCode.REQUIRED_PARAMETER_MISSING);
             }
 
-            var tokenData = await _oauth2Service.GetTokenDataAsync(state);
+            var tokenData = await _oauth2Service.ConsumeTokenDataAsync(state);
             if (tokenData == null)
             {
                 throw new ValidationException(ErrorCode.OAUTH2_REQUEST_NOT_FOUND);
             }
-
-            await _oauth2Service.DeleteTokenDataAsync(state);
 
             Response.Headers.Append("X-Access-Credit", tokenData.AccessToken);
             Response.Headers.Append("X-Refresh-Credit", tokenData.RefreshToken);

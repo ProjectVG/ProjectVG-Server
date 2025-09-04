@@ -1,10 +1,7 @@
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ProjectVG.Application.Models.Auth;
 using ProjectVG.Common.Configuration;
-using ProjectVG.Common.Constants;
-using ProjectVG.Common.Exceptions;
 
 namespace ProjectVG.Application.Services.Auth
 {

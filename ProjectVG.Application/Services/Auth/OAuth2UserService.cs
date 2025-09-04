@@ -1,8 +1,4 @@
 using System.Net.Http.Headers;
-using Microsoft.Extensions.Logging;
-using ProjectVG.Application.Models.Auth;
-using ProjectVG.Common.Constants;
-using ProjectVG.Common.Exceptions;
 
 namespace ProjectVG.Application.Services.Auth
 {
@@ -25,9 +21,12 @@ namespace ProjectVG.Application.Services.Auth
         public async Task<OAuth2UserInfo> GetUserInfoAsync(string accessToken, string providerName)
         {
             var provider = _providerFactory.GetProvider(providerName);
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            var response = await _httpClient.GetAsync(provider.UserInfoEndpoint);
+            
+            using var req = new HttpRequestMessage(HttpMethod.Get, provider.UserInfoEndpoint);
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            
+            var response = await _httpClient.SendAsync(req);
             if (response.IsSuccessStatusCode) {
                 var json = await response.Content.ReadAsStringAsync();
                 return provider.ParseUserInfo(json);

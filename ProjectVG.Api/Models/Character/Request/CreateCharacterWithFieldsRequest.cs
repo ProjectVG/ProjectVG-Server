@@ -24,7 +24,8 @@ namespace ProjectVG.Api.Models.Character.Request
         public string ImageUrl { get; init; } = string.Empty;
 
         [JsonPropertyName("voice_id")]
-        [StringLength(100, ErrorMessage = "음성 ID는 최대 100자까지 입력 가능합니다.")]
+        [Required(ErrorMessage = "음성 ID는 필수입니다.")]
+        [StringLength(100, MinimumLength = 1, ErrorMessage = "음성 ID는 1-100자 사이여야 합니다.")]
         public string VoiceId { get; init; } = string.Empty;
 
         [JsonPropertyName("individual_config")]

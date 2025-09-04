@@ -1,5 +1,4 @@
 using System.Text.Json;
-using ProjectVG.Application.Models.Auth;
 
 namespace ProjectVG.Application.Services.Auth.Providers
 {

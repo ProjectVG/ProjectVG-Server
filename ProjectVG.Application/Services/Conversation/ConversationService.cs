@@ -75,14 +75,14 @@ namespace ProjectVG.Application.Services.Conversation
             return count;
         }
 
-        public async Task<IEnumerable<ConversationHistory>> GetByConversationIdAsync(string conversationId)
+        public async Task<IEnumerable<ConversationHistory>> GetByConversationIdAsync(string conversationId, Guid userId)
         {
             if (string.IsNullOrWhiteSpace(conversationId))
             {
                 throw new ValidationException(ErrorCode.VALIDATION_FAILED, "ConversationId cannot be empty");
             }
 
-            return await _conversationRepository.GetByConversationIdAsync(conversationId);
+            return await _conversationRepository.GetByConversationIdAsync(conversationId, userId);
         }
 
         public async Task DeleteMessageAsync(Guid messageId, Guid userId)

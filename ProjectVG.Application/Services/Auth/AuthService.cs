@@ -1,13 +1,7 @@
-using Microsoft.Extensions.Logging;
-using ProjectVG.Application.Models.Auth;
 using ProjectVG.Application.Models.User;
 using ProjectVG.Application.Services.Credit;
 using ProjectVG.Application.Services.Users;
-using ProjectVG.Common.Constants;
-using ProjectVG.Common.Exceptions;
-using ProjectVG.Domain.Entities.Users;
 using ProjectVG.Infrastructure.Auth;
-using System;
 
 namespace ProjectVG.Application.Services.Auth
 {
@@ -50,9 +44,6 @@ namespace ProjectVG.Application.Services.Auth
                 user = await _userService.CreateUserAsync(createCommand);
                 _logger.LogInformation("새 게스트 사용자 생성됨: UserId={UserId}, GuestId={GuestId}", user.Id, guestId);
             }
-            else {
-                _logger.LogDebug("기존 게스트 사용자 로그인: UserId={UserId}, GuestId={GuestId}", user.Id, guestId);
-            }
 
             return await FinalizeLoginAsync(user, "guest");
         }
@@ -64,14 +55,9 @@ namespace ProjectVG.Application.Services.Auth
             if (tokenGranted) {
                 _logger.LogInformation("사용자 {UserId}에게 최초 크레딧 지급 완료", user.Id);
             }
-            else {
-                _logger.LogDebug("사용자 {UserId}는 이미 크레딧이 지급되었거나 지급 실패", user.Id);
-            }
 
             // 최종 JWT 토큰 발급
             var tokens = await _tokenService.GenerateTokensAsync(user.Id);
-
-            _logger.LogDebug("사용자 {UserId} 로그인 완료 (Provider={Provider})", user.Id, provider);
 
             return new AuthResult {
                 Tokens = tokens,
@@ -82,12 +68,12 @@ namespace ProjectVG.Application.Services.Auth
         public async Task<AuthResult> RefreshAccessTokenAsync(string? refreshToken)
         {
             if (string.IsNullOrEmpty(refreshToken)) {
-                throw new ValidationException(ErrorCode.TOKEN_MISSING, "리프레시 토큰이 필요합니다");
+                throw new ValidationException(ErrorCode.TOKEN_MISSING);
             }
 
             var tokens = await _tokenService.RefreshAccessTokenAsync(refreshToken);
             if (tokens == null) {
-                throw new ValidationException(ErrorCode.TOKEN_REFRESH_FAILED, "유효하지 않거나 만료된 리프레시 토큰입니다");
+                throw new ValidationException(ErrorCode.TOKEN_REFRESH_FAILED);
             }
 
             var userId = await _tokenService.GetUserIdFromTokenAsync(refreshToken);
@@ -102,16 +88,12 @@ namespace ProjectVG.Application.Services.Auth
         public async Task<bool> LogoutAsync(string? refreshToken)
         {
             if (string.IsNullOrEmpty(refreshToken)) {
-                throw new ValidationException(ErrorCode.TOKEN_MISSING, "리프레시 토큰이 필요합니다");
+                throw new ValidationException(ErrorCode.TOKEN_MISSING);
             }
 
             var revoked = await _tokenService.RevokeRefreshTokenAsync(refreshToken);
             if (revoked) {
                 var userId = await _tokenService.GetUserIdFromTokenAsync(refreshToken);
-                _logger.LogInformation("사용자 {UserId} 로그아웃 성공", userId);
-            }
-            else {
-                _logger.LogWarning("리프레시 토큰 만료 또는 무효화 실패: {RefreshToken}", refreshToken);
             }
             return revoked;
         }

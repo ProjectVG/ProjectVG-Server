@@ -1,7 +1,6 @@
 using System.Text.Json.Serialization;
-using ProjectVG.Application.Models.Chat;
 
-namespace ProjectVG.Application.Models.API.Request
+namespace ProjectVG.Api.Models.Chat.Request
 {
     public record ChatRequest
     {

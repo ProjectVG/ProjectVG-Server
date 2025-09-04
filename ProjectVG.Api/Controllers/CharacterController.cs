@@ -88,9 +88,16 @@ namespace ProjectVG.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [JwtAuthentication]
         public async Task<ActionResult> DeleteCharacter(Guid id)
         {
-            await _characterService.DeleteCharacterAsync(id);
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                return Unauthorized();
+            }
+
+            await _characterService.DeleteCharacterAsync(id, userId.Value);
             return NoContent();
         }
 

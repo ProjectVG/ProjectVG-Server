@@ -1,8 +1,6 @@
-using Microsoft.Extensions.Logging;
 using ProjectVG.Infrastructure.Integrations.MemoryClient;
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Infrastructure.Integrations.MemoryClient.Models;
-using Microsoft.IdentityModel.Tokens;
 
 namespace ProjectVG.Application.Services.Chat.Preprocessors
 {

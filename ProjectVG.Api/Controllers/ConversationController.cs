@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using ProjectVG.Api.Models.Conversation.Request;
 using ProjectVG.Api.Models.Conversation.Response;
 using ProjectVG.Application.Services.Conversation;
+using ProjectVG.Api.Filters;
+using ProjectVG.Common.Exceptions;
+using ProjectVG.Common.Constants;
 using System.Security.Claims;
 
 namespace ProjectVG.Api.Controllers
@@ -137,14 +140,8 @@ namespace ProjectVG.Api.Controllers
                     throw new ValidationException(ErrorCode.AUTHENTICATION_FAILED);
                 }
 
-                // 대화 세션 조회
-                var messages = await _conversationService.GetByConversationIdAsync(conversationId);
-                
-                // 사용자 권한 확인 (첫 번째 메시지의 사용자 ID 확인)
-                if (messages.Any() && !messages.Any(m => m.UserId == userGuid))
-                {
-                    return Forbid();
-                }
+                // 대화 세션 조회 (DB 레벨에서 userId로 필터링)
+                var messages = await _conversationService.GetByConversationIdAsync(conversationId, userGuid);
 
                 // 응답 매핑
                 var response = messages.Select(m => new ConversationHistoryResponse

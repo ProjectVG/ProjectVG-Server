@@ -3,8 +3,6 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using ProjectVG.Common.Configuration;
 using ProjectVG.Application.Models.Auth;
-using ProjectVG.Common.Exceptions;
-using ProjectVG.Common.Constants;
 
 namespace ProjectVG.Application.Services.Auth
 {
@@ -119,7 +117,7 @@ namespace ProjectVG.Application.Services.Auth
             var tokenData = new OAuth2TokenData {
                 AccessToken = authResult.Tokens!.AccessToken,
                 RefreshToken = authResult.Tokens.RefreshToken,
-                ExpiresIn = (int)(authResult.Tokens.AccessTokenExpiresAt - DateTime.UtcNow).TotalSeconds,
+                ExpiresIn = Math.Max(0, (int)(authResult.Tokens.AccessTokenExpiresAt.ToUniversalTime() - DateTime.UtcNow).TotalSeconds),
                 UID = authResult.User!.UID
             };
 
@@ -237,6 +235,28 @@ namespace ProjectVG.Application.Services.Auth
             }
         }
 
+        public async Task<OAuth2TokenData?> ConsumeTokenDataAsync(string state)
+        {
+            try {
+                var key = TokenDataPrefix + state;
+                var json = await _cache.GetStringAsync(key);
+
+                if (!string.IsNullOrEmpty(json)) {
+                    await _cache.RemoveAsync(key);
+                    var tokenData = JsonSerializer.Deserialize<OAuth2TokenData>(json);
+                    _logger.LogDebug("토큰 데이터 원자적 소비 성공: State={State}", state);
+                    return tokenData;
+                }
+
+                _logger.LogWarning("토큰 데이터를 찾을 수 없음: State={State}", state);
+                return null;
+            }
+            catch (Exception ex) {
+                _logger.LogError(ex, "토큰 데이터 원자적 소비 실패: State={State}", state);
+                return null;
+            }
+        }
+
 
         private string GetProviderNameFromClientId(string clientId)
         {
@@ -245,7 +265,7 @@ namespace ProjectVG.Application.Services.Auth
                     return provider.Key;
                 }
             }
-            return "google";
+            throw new ValidationException(ErrorCode.OAUTH2_PROVIDER_NOT_CONFIGURED, $"Unknown client id: {clientId}");
         }
     }
 }

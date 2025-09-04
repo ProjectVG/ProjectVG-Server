@@ -19,7 +19,8 @@ namespace ProjectVG.Application.Services.Chat.Processors
 
         public async Task ProcessAsync(ChatProcessContext context)
         {
-            if (!context.UseTTS || string.IsNullOrWhiteSpace(context.Character?.VoiceId) || context.Segments?.Count == 0) {
+
+            if (!context.UseTTS || string.IsNullOrWhiteSpace(context.Character?.VoiceId) || context.Segments == null || context.Segments?.Count == 0) {
                 _logger.LogDebug("TTS 처리 건너뜀: 세션 {UserId}, TTS사용여부 {UseTTS}, 음성ID {VoiceId}, 세그먼트 수 {SegmentCount}",
                     context.RequestId, context.UseTTS, context.Character?.VoiceId, context.Segments?.Count ?? 0);
                 return;
@@ -27,7 +28,7 @@ namespace ProjectVG.Application.Services.Chat.Processors
 
             var profile = VoiceCatalog.GetProfile(context.Character.VoiceId);
             if (profile == null) {
-                _logger.LogWarning("존재하지 않는 보이스: {VoiceId}, 세션 {UserId}", context.Character.VoiceId, context.RequestId);
+                _logger.LogWarning("존재하지 않는 보이스: {VoiceId}, 세션 {RequestId}", context.Character.VoiceId, context.RequestId);
                 return;
             }
 

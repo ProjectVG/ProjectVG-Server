@@ -1,4 +1,3 @@
-using Azure.Core;
 using ProjectVG.Application.Models.Character;
 using ProjectVG.Domain.Entities.ConversationHistorys;
 
@@ -39,11 +38,13 @@ namespace ProjectVG.Application.Models.Chat
             IEnumerable<ConversationHistory> conversationHistory,
             IEnumerable<string> memoryContext)
         {
+            RequestId = command.Id;
             UserId = command.UserId;
             CharacterId = command.CharacterId;
             UserMessage = command.UserPrompt;
             MemoryStore = command.UserId.ToString();
             UseTTS = command.UseTTS;
+            UserRequestAt = command.UserRequestAt;
             
             Character = character;
             ConversationHistory = conversationHistory;

@@ -7,7 +7,6 @@ using ProjectVG.Application.Services.Chat.Preprocessors;
 using ProjectVG.Application.Services.Chat.Processors;
 using ProjectVG.Application.Services.Chat.Validators;
 using ProjectVG.Application.Services.Conversation;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace ProjectVG.Application.Services.Chat
 {
@@ -108,12 +107,13 @@ namespace ProjectVG.Application.Services.Chat
         /// </summary>
         private async Task ProcessChatRequestInternalAsync(ChatProcessContext context)
         {
+            using var scope = _scopeFactory.CreateScope();
             try {
                 await _llmProcessor.ProcessAsync(context);
                 await _ttsProcessor.ProcessAsync(context);
 
                 // ChatSuccessHandler와 ChatResultProcessor를 같은 스코프에서 실행
-                using var scope = _scopeFactory.CreateScope();
+                
                 var successHandler = scope.ServiceProvider.GetRequiredService<ChatSuccessHandler>();
                 var resultProcessor = scope.ServiceProvider.GetRequiredService<ChatResultProcessor>();
                 
@@ -121,7 +121,8 @@ namespace ProjectVG.Application.Services.Chat
                 await resultProcessor.PersistResultsAsync(context);
             }
             catch (Exception) {
-                await _chatFailureHandler.HandleAsync(context);
+                var failureHandler = scope.ServiceProvider.GetRequiredService<ChatFailureHandler>();
+                await failureHandler.HandleAsync(context);
             }
             finally {
                 LogChatProcessContext(context);

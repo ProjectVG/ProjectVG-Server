@@ -8,7 +8,7 @@ namespace ProjectVG.Domain.Repositories
         Task<ConversationHistory> AddAsync(ConversationHistory conversationHistory);
         Task DeleteConversationAsync(Guid userId, Guid characterId);
         Task<int> GetMessageCountAsync(Guid userId, Guid characterId);
-        Task<IEnumerable<ConversationHistory>> GetByConversationIdAsync(string conversationId);
+        Task<IEnumerable<ConversationHistory>> GetByConversationIdAsync(string conversationId, Guid userId);
         Task DeleteMessageAsync(Guid messageId);
     }
 }

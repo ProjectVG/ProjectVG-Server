@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using ProjectVG.Domain.Entities.ConversationHistorys;
 using ProjectVG.Domain.Repositories;
 using ProjectVG.Infrastructure.Persistence.EfCore;
@@ -24,7 +23,7 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Conversation
                 .OrderByDescending(ch => ch.Timestamp)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .OrderBy(ch => ch.Timestamp) // 최종적으로 시간순으로 정렬하여 반환
+                .OrderBy(ch => ch.Timestamp)
                 .ToListAsync();
 
             return messages;
@@ -63,10 +62,10 @@ namespace ProjectVG.Infrastructure.Persistence.Repositories.Conversation
                 .CountAsync(ch => ch.UserId == userId && ch.CharacterId == characterId);
         }
 
-        public async Task<IEnumerable<ConversationHistory>> GetByConversationIdAsync(string conversationId)
+        public async Task<IEnumerable<ConversationHistory>> GetByConversationIdAsync(string conversationId, Guid userId)
         {
             return await _context.ConversationHistories
-                .Where(ch => ch.ConversationId == conversationId)
+                .Where(ch => ch.ConversationId == conversationId && ch.UserId == userId)
                 .OrderBy(ch => ch.Timestamp)
                 .ToListAsync();
         }

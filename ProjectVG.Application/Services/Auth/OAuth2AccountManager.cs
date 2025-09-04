@@ -1,9 +1,4 @@
-using Microsoft.Extensions.Logging;
-using ProjectVG.Application.Models.Auth;
-using ProjectVG.Application.Models.User;
 using ProjectVG.Application.Services.Users;
-using ProjectVG.Common.Constants;
-using ProjectVG.Common.Exceptions;
 
 namespace ProjectVG.Application.Services.Auth
 {

@@ -1,6 +1,4 @@
 using ProjectVG.Application.Services.Auth.Providers;
-using ProjectVG.Common.Exceptions;
-using ProjectVG.Common.Constants;
 
 namespace ProjectVG.Application.Services.Auth
 {

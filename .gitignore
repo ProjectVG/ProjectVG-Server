@@ -114,6 +114,12 @@ Thumbs.db
 .DS_Store
 Desktop.ini
 
+# Shell configuration files
+.zshrc
+.bashrc
+.bash_profile
+.profile
+
 # Crash dumps
 *.dmp
 

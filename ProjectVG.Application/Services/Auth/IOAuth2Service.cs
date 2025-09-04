@@ -41,6 +41,13 @@ namespace ProjectVG.Application.Services.Auth
         /// <param name="state">삭제할 토큰 데이터의 상태값</param>
         Task DeleteTokenDataAsync(string state);
 
+        /// <summary>
+        /// 상태값으로 저장된 OAuth2 토큰 데이터를 원자적으로 소비 (조회 후 삭제)
+        /// </summary>
+        /// <param name="state">상태값</param>
+        /// <returns>토큰 데이터 (없으면 null)</returns>
+        Task<OAuth2TokenData?> ConsumeTokenDataAsync(string state);
+
         
         /// <summary>
         /// OAuth2 요청 정보 저장 (임시 저장소)

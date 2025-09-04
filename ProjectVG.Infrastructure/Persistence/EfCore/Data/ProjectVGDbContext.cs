@@ -30,6 +30,14 @@ namespace ProjectVG.Infrastructure.Persistence.EfCore
                 entity.Property(e => e.TotalCreditsEarned).HasDefaultValue(0m);
                 entity.Property(e => e.TotalCreditsSpent).HasDefaultValue(0m);
                 entity.Property(e => e.InitialCreditsGranted).HasDefaultValue(false);
+                
+                // 유니크 인덱스 설정
+                entity.HasIndex(u => u.Email).IsUnique();
+                entity.HasIndex(u => u.UID).IsUnique();
+                entity.HasIndex(u => new { u.Provider, u.ProviderId }).IsUnique();
+                
+                // 동시성 토큰 설정
+                entity.Property(u => u.RowVersion).IsRowVersion().IsConcurrencyToken();
             });
 
             // Characters 엔티티 설정 (복잡한 설정만 Fluent API로 유지)

@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 
 namespace ProjectVG.Application.Models.Auth
 {

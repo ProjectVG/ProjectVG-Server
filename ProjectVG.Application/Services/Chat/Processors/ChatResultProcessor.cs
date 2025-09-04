@@ -1,5 +1,4 @@
 using ProjectVG.Application.Models.Chat;
-using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Application.Services.Conversation;
 using ProjectVG.Application.Services.WebSocket;
 using ProjectVG.Infrastructure.Integrations.MemoryClient;

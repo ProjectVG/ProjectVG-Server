@@ -2,7 +2,7 @@ namespace ProjectVG.Common.Models.Session
 {
 	public record SessionInfo
 	{
-		public string SessionId { get; init; } = string.Empty;
+		public required string SessionId { get; init; }
 		public string? UserId { get; init; }
 		public DateTime ConnectedAt { get; init; } = DateTime.UtcNow;
 	}
