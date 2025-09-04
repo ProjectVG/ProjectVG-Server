@@ -1,9 +1,7 @@
-using System.Text;
 using System.Text.Json;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Infrastructure.Integrations.LLMClient.Models;
-using ProjectVG.Common.Constants;
 using Microsoft.Extensions.Configuration;
 
 namespace ProjectVG.Infrastructure.Integrations.LLMClient
@@ -18,104 +16,51 @@ namespace ProjectVG.Infrastructure.Integrations.LLMClient
         {
             _httpClient = httpClient;
             _logger = logger;
-            
-            // JSON 직렬화 옵션 설정
-            _jsonOptions = new JsonSerializerOptions
-            {
+
+            _jsonOptions = new JsonSerializerOptions {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 WriteIndented = false
             };
 
-            // HTTP 클라이언트 기본 설정
-            _httpClient.BaseAddress = new Uri(configuration["LLM:BaseUrl"] ?? "http://localhost:5601/");
+            _httpClient.BaseAddress = new Uri(configuration["LLM:BaseUrl"] ?? "");
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
             _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         }
-
         public async Task<LLMResponse> SendRequestAsync(LLMRequest request)
         {
-            try
-            {
-                _logger.LogDebug("LLM 요청 시작: {Model}, 사용자 메시지: {UserPrompt}", 
-                    request.Model, 
-                    request.UserPrompt[..Math.Min(50, request.UserPrompt.Length)]);
+            try {
+                if (_logger.IsEnabled(LogLevel.Debug))
+                    _logger.LogDebug("LLM 요청 시작: {Model}", request.Model);
 
                 using var jsonContent = JsonContent.Create(request, options: _jsonOptions);
                 using var response = await _httpClient.PostAsync("api/v1/chat", jsonContent);
 
-                if (!response.IsSuccessStatusCode)
-                {
+                if (!response.IsSuccessStatusCode) {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("LLM 서비스 오류: {StatusCode}, {Error}", response.StatusCode, errorContent);
-                    
-                    return new LLMResponse
-                    {
-                        Success = false,
-                        Error = $"서비스 오류: {response.StatusCode}"
-                    };
+                    _logger.LogDebug("LLM 오류: {StatusCode}, {Error}", response.StatusCode, errorContent);
+                    throw new HttpRequestException($"LLM 서비스 오류: {response.StatusCode}");
                 }
 
                 var responseContent = await response.Content.ReadAsStringAsync();
                 var llmResponse = JsonSerializer.Deserialize<LLMResponse>(responseContent, _jsonOptions);
 
-                if (llmResponse?.Success == true)
-                {
-                    _logger.LogInformation("LLM 요청 성공: 토큰 {TotalTokens}, 응답 길이 {ResponseLength}", 
-                        llmResponse.TotalTokens, 
-                        llmResponse.OutputText?.Length ?? 0);
+                if (llmResponse == null) {
+                    _logger.LogDebug("응답 파싱 실패");
+                    throw new InvalidOperationException("응답을 파싱할 수 없습니다.");
                 }
 
-                return llmResponse ?? new LLMResponse
-                {
-                    Success = false,
-                    Error = "응답을 파싱할 수 없습니다."
-                };
+                _logger.LogDebug("LLM 성공: 토큰 {TotalTokens}, 응답길이 {ResponseLength}",
+                    llmResponse.TotalTokens,
+                    llmResponse.OutputText?.Length ?? 0);
+
+                return llmResponse;
             }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogWarning("LLM 서비스 연결 오류 - Mock 응답 반환: {Error}", ex.Message);
-                
-                // 임시 Mock 응답 (개발 환경에서만)
-                return new LLMResponse
-                {
-                    Success = true,
-                    Id = "mock-chatcmpl-" + Guid.NewGuid().ToString("N")[..8],
-                    RequestId = request.RequestId ?? "",
-                    Object = "response",
-                    CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                    Status = "completed",
-                    Model = request.Model ?? "gpt-4o-mini",
-                    OutputText = "안녕하세요! 저는 현재 Mock 모드로 동작하고 있습니다. 실제 LLM 서비스가 연결되지 않았습니다.",
-                    InputTokens = 30,
-                    OutputTokens = 20,
-                    TotalTokens = 50,
-                    CachedTokens = 0,
-                    ReasoningTokens = 0,
-                    TextFormatType = "text",
-                    Cost = 5,
-                    ResponseTime = 0.1,
-                    UseUserApiKey = request.UseUserApiKey ?? false
-                };
-            }
-            catch (TaskCanceledException ex)
-            {
-                _logger.LogError(ex, "LLM 요청 시간 초과");
-                return new LLMResponse
-                {
-                    Success = false,
-                    Error = "요청 시간이 초과되었습니다."
-                };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "LLM 요청 처리 중 예외 발생");
-                return new LLMResponse
-                {
-                    Success = false,
-                    Error = "요청 처리 중 오류가 발생했습니다."
-                };
+            catch (Exception ex) {
+                _logger.LogDebug(ex, "LLM 요청 처리 중 예외 발생");
+                throw;
             }
         }
+
 
         public async Task<LLMResponse> CreateTextResponseAsync(
             string systemMessage,
@@ -126,8 +71,7 @@ namespace ProjectVG.Infrastructure.Integrations.LLMClient
             int? maxTokens = 1000,
             float? temperature = 0.7f)
         {
-            var request = new LLMRequest
-            {
+            var request = new LLMRequest {
                 RequestId = Guid.NewGuid().ToString(),
                 SystemPrompt = systemMessage,
                 UserPrompt = userMessage,
@@ -143,4 +87,4 @@ namespace ProjectVG.Infrastructure.Integrations.LLMClient
             return await SendRequestAsync(request);
         }
     }
-} 
+}
