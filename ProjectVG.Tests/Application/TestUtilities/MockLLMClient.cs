@@ -112,7 +112,7 @@ namespace ProjectVG.Tests.Application.TestUtilities
             string systemMessage, 
             string userMessage, 
             string? instructions = "", 
-            List<string>? conversationHistory = null, 
+            List<History>? conversationHistory = null, 
             string? model = "gpt-4o-mini", 
             int? maxTokens = 1000, 
             float? temperature = 0.7f)
@@ -123,7 +123,7 @@ namespace ProjectVG.Tests.Application.TestUtilities
                 SystemPrompt = systemMessage,
                 UserPrompt = userMessage,
                 Instructions = instructions ?? "",
-                ConversationHistory = conversationHistory?.Select(msg => new History { Role = "user", Content = msg }).ToList() ?? new List<History>(),
+                ConversationHistory = conversationHistory ?? new List<History>(),
                 Model = model ?? "gpt-4o-mini",
                 MaxTokens = maxTokens ?? 1000,
                 Temperature = temperature ?? 0.7f,
