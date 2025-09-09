@@ -9,7 +9,6 @@ namespace ProjectVG.Application.Models.Chat
         public Guid UserId { get; private set; }
         public Guid CharacterId { get; private set; }
         public string UserMessage { get; private set; } = string.Empty;
-        public string MemoryStore { get; private set; } = string.Empty;
         public DateTime UserRequestAt { get; private set; } = DateTime.Now;
         public bool UseTTS { get; private set; } = true;
         
@@ -27,7 +26,6 @@ namespace ProjectVG.Application.Models.Chat
             UserId = command.UserId;
             CharacterId = command.CharacterId;
             UserMessage = command.UserPrompt;
-            MemoryStore = command.UserId.ToString();
             UseTTS = command.UseTTS;
             UserRequestAt = command.UserRequestAt;
         }
@@ -42,7 +40,6 @@ namespace ProjectVG.Application.Models.Chat
             UserId = command.UserId;
             CharacterId = command.CharacterId;
             UserMessage = command.UserPrompt;
-            MemoryStore = command.UserId.ToString();
             UseTTS = command.UseTTS;
             UserRequestAt = command.UserRequestAt;
             
@@ -63,11 +60,15 @@ namespace ProjectVG.Application.Models.Chat
             Cost += additionalCost;
         }
 
-        public IEnumerable<string> ParseConversationHistory(int count = 5)
+        public IEnumerable<ConversationHistory> ParseConversationHistory(int count = 10)
         {
-            if (ConversationHistory == null) return Enumerable.Empty<string>();
+            if (ConversationHistory == null) 
+            {
+                return Enumerable.Empty<ConversationHistory>();
+            }
 
-            return ConversationHistory.Take(count).Select(h => $"{h.Role}: {h.Content}");
+            var parsed = ConversationHistory.Take(count);
+            return parsed.ToList();
         }
 
         public string ToDebugString()

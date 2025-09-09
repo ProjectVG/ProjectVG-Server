@@ -26,7 +26,7 @@ namespace ProjectVG.Infrastructure.Integrations.LLMClient
             string systemMessage,
             string userMessage,
             string? instructions = "",
-            List<string>? conversationHistory = default,
+            List<History>? conversationHistory = default,
             string? model = "gpt-4o-mini",
             int? maxTokens = 1000,
             float? temperature = 0.7f);

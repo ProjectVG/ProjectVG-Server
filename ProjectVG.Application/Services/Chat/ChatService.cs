@@ -89,10 +89,10 @@ namespace ProjectVG.Application.Services.Chat
             await _actionProcessor.ProcessAsync(command);
 
             var characterInfo = await _characterService.GetCharacterByIdAsync(command.CharacterId);
-            var conversationHistoryContext = await _conversationService.GetConversationHistoryAsync(command.UserId, command.CharacterId, 10);
+            
+            var conversationHistoryContext = await _conversationService.GetConversationHistoryAsync(command.UserId, command.CharacterId, 1, 10);
+            
             var memoryContext = await _memoryPreprocessor.CollectMemoryContextAsync(command);
-
-
 
             return new ChatProcessContext(
                 command,

@@ -82,26 +82,26 @@ namespace ProjectVG.Tests.Application.Services.Chat
         }
 
         [Fact]
-        public void ServiceProvider_GetRequiredService_ShouldResolveServicesCorrectly()
+        public void ServiceProvider_GetService_ShouldResolveServicesCorrectly()
         {
-            // Arrange
-            var mockChatSuccessHandler = new Mock<ChatSuccessHandler>();
-            var mockChatResultProcessor = new Mock<ChatResultProcessor>();
+            // Arrange - Test service provider setup without needing concrete instances
+            var dummySuccessHandler = new object();
+            var dummyResultProcessor = new object();
             
-            _mockServiceProvider.Setup(x => x.GetRequiredService<ChatSuccessHandler>())
-                .Returns(mockChatSuccessHandler.Object);
-            _mockServiceProvider.Setup(x => x.GetRequiredService<ChatResultProcessor>())
-                .Returns(mockChatResultProcessor.Object);
+            _mockServiceProvider.Setup(x => x.GetService(typeof(ChatSuccessHandler)))
+                .Returns(dummySuccessHandler);
+            _mockServiceProvider.Setup(x => x.GetService(typeof(ChatResultProcessor)))
+                .Returns(dummyResultProcessor);
 
             // Act
-            var successHandler = _mockServiceProvider.Object.GetRequiredService<ChatSuccessHandler>();
-            var resultProcessor = _mockServiceProvider.Object.GetRequiredService<ChatResultProcessor>();
+            var successHandler = _mockServiceProvider.Object.GetService(typeof(ChatSuccessHandler));
+            var resultProcessor = _mockServiceProvider.Object.GetService(typeof(ChatResultProcessor));
 
             // Assert
             successHandler.Should().NotBeNull();
             resultProcessor.Should().NotBeNull();
-            successHandler.Should().BeSameAs(mockChatSuccessHandler.Object);
-            resultProcessor.Should().BeSameAs(mockChatResultProcessor.Object);
+            successHandler.Should().BeSameAs(dummySuccessHandler);
+            resultProcessor.Should().BeSameAs(dummyResultProcessor);
         }
 
         [Fact]
@@ -111,18 +111,18 @@ namespace ProjectVG.Tests.Application.Services.Chat
             // The actual method is private and complex, so we test the scope creation pattern
 
             // Arrange
-            var mockChatSuccessHandler = new Mock<ChatSuccessHandler>();
-            var mockChatResultProcessor = new Mock<ChatResultProcessor>();
+            var dummySuccessHandler = new object();
+            var dummyResultProcessor = new object();
             
-            _mockServiceProvider.Setup(x => x.GetRequiredService<ChatSuccessHandler>())
-                .Returns(mockChatSuccessHandler.Object);
-            _mockServiceProvider.Setup(x => x.GetRequiredService<ChatResultProcessor>())
-                .Returns(mockChatResultProcessor.Object);
+            _mockServiceProvider.Setup(x => x.GetService(typeof(ChatSuccessHandler)))
+                .Returns(dummySuccessHandler);
+            _mockServiceProvider.Setup(x => x.GetService(typeof(ChatResultProcessor)))
+                .Returns(dummyResultProcessor);
 
             // Act - Simulate the scope creation pattern used in ChatService
             using var scope = _mockScopeFactory.Object.CreateScope();
-            var successHandler = scope.ServiceProvider.GetRequiredService<ChatSuccessHandler>();
-            var resultProcessor = scope.ServiceProvider.GetRequiredService<ChatResultProcessor>();
+            var successHandler = scope.ServiceProvider.GetService(typeof(ChatSuccessHandler));
+            var resultProcessor = scope.ServiceProvider.GetService(typeof(ChatResultProcessor));
 
             // Assert
             _mockScopeFactory.Verify(x => x.CreateScope(), Times.Once);
@@ -130,8 +130,8 @@ namespace ProjectVG.Tests.Application.Services.Chat
             resultProcessor.Should().NotBeNull();
             
             // Verify both services come from the same scope
-            _mockServiceProvider.Verify(x => x.GetRequiredService<ChatSuccessHandler>(), Times.Once);
-            _mockServiceProvider.Verify(x => x.GetRequiredService<ChatResultProcessor>(), Times.Once);
+            _mockServiceProvider.Verify(x => x.GetService(typeof(ChatSuccessHandler)), Times.Once);
+            _mockServiceProvider.Verify(x => x.GetService(typeof(ChatResultProcessor)), Times.Once);
 
             await Task.CompletedTask; // To satisfy async context
         }
@@ -162,21 +162,21 @@ namespace ProjectVG.Tests.Application.Services.Chat
             // use the same service provider instance, preventing DbContext disposal issues
 
             // Arrange
-            var mockChatSuccessHandler = new Mock<ChatSuccessHandler>();
-            var mockChatResultProcessor = new Mock<ChatResultProcessor>();
+            var dummySuccessHandler = new object();
+            var dummyResultProcessor = new object();
             
-            _mockServiceProvider.Setup(x => x.GetRequiredService<ChatSuccessHandler>())
-                .Returns(mockChatSuccessHandler.Object);
-            _mockServiceProvider.Setup(x => x.GetRequiredService<ChatResultProcessor>())
-                .Returns(mockChatResultProcessor.Object);
+            _mockServiceProvider.Setup(x => x.GetService(typeof(ChatSuccessHandler)))
+                .Returns(dummySuccessHandler);
+            _mockServiceProvider.Setup(x => x.GetService(typeof(ChatResultProcessor)))
+                .Returns(dummyResultProcessor);
 
             // Act
             using var scope = _mockScopeFactory.Object.CreateScope();
             var provider1 = scope.ServiceProvider;
             var provider2 = scope.ServiceProvider;
             
-            var service1 = provider1.GetRequiredService<ChatSuccessHandler>();
-            var service2 = provider2.GetRequiredService<ChatResultProcessor>();
+            var service1 = provider1.GetService(typeof(ChatSuccessHandler));
+            var service2 = provider2.GetService(typeof(ChatResultProcessor));
 
             // Assert
             provider1.Should().BeSameAs(provider2, "Same scope should always return same ServiceProvider");
@@ -184,8 +184,8 @@ namespace ProjectVG.Tests.Application.Services.Chat
             service2.Should().NotBeNull();
             
             // Both services should be resolved from the same provider instance
-            _mockServiceProvider.Verify(x => x.GetRequiredService<ChatSuccessHandler>(), Times.Once);
-            _mockServiceProvider.Verify(x => x.GetRequiredService<ChatResultProcessor>(), Times.Once);
+            _mockServiceProvider.Verify(x => x.GetService(typeof(ChatSuccessHandler)), Times.Once);
+            _mockServiceProvider.Verify(x => x.GetService(typeof(ChatResultProcessor)), Times.Once);
         }
 
         #endregion
@@ -195,14 +195,51 @@ namespace ProjectVG.Tests.Application.Services.Chat
         private ChatService CreateTestChatService()
         {
             // Create minimal mocks for all required dependencies
-            var mockValidator = new Mock<ChatRequestValidator>();
-            var mockMemoryPreprocessor = new Mock<MemoryContextPreprocessor>();
+            var mockSessionStorage = new Mock<ProjectVG.Infrastructure.Persistence.Session.ISessionStorage>();
+            var mockUserService = new Mock<ProjectVG.Application.Services.Users.IUserService>();
+            var mockCreditService = new Mock<ProjectVG.Application.Services.Credit.ICreditManagementService>();
+            var mockValidatorLogger = new Mock<ILogger<ChatRequestValidator>>();
+            
+            var mockMemoryClient = new Mock<ProjectVG.Infrastructure.Integrations.MemoryClient.IMemoryClient>();
+            var mockMemoryLogger = new Mock<ILogger<MemoryContextPreprocessor>>();
+            
             var mockInputProcessor = new Mock<ICostTrackingDecorator<UserInputAnalysisProcessor>>();
-            var mockActionProcessor = new Mock<UserInputActionProcessor>();
+            
+            var mockActionLogger = new Mock<ILogger<UserInputActionProcessor>>();
+            
             var mockLLMProcessor = new Mock<ICostTrackingDecorator<ChatLLMProcessor>>();
             var mockTTSProcessor = new Mock<ICostTrackingDecorator<ChatTTSProcessor>>();
-            var mockResultProcessor = new Mock<ChatResultProcessor>();
-            var mockFailureHandler = new Mock<ChatFailureHandler>();
+            
+            var mockResultLogger = new Mock<ILogger<ChatResultProcessor>>();
+            var mockWebSocketManager = new Mock<ProjectVG.Application.Services.WebSocket.IWebSocketManager>();
+            var mockMemoryClientForResult = new Mock<ProjectVG.Infrastructure.Integrations.MemoryClient.IMemoryClient>();
+            
+            var mockFailureLogger = new Mock<ILogger<ChatFailureHandler>>();
+
+            var mockValidator = new ChatRequestValidator(
+                mockSessionStorage.Object,
+                mockUserService.Object,
+                _mockCharacterService.Object,
+                mockCreditService.Object,
+                mockValidatorLogger.Object);
+            
+            var mockMemoryPreprocessor = new MemoryContextPreprocessor(
+                mockMemoryClient.Object,
+                mockMemoryLogger.Object);
+            
+            var mockActionProcessor = new UserInputActionProcessor(
+                _mockConversationService.Object,
+                mockActionLogger.Object);
+            
+            var mockResultProcessor = new ChatResultProcessor(
+                mockResultLogger.Object,
+                _mockConversationService.Object,
+                mockMemoryClientForResult.Object,
+                mockWebSocketManager.Object);
+            
+            var mockFailureHandler = new ChatFailureHandler(
+                mockFailureLogger.Object,
+                mockWebSocketManager.Object);
 
             return new ChatService(
                 _mockMetricsService.Object,
@@ -210,14 +247,14 @@ namespace ProjectVG.Tests.Application.Services.Chat
                 _mockLogger.Object,
                 _mockConversationService.Object,
                 _mockCharacterService.Object,
-                mockValidator.Object,
-                mockMemoryPreprocessor.Object,
+                mockValidator,
+                mockMemoryPreprocessor,
                 mockInputProcessor.Object,
-                mockActionProcessor.Object,
+                mockActionProcessor,
                 mockLLMProcessor.Object,
                 mockTTSProcessor.Object,
-                mockResultProcessor.Object,
-                mockFailureHandler.Object
+                mockResultProcessor,
+                mockFailureHandler
             );
         }
 
