@@ -76,8 +76,10 @@ namespace ProjectVG.Infrastructure
                 client.BaseAddress = new Uri(memoryBaseUrl);
             });
 
+            var ttsBaseUrl = configuration.GetValue<string>("TTS:BaseUrl") ?? Environment.GetEnvironmentVariable("TTS_BASE_URL") ?? "https://supertoneapi.com";
+
             services.AddHttpClient<ITextToSpeechClient, TextToSpeechClient>((sp, client) => {
-                client.BaseAddress = new Uri("https://supertoneapi.com");
+                client.BaseAddress = new Uri(ttsBaseUrl);
 
                 var apiKey = configuration.GetValue<string>("TTSApiKey") ?? Environment.GetEnvironmentVariable("TTS_API_KEY");
 
