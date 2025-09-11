@@ -141,7 +141,7 @@ namespace ProjectVG.Tests.Application.Integration
             existsBefore.Should().BeTrue();
 
             // Act - Delete
-            await _characterService.DeleteCharacterAsync(createdCharacter.Id, createCommand.UserId!.Value);
+            await _characterService.DeleteCharacterAsync(createdCharacter.Id);
 
             // Assert - Should not exist
             var existsAfter = await _characterService.CharacterExistsAsync(createdCharacter.Id);
@@ -160,9 +160,8 @@ namespace ProjectVG.Tests.Application.Integration
             var nonExistentId = Guid.NewGuid();
 
             // Act & Assert
-            var userId = Guid.NewGuid();
             await Assert.ThrowsAsync<NotFoundException>(
-                () => _characterService.DeleteCharacterAsync(nonExistentId, userId));
+                () => _characterService.DeleteCharacterAsync(nonExistentId));
         }
 
         [Fact]
@@ -170,16 +169,15 @@ namespace ProjectVG.Tests.Application.Integration
         {
             // Arrange
             await _fixture.ClearDatabaseAsync();
-            var command1 = TestDataBuilder.CreateCreateCharacterWithFieldsCommand("Character 1");
-            var command2 = TestDataBuilder.CreateCreateCharacterWithFieldsCommand("Character 2");
-            var command3 = TestDataBuilder.CreateCreateCharacterWithFieldsCommand("Character 3");
-            
-            var character1 = await _characterService.CreateCharacterWithFieldsAsync(command1);
-            var character2 = await _characterService.CreateCharacterWithFieldsAsync(command2);
-            var character3 = await _characterService.CreateCharacterWithFieldsAsync(command3);
+            var character1 = await _characterService.CreateCharacterWithFieldsAsync(
+                TestDataBuilder.CreateCreateCharacterWithFieldsCommand("Character 1"));
+            var character2 = await _characterService.CreateCharacterWithFieldsAsync(
+                TestDataBuilder.CreateCreateCharacterWithFieldsCommand("Character 2"));
+            var character3 = await _characterService.CreateCharacterWithFieldsAsync(
+                TestDataBuilder.CreateCreateCharacterWithFieldsCommand("Character 3"));
 
             // Act - Delete middle character
-            await _characterService.DeleteCharacterAsync(character2.Id, command2.UserId!.Value);
+            await _characterService.DeleteCharacterAsync(character2.Id);
 
             // Assert
             var allCharacters = await _characterService.GetAllCharactersAsync();
@@ -257,7 +255,7 @@ namespace ProjectVG.Tests.Application.Integration
             retrievedAfterUpdate.Name.Should().Be("Updated Lifecycle Character");
 
             // Delete
-            await _characterService.DeleteCharacterAsync(createdCharacter.Id, createCommand.UserId!.Value);
+            await _characterService.DeleteCharacterAsync(createdCharacter.Id);
 
             // Verify deletion
             var existsAfterDelete = await _characterService.CharacterExistsAsync(createdCharacter.Id);

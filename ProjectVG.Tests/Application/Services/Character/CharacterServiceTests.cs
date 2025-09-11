@@ -489,9 +489,7 @@ namespace ProjectVG.Tests.Application.Services.Character
         {
             // Arrange
             var characterId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
             var character = TestDataBuilder.CreateCharacterEntityWithIndividualConfig("TestCharacter", characterId);
-            character.UserId = userId;
 
             _mockCharacterRepository.Setup(x => x.GetByIdAsync(characterId))
                 .ReturnsAsync(character);
@@ -499,7 +497,7 @@ namespace ProjectVG.Tests.Application.Services.Character
                 .Returns(Task.CompletedTask);
 
             // Act
-            await _characterService.DeleteCharacterAsync(characterId, userId);
+            await _characterService.DeleteCharacterAsync(characterId);
 
             // Assert
             _mockCharacterRepository.Verify(x => x.GetByIdAsync(characterId), Times.Once);
@@ -511,14 +509,13 @@ namespace ProjectVG.Tests.Application.Services.Character
         {
             // Arrange
             var characterId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
 
             _mockCharacterRepository.Setup(x => x.GetByIdAsync(characterId))
                 .ReturnsAsync((ProjectVG.Domain.Entities.Characters.Character?)null);
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<NotFoundException>(
-                () => _characterService.DeleteCharacterAsync(characterId, userId)
+                () => _characterService.DeleteCharacterAsync(characterId)
             );
 
             exception.ErrorCode.Should().Be(ErrorCode.CHARACTER_NOT_FOUND);
@@ -531,9 +528,7 @@ namespace ProjectVG.Tests.Application.Services.Character
         {
             // Arrange
             var characterId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
             var character = TestDataBuilder.CreateCharacterEntityWithIndividualConfig("DeleteTestCharacter", characterId);
-            character.UserId = userId;
 
             _mockCharacterRepository.Setup(x => x.GetByIdAsync(characterId))
                 .ReturnsAsync(character);
@@ -541,7 +536,7 @@ namespace ProjectVG.Tests.Application.Services.Character
                 .Returns(Task.CompletedTask);
 
             // Act
-            await _characterService.DeleteCharacterAsync(characterId, userId);
+            await _characterService.DeleteCharacterAsync(characterId);
 
             // Assert
             _mockLogger.Verify(

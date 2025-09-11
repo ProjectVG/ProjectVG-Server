@@ -111,8 +111,7 @@ namespace ProjectVG.Tests.Application.TestUtilities
             string? speechStyle = "Casual",
             string? summary = "Test character summary",
             string? userAlias = "User",
-            string? imageUrl = null,
-            Guid? userId = null)
+            string? imageUrl = null)
         {
             return new CreateCharacterWithFieldsCommand
             {
@@ -121,7 +120,6 @@ namespace ProjectVG.Tests.Application.TestUtilities
                 IsActive = isActive,
                 VoiceId = voiceId,
                 ImageUrl = imageUrl ?? string.Empty,
-                UserId = userId ?? Guid.NewGuid(),
                 IndividualConfig = new IndividualConfig
                 {
                     Role = role,
