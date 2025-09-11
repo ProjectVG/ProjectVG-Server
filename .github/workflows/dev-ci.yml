@@ -1,4 +1,4 @@
-name: Development CI
+name: 개발 환경 CI
 
 on:
   pull_request:
@@ -13,19 +13,19 @@ env:
   
 jobs:
   build-and-test:
-    name: Build and Test
+    name: 빌드 및 테스트
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
+    - name: 소스 코드 체크아웃
       uses: actions/checkout@v4
       
-    - name: Setup .NET
+    - name: .NET 환경 설정
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         
-    - name: Cache NuGet packages
+    - name: NuGet 패키지 캐싱
       uses: actions/cache@v4
       with:
         path: ~/.nuget/packages
@@ -33,16 +33,34 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-nuget-
           
-    - name: Restore dependencies
-      run: dotnet restore ProjectVG.sln
+    - name: 종속성 복원
+      run: |
+        echo "복원 중..."
+        start_time=$(date +%s)
+        dotnet restore ProjectVG.sln
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        echo "복원 완료 (${duration}초)"
       
-    - name: Build solution
-      run: dotnet build ProjectVG.sln --no-restore --configuration Release
+    - name: 솔루션 빌드
+      run: |
+        echo "🔨 빌드 중..."
+        start_time=$(date +%s)
+        dotnet build ProjectVG.sln --no-restore --configuration Release
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        echo "빌드 완료 (${duration}초)"
       
-    - name: Run tests
-      run: dotnet test ProjectVG.Tests/ProjectVG.Tests.csproj --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --logger trx --results-directory coverage
+    - name: 단위 테스트 실행
+      run: |
+        echo "테스트 중..."
+        start_time=$(date +%s)
+        dotnet test --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --logger trx --results-directory coverage
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        echo "테스트 완료 (${duration}초)"
       
-    - name: Code Coverage Report
+    - name: 코드 커버리지 리포트 생성
       uses: irongut/CodeCoverageSummary@v1.3.0
       with:
         filename: coverage/**/coverage.cobertura.xml
@@ -55,23 +73,24 @@ jobs:
         output: both
         thresholds: '60 80'
         
-    - name: Add Coverage PR Comment
+    - name: PR에 커버리지 결과 댓글 추가
       uses: marocchino/sticky-pull-request-comment@v2
       if: github.event_name == 'pull_request'
       with:
         recreate: true
         path: code-coverage-results.md
         
-    - name: Publish Test Results
+    - name: 테스트 결과 발행
       uses: dorny/test-reporter@v1
       if: success() || failure()
       with:
-        name: Test Results
+        name: 테스트 결과
         path: coverage/*.trx
         reporter: dotnet-trx
         
-    - name: Build Status Check
+    - name: 빌드 상태 확인
       if: failure()
       run: |
-        echo "❌ Build or tests failed"
+        echo "❌ 빌드 실패"
+        echo "단계를 확인하세요."
         exit 1
