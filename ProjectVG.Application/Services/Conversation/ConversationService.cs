@@ -19,6 +19,7 @@ namespace ProjectVG.Application.Services.Conversation
 
         public async Task<ConversationHistory> AddMessageAsync(Guid userId, Guid characterId, string role, string content, DateTime timestamp, string? conversationId = null)
         {
+
             if (string.IsNullOrWhiteSpace(content))
             {
                 throw new ValidationException(ErrorCode.MESSAGE_EMPTY, content);
@@ -45,11 +46,13 @@ namespace ProjectVG.Application.Services.Conversation
             };
 
             var addedMessage = await _conversationRepository.AddAsync(message);
+            
             return addedMessage;
         }
 
         public async Task<IEnumerable<ConversationHistory>> GetConversationHistoryAsync(Guid userId, Guid characterId, int page = 1, int pageSize = 10)
         {
+
             if (page <= 0)
             {
                 throw new ValidationException(ErrorCode.VALIDATION_FAILED, $"Page must be greater than 0, but was: {page}");
@@ -61,6 +64,7 @@ namespace ProjectVG.Application.Services.Conversation
             }
 
             var history = await _conversationRepository.GetConversationHistoryAsync(userId, characterId, page, pageSize);
+            
             return history;
         }
 

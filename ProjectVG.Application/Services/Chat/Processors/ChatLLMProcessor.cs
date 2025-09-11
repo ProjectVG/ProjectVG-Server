@@ -23,11 +23,20 @@ namespace ProjectVG.Application.Services.Chat.Processors
         {
             var format = LLMFormatFactory.CreateChatFormat();
 
+            var conversationHistory = context.ParseConversationHistory()
+                .Select(h => new ProjectVG.Infrastructure.Integrations.LLMClient.Models.History 
+                { 
+                    Role = h.Role, 
+                    Content = h.Content 
+                })
+                .ToList();
+
+
             var llmResponse = await _llmClient.CreateTextResponseAsync(
                     format.GetSystemMessage(context),
                     context.UserMessage,
                     format.GetInstructions(context),
-                    context.ParseConversationHistory().ToList(),
+                    conversationHistory,
                     model: format.Model,
                     maxTokens: format.MaxTokens,
                     temperature: format.Temperature
@@ -37,8 +46,6 @@ namespace ProjectVG.Application.Services.Chat.Processors
             var cost = format.CalculateCost(llmResponse.InputTokens, llmResponse.OutputTokens);
             context.SetResponse(llmResponse.OutputText, segments, cost);
 
-            _logger.LogInformation("채팅 처리 결과: {Response}\n 세그먼트 생성 개수: {SementCount}\n 입력 토큰: {InputTokens}\n 출력 토큰: {OutputTokens}\n 비용: {Cost}",
-                llmResponse.OutputText, segments.Count, llmResponse.InputTokens, llmResponse.OutputTokens, cost);
         }
     }
 }

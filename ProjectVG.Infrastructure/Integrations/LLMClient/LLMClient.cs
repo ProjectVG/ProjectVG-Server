@@ -66,7 +66,7 @@ namespace ProjectVG.Infrastructure.Integrations.LLMClient
             string systemMessage,
             string userMessage,
             string? instructions = "",
-            List<string>? conversationHistory = default,
+            List<History>? conversationHistory = default,
             string? model = "gpt-4o-mini",
             int? maxTokens = 1000,
             float? temperature = 0.7f)
@@ -76,7 +76,7 @@ namespace ProjectVG.Infrastructure.Integrations.LLMClient
                 SystemPrompt = systemMessage,
                 UserPrompt = userMessage,
                 Instructions = instructions ?? "",
-                ConversationHistory = conversationHistory?.Select(msg => new History { Role = "user", Content = msg }).ToList() ?? new List<History>(),
+                ConversationHistory = conversationHistory ?? new List<History>(),
                 Model = model ?? "gpt-4o-mini",
                 MaxTokens = maxTokens ?? 1000,
                 Temperature = temperature ?? 0.7f,

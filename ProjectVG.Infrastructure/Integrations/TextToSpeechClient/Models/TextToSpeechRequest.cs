@@ -45,7 +45,7 @@ namespace ProjectVG.Infrastructure.Integrations.TextToSpeechClient.Models
         /// 피치 레벨을 조절합니다. 0은 원래 음성 피치이며, ±12단계가 가능합니다. 1단계는 반음입니다.
         /// </summary>
         [JsonPropertyName("pitch_shift")]
-        public int PitchShift { get; set; } = 0;
+        public int PitchShift { get; set; } = -3;
 
         /// <summary>
         /// 음성 중 음조 변화의 정도를 조절합니다. 값이 작을수록 음조가 평탄해지고, 값이 클수록 음조가 풍부해집니다.
@@ -57,6 +57,6 @@ namespace ProjectVG.Infrastructure.Integrations.TextToSpeechClient.Models
         /// 음성 속도를 조절합니다. 값이 1보다 작으면 음성 속도가 느려지고, 값이 1보다 크면 음성 속도가 빨라집니다.
         /// </summary>
         [JsonPropertyName("speed")]
-        public float Speed { get; set; } = 1.2f;
+        public float Speed { get; set; } = 1.1f;
     }
 } 
