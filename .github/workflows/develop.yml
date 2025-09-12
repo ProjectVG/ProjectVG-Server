@@ -1,4 +1,4 @@
-name: 개발 환경 CI
+name: Develop
 
 on:
   pull_request:
@@ -13,19 +13,19 @@ env:
   
 jobs:
   build-and-test:
-    name: 빌드 및 테스트
+    name: Build & Test
     runs-on: ubuntu-latest
     
     steps:
-    - name: 소스 코드 체크아웃
+    - name: Checkout
       uses: actions/checkout@v4
       
-    - name: .NET 환경 설정
+    - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         
-    - name: NuGet 패키지 캐싱
+    - name: Cache NuGet
       uses: actions/cache@v4
       with:
         path: ~/.nuget/packages
@@ -33,7 +33,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-nuget-
           
-    - name: 종속성 복원
+    - name: Restore
       run: |
         echo "복원 중..."
         start_time=$(date +%s)
@@ -42,7 +42,7 @@ jobs:
         duration=$((end_time - start_time))
         echo "복원 완료 (${duration}초)"
       
-    - name: 솔루션 빌드
+    - name: Build
       run: |
         echo "🔨 빌드 중..."
         start_time=$(date +%s)
@@ -51,7 +51,7 @@ jobs:
         duration=$((end_time - start_time))
         echo "빌드 완료 (${duration}초)"
       
-    - name: 단위 테스트 실행
+    - name: Test
       run: |
         echo "테스트 중..."
         start_time=$(date +%s)
@@ -59,38 +59,22 @@ jobs:
         end_time=$(date +%s)
         duration=$((end_time - start_time))
         echo "테스트 완료 (${duration}초)"
-      
-    - name: 코드 커버리지 리포트 생성
-      uses: irongut/CodeCoverageSummary@v1.3.0
-      with:
-        filename: coverage/**/coverage.cobertura.xml
-        badge: true
-        fail_below_min: false
-        format: markdown
-        hide_branch_rate: false
-        hide_complexity: true
-        indicators: true
-        output: both
-        thresholds: '60 80'
         
-    - name: PR에 커버리지 결과 댓글 추가
-      uses: marocchino/sticky-pull-request-comment@v2
-      if: github.event_name == 'pull_request'
-      with:
-        recreate: true
-        path: code-coverage-results.md
-        
-    - name: 테스트 결과 발행
+    - name: Publish Test Results
       uses: dorny/test-reporter@v1
       if: success() || failure()
       with:
-        name: 테스트 결과
+        name: Test Results
         path: coverage/*.trx
         reporter: dotnet-trx
         
-    - name: 빌드 상태 확인
+    - name: Success Status
+      if: success()
+      run: |
+        echo "✅ 빌드 및 테스트 성공"
+
+    - name: Build Status
       if: failure()
       run: |
         echo "❌ 빌드 실패"
-        echo "단계를 확인하세요."
         exit 1

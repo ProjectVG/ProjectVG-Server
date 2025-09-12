@@ -1,0 +1,45 @@
+
+networks:
+  projectvg-network:
+    driver: bridge
+  external-db-network:
+    external: true
+    name: projectvg-external-db
+
+services:
+  projectvg.api:
+    image: projectvgapi:latest
+    build:
+      context: .
+      dockerfile: ProjectVG.Api/Dockerfile
+      target: production
+      cache_from:
+        - projectvgapi:latest
+    ports:
+      - "${API_PORT:-7910}:7900"
+    cpus: '${API_CPU_LIMIT:-1.0}'
+    mem_limit: ${API_MEMORY_LIMIT:-1g}
+    memswap_limit: ${API_MEMORY_LIMIT:-1g}
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
+      # 외부 서비스 연결
+      - LLM_BASE_URL=${LLM_BASE_URL}
+      - MEMORY_BASE_URL=${MEMORY_BASE_URL}
+      - TTS_BASE_URL=${TTS_BASE_URL}
+      - TTS_API_KEY=${TTS_API_KEY}
+      - DB_CONNECTION_STRING=${DB_CONNECTION_STRING}
+      - REDIS_CONNECTION_STRING=${REDIS_CONNECTION_STRING}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_ACCESS_TOKEN_LIFETIME_MINUTES=${JWT_ACCESS_TOKEN_LIFETIME_MINUTES}
+      - JWT_REFRESH_TOKEN_LIFETIME_DAYS=${JWT_REFRESH_TOKEN_LIFETIME_DAYS}
+      - OAUTH2_ENABLED=${OAUTH2_ENABLED}
+      - GOOGLE_OAUTH_ENABLED=${GOOGLE_OAUTH_ENABLED}
+      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
+      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
+      - GOOGLE_OAUTH_REDIRECT_URI=${GOOGLE_OAUTH_REDIRECT_URI}
+      - GOOGLE_OAUTH_AUTO_CREATE_USER=${GOOGLE_OAUTH_AUTO_CREATE_USER}
+      - GOOGLE_OAUTH_DEFAULT_ROLE=${GOOGLE_OAUTH_DEFAULT_ROLE}
+    networks:
+      - projectvg-network
+    restart: unless-stopped
+

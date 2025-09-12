@@ -115,6 +115,26 @@ dotnet test ProjectVG.Tests/ProjectVG.Tests.csproj
 - `POST /api/auth/logout` - 로그아웃
 - `GET /api/test/me` - 사용자 정보 (인증 필요)
 
+## 🚀 배포
+
+### 자동 배포 (CI/CD)
+`release` 브랜치에 푸시하면 자동 배포됩니다.
+
+### 수동 배포
+```bash
+# 프로덕션 배포
+./deploy.sh
+
+# 개발 환경 배포  
+./deploy-dev.sh
+
+# Windows 환경
+.\scripts\deploy.ps1 -Environment dev
+.\scripts\deploy.ps1 -Environment prod
+```
+
+상세한 배포 가이드는 [DEPLOYMENT.md](DEPLOYMENT.md)를 참조하세요.
+
 ## 🧪 테스트
 
 ### 테스트 실행

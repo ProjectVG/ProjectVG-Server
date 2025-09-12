@@ -1,0 +1,32 @@
+# Set default behavior to automatically normalize line endings.
+* text=auto
+
+# Set file types that should always have CRLF line endings on checkout.
+*.sln text eol=crlf
+*.csproj text eol=crlf
+*.config text eol=crlf
+
+# Set file types that should always have LF line endings on checkout.
+*.sh text eol=lf
+*.bash text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Ensure that shell scripts are executable
+*.sh text eol=lf
+deploy.sh text eol=lf
+deploy-dev.sh text eol=lf
+
+# PowerShell scripts
+*.ps1 text eol=crlf
+
+# Docker files
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+docker-compose*.yml text eol=lf
+
+# Markdown files
+*.md text eol=lf
+
+# JSON files
+*.json text eol=lf
