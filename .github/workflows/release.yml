@@ -1,4 +1,4 @@
-name: Release CI/CD
+name: Release
 
 on:
   push:
@@ -12,13 +12,18 @@ env:
   DOTNET_VERSION: '8.0.x'
   DOCKER_IMAGE_NAME: ghcr.io/projectvg/projectvgapi
   ACTOR: projectvg
+
+permissions:
+  contents: read
+  packages: write
   
 jobs:
   build:
+    name: Build & Push
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout Repository
+    - name: Checkout
       uses: actions/checkout@v4
       
     - name: Setup .NET
@@ -26,7 +31,7 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         
-    - name: Cache NuGet packages
+    - name: Cache NuGet
       uses: actions/cache@v4
       with:
         path: ~/.nuget/packages
@@ -34,57 +39,83 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-nuget-
           
-    - name: 종속성 복원
+    - name: Restore
       run: |
         echo "복원 중..."
         dotnet restore ProjectVG.sln
         echo "복원 완료"
         
-    - name: 솔루션 빌드
+    - name: Build
       run: |
         echo "🔨 빌드 중..."
         dotnet build ProjectVG.sln --no-restore --configuration Release
         echo "빌드 완료"
         
-    - name: 단위 테스트 실행
+    - name: Test
       run: |
         echo "테스트 중..."
-        dotnet test --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --logger trx --results-directory coverage
+        dotnet test --no-build --configuration Release --verbosity normal
         echo "테스트 완료"
         
-    - name: Login to GitHub Container Registry
+    - name: Login GHCR
       uses: docker/login-action@v3
       with:
         registry: ghcr.io
         username: ${{ env.ACTOR }}
         password: ${{ secrets.GHCR_TOKEN }}
         
-    - name: Build and Push Docker Image
+    - name: Build & Push Image
       run: |
         docker build -t ${{ env.DOCKER_IMAGE_NAME }}:latest -f ProjectVG.Api/Dockerfile .
         docker push ${{ env.DOCKER_IMAGE_NAME }}:latest
+        
+    - name: Build Success Status
+      if: success()
+      run: |
+        echo "✅ 빌드 및 이미지 푸시 완료"
+        echo "이미지: ${{ env.DOCKER_IMAGE_NAME }}:latest"
+        
+    - name: Build Failure Status
+      if: failure()
+      run: |
+        echo "❌ 빌드 또는 이미지 푸시 실패"
+        exit 1
 
   deploy:
+    name: Deploy
     needs: build
     runs-on: [self-hosted, deploy-runner]
     
     steps:
-    - name: Login to GitHub Container Registry
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Login GHCR
       run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ env.ACTOR }} --password-stdin
       
-    - name: Add Private Files
+    - name: Add Config Files
       run: |
         echo "${{ secrets.PROD_APPLICATION_ENV }}" | base64 --decode > .env
-        echo "${{ secrets.PROD_DOCKER_COMPOSE }}" | base64 --decode > docker-compose.yml
+        echo "${{ secrets.PROD_DOCKER_COMPOSE }}" | base64 --decode > deploy/docker-compose.yml
         
-    - name: Run Deployment Script
-      run: ./deploy.sh
+    - name: Make Script Executable
+      run: chmod +x deploy/deploy.sh
+        
+    - name: Deploy
+      run: ./deploy/deploy.sh
       
-    - name: Cleanup Docker and Cache
+    - name: Cleanup
       run: |
         docker system prune -af --volumes
         
-    - name: Deployment Status
+    - name: Deploy Success Status
+      if: success()
       run: |
-        echo "🚀 배포 완료"
-        echo "📦 이미지: ${{ env.DOCKER_IMAGE_NAME }}:latest"
+        echo "✅ 배포 완료"
+        echo "이미지: ${{ env.DOCKER_IMAGE_NAME }}:latest"
+        
+    - name: Deploy Failure Status
+      if: failure()
+      run: |
+        echo "❌ 배포 실패"
+        exit 1

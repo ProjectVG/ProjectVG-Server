@@ -100,7 +100,11 @@ _ReSharper*/
 
 # Docker
 **/Dockerfile.*
-docker-compose*
+docker-compose.override.yml
+
+# Keep template files but ignore runtime files
+!docker-compose.prod.yml
+!env.prod.example
 
 # Logs
 *.log
@@ -175,5 +179,5 @@ secrets.json
 *.xlsx
 
 # Demo files
-web_chat_demo.html
-time_travel_commit.exe
+*.exe
+*.ini

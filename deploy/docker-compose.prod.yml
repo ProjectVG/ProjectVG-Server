@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  projectvg-api:
+    image: ghcr.io/projectvg/projectvgapi:latest
+    container_name: projectvg-api
+    ports:
+      - "7910:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+    env_file:
+      - .env
+    depends_on:
+      - projectvg-db
+      - projectvg-redis
+    networks:
+      - projectvg-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  projectvg-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: projectvg-db
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${DB_SA_PASSWORD}
+      - MSSQL_PID=Developer
+    volumes:
+      - projectvg_db_data:/var/opt/mssql
+    networks:
+      - projectvg-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P ${DB_SA_PASSWORD} -Q 'SELECT 1' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  projectvg-redis:
+    image: redis:7-alpine
+    container_name: projectvg-redis
+    ports:
+      - "6380:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - projectvg_redis_data:/data
+    networks:
+      - projectvg-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  projectvg_db_data:
+    driver: local
+  projectvg_redis_data:
+    driver: local
+
+networks:
+  projectvg-network:
+    driver: bridge

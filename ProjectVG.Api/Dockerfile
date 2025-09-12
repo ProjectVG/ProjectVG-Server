@@ -29,8 +29,8 @@ EXPOSE 7900
 # 빌드 결과 복사
 COPY --from=build /app/publish .
 
-# 헬스체크 추가
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:7900/health || exit 1
+# 헬스체크 추가 - wget 사용
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:7900/health || exit 1
 
 ENTRYPOINT ["dotnet", "ProjectVG.Api.dll"]
