@@ -133,7 +133,7 @@ namespace ProjectVG.Tests.Application.Integration
             var message3 = await _conversationService.AddMessageAsync(userId, characterId, ChatRole.User, "Third message", DateTime.UtcNow);
 
             // Act
-            var history = await _conversationService.GetConversationHistoryAsync(userId, characterId, 10);
+            var history = await _conversationService.GetConversationHistoryAsync(userId, characterId, 1, 10);
 
             // Assert
             var historyList = history.ToList();
@@ -160,7 +160,7 @@ namespace ProjectVG.Tests.Application.Integration
             }
 
             // Act - Request only 3 messages
-            var history = await _conversationService.GetConversationHistoryAsync(userId, characterId, 3);
+            var history = await _conversationService.GetConversationHistoryAsync(userId, characterId, 1, 3);
 
             // Assert
             var historyList = history.ToList();
@@ -215,7 +215,7 @@ namespace ProjectVG.Tests.Application.Integration
 
             // Act & Assert
             await Assert.ThrowsAsync<ValidationException>(
-                () => _conversationService.GetConversationHistoryAsync(userId, characterId, count));
+                () => _conversationService.GetConversationHistoryAsync(userId, characterId, 1, count));
         }
 
         [Fact]
@@ -225,8 +225,8 @@ namespace ProjectVG.Tests.Application.Integration
             await _fixture.ClearDatabaseAsync();
             var user1 = await CreateUserAsync("user1", "user1@example.com");
             var user2 = await CreateUserAsync("user2", "user2@example.com");
-            var char1 = await CreateCharacterAsync("Character1");
-            var char2 = await CreateCharacterAsync("Character2");
+            var char1 = await CreateCharacterAsync("Character1", user1.Id);
+            var char2 = await CreateCharacterAsync("Character2", user1.Id);
 
             // Add messages for different user-character combinations
             await _conversationService.AddMessageAsync(user1.Id, char1.Id, ChatRole.User, "User1-Char1 Message", DateTime.UtcNow);
@@ -291,8 +291,8 @@ namespace ProjectVG.Tests.Application.Integration
             await _fixture.ClearDatabaseAsync();
             var user1 = await CreateUserAsync("user1", "user1@example.com");
             var user2 = await CreateUserAsync("user2", "user2@example.com");
-            var char1 = await CreateCharacterAsync("Character1");
-            var char2 = await CreateCharacterAsync("Character2");
+            var char1 = await CreateCharacterAsync("Character1", user1.Id);
+            var char2 = await CreateCharacterAsync("Character2", user1.Id);
 
             // Add messages for different combinations
             await _conversationService.AddMessageAsync(user1.Id, char1.Id, ChatRole.User, "User1-Char1", DateTime.UtcNow);
@@ -429,8 +429,8 @@ namespace ProjectVG.Tests.Application.Integration
             await _fixture.ClearDatabaseAsync();
             var user1 = await CreateUserAsync("user1", "user1@example.com");
             var user2 = await CreateUserAsync("user2", "user2@example.com");
-            var character1 = await CreateCharacterAsync("Character1");
-            var character2 = await CreateCharacterAsync("Character2");
+            var character1 = await CreateCharacterAsync("Character1", user1.Id);
+            var character2 = await CreateCharacterAsync("Character2", user1.Id);
 
             // Create conversations for different user-character pairs
             // User1 with Character1
@@ -473,7 +473,7 @@ namespace ProjectVG.Tests.Application.Integration
         private async Task<(Guid userId, Guid characterId)> CreateUserAndCharacterAsync()
         {
             var user = await CreateUserAsync();
-            var character = await CreateCharacterAsync();
+            var character = await CreateCharacterAsync("TestCharacter", user.Id);
             return (user.Id, character.Id);
         }
 
@@ -486,9 +486,9 @@ namespace ProjectVG.Tests.Application.Integration
         }
 
         private async Task<ProjectVG.Application.Models.Character.CharacterDto> CreateCharacterAsync(
-            string name = "TestCharacter")
+            string name = "TestCharacter", Guid? userId = null)
         {
-            var createCommand = TestDataBuilder.CreateCreateCharacterWithFieldsCommand(name);
+            var createCommand = TestDataBuilder.CreateCreateCharacterWithFieldsCommand(name, userId: userId);
             return await _characterService.CreateCharacterWithFieldsAsync(createCommand);
         }
 
