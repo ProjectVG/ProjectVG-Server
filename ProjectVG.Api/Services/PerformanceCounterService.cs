@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 
@@ -7,14 +8,14 @@ public class PerformanceCounterService : IDisposable
 {
     private readonly ILogger<PerformanceCounterService> _logger;
     private readonly Timer _metricsTimer;
-    private readonly Dictionary<string, object> _lastMetrics;
+    private readonly ConcurrentDictionary<string, object> _lastMetrics;
     private readonly Process _currentProcess;
     private bool _disposed = false;
 
     public PerformanceCounterService(ILogger<PerformanceCounterService> logger)
     {
         _logger = logger;
-        _lastMetrics = new Dictionary<string, object>();
+        _lastMetrics = new ConcurrentDictionary<string, object>();
         _currentProcess = Process.GetCurrentProcess();
         
         // 5초마다 메트릭 수집
@@ -73,10 +74,10 @@ public class PerformanceCounterService : IDisposable
             }
             
             // 최신 메트릭 캐시
-            _lastMetrics["LastUpdate"] = metrics.Timestamp;
-            _lastMetrics["WorkingMemory"] = metrics.WorkingSetMemoryMB;
-            _lastMetrics["CpuUsage"] = metrics.CpuUsagePercent;
-            _lastMetrics["ThreadPoolPending"] = metrics.ThreadPoolPendingWorkItems;
+            _lastMetrics.AddOrUpdate("LastUpdate", metrics.Timestamp, (k, v) => metrics.Timestamp);
+            _lastMetrics.AddOrUpdate("WorkingMemory", metrics.WorkingSetMemoryMB, (k, v) => metrics.WorkingSetMemoryMB);
+            _lastMetrics.AddOrUpdate("CpuUsage", metrics.CpuUsagePercent, (k, v) => metrics.CpuUsagePercent);
+            _lastMetrics.AddOrUpdate("ThreadPoolPending", metrics.ThreadPoolPendingWorkItems, (k, v) => metrics.ThreadPoolPendingWorkItems);
         }
         catch (Exception ex)
         {
