@@ -135,8 +135,9 @@ namespace ProjectVG.Api.Middleware
                         break;
                     }
 
-                    if (result.MessageType == WebSocketMessageType.Pong) {
-                        _logger.LogDebug("Pong 받음: {UserId}", userId);
+                    // WebSocket의 기본 제어 메시지들 처리
+                    if (result.MessageType == WebSocketMessageType.Binary) {
+                        _logger.LogDebug("Binary 메시지 받음: {UserId}", userId);
                         continue;
                     }
 

@@ -11,6 +11,7 @@ namespace ProjectVG.Tests.Auth
     public class JwtProviderTests
     {
         private readonly JwtProvider _jwtProvider;
+        private readonly Mock<ILogger<JwtProvider>> _mockLogger;
         private readonly string _testJwtKey = "your-super-secret-jwt-key-here-minimum-32-characters";
         private readonly string _testIssuer = "ProjectVG";
         private readonly string _testAudience = "ProjectVG";
@@ -19,12 +20,14 @@ namespace ProjectVG.Tests.Auth
 
         public JwtProviderTests()
         {
+            _mockLogger = new Mock<ILogger<JwtProvider>>();
             _jwtProvider = new JwtProvider(
                 _testJwtKey,
                 _testIssuer,
                 _testAudience,
                 _accessTokenExpirationMinutes,
-                _refreshTokenExpirationMinutes
+                _refreshTokenExpirationMinutes,
+                _mockLogger.Object
             );
         }
 
