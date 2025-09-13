@@ -75,15 +75,18 @@ namespace ProjectVG.Application.Services.Chat.Validators
         {
             try {
                 // 사용자 ID를 기반으로 세션 조회
-                var userSessions = await _sessionStorage.GetSessionsByUserIdAsync(userId.ToString()).ConfigureAwait(false);
+                var userSessions = (await _sessionStorage
+                    .GetSessionsByUserIdAsync(userId.ToString())
+                    .ConfigureAwait(false))
+                    .ToList();
 
-                if (!userSessions.Any()) {
+                if (userSessions.Count == 0) {
                     _logger.LogWarning("유효하지 않은 사용자 세션: {UserId}", userId);
                     throw new ValidationException(ErrorCode.SESSION_EXPIRED, "세션이 만료되었습니다. 다시 로그인해 주세요.");
                 }
 
                 // 세션이 존재하면 로그 기록
-                _logger.LogDebug("세션 검증 성공: {UserId}, 활성 세션 수: {SessionCount}", userId, userSessions.Count());
+                _logger.LogDebug("세션 검증 성공: {UserId}, 활성 세션 수: {SessionCount}", userId, userSessions.Count);
             }
             catch (ValidationException) {
                 throw; // 검증 예외는 그대로 전파
