@@ -22,7 +22,6 @@ namespace ProjectVG.Infrastructure.Integrations.LLMClient
                 WriteIndented = false
             };
 
-            _httpClient.BaseAddress = new Uri(configuration["LLM:BaseUrl"] ?? "");
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
             _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         }

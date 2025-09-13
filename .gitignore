@@ -159,20 +159,6 @@ secrets.json
 *.temp
 ~$*
 
-# Media files
-*.wav
-*.mp3
-*.mp4
-*.avi
-*.wmv
-*.flv
-*.mkv
-*.webm
-*.m4a
-*.m4v
-*.m4b
-*.m4r
-*.m4p
 
 # Data files
 *.csv

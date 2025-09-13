@@ -12,7 +12,19 @@ builder.Configuration.AddEnvironmentVariableSubstitution(builder.Configuration);
 var port = builder.Configuration.GetValue<int>("Port", 7900);
 builder.WebHost.ConfigureKestrel(options => {
     options.ListenAnyIP(port);
+    
+    // 부하테스트 환경에서 성능 최적화
+    if (builder.Environment.IsEnvironment("LoadTest"))
+    {
+        LoadTestConfiguration.ConfigureKestrelForLoadTest(options);
+    }
 });
+
+// ThreadPool 최적화 (부하테스트 환경)
+if (builder.Environment.IsEnvironment("LoadTest"))
+{
+    LoadTestConfiguration.ConfigureThreadPoolForLoadTest();
+}
 
 // 모듈별 서비스 등록
 builder.Services.AddApiServices();
@@ -28,6 +40,13 @@ if (oauth2Enabled)
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices();
 builder.Services.AddDevelopmentCors();
+
+// 부하테스트 환경에서 성능 모니터링 서비스 추가
+if (builder.Environment.IsEnvironment("LoadTest"))
+{
+    builder.Services.AddLoadTestPerformanceServices();
+    Console.WriteLine("LoadTest Performance Monitoring Services registered");
+}
 
 var app = builder.Build();
 

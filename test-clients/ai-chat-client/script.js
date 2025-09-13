@@ -1,8 +1,8 @@
 // 환경에 따른 포트 설정
 // Development 환경(7901)에서 실행되면 7901 사용, 아니면 기본값 7900 사용
 const currentPort = window.location.port;
-const isDevelopment = currentPort === '7901';
-const serverPort = isDevelopment ? '7901' : '7900';
+const isDevelopment = currentPort === '7900';
+const serverPort = isDevelopment ? '7900' : '7900';
 const currentHost = window.location.hostname || 'localhost';
 const ENDPOINT = `${currentHost}:${serverPort}`;
 const WS_URL = `ws://${ENDPOINT}/ws`;

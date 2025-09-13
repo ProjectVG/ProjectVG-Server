@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProjectVG LoadTest Performance Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0d1117;
+            color: #e6edf3;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #58a6ff;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header .status {
+            font-size: 1.2em;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            margin: 5px;
+        }
+        
+        .status.online {
+            background-color: #238636;
+            color: white;
+        }
+        
+        .status.offline {
+            background-color: #da3633;
+            color: white;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #161b22 0%, #21262d 100%);
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .metric-card h3 {
+            color: #58a6ff;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #30363d;
+            padding-bottom: 8px;
+        }
+        
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 8px 0;
+        }
+        
+        .metric-label {
+            font-weight: 500;
+        }
+        
+        .metric-value {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .progress-bar {
+            width: 200px;
+            height: 20px;
+            background-color: #21262d;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #30363d;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            background: linear-gradient(90deg, #238636 0%, #7c3aed 50%, #da3633 100%);
+        }
+        
+        .alert {
+            background-color: #da3633;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .timestamp {
+            color: #7d8590;
+            font-size: 0.9em;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .controls button {
+            background-color: #238636;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+        
+        .controls button:hover {
+            background-color: #2ea043;
+        }
+        
+        .controls button.stop {
+            background-color: #da3633;
+        }
+        
+        .controls button.stop:hover {
+            background-color: #e85d5d;
+        }
+        
+        .log {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 0;
+        }
+        
+        .log-error {
+            color: #ff7b72;
+        }
+        
+        .log-warning {
+            color: #f0883e;
+        }
+        
+        .log-info {
+            color: #56d364;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ProjectVG LoadTest Performance Monitor</h1>
+        <div class="status" id="connectionStatus">Connecting...</div>
+        <div class="timestamp" id="lastUpdate">Last Update: Never</div>
+    </div>
+    
+    <div class="controls">
+        <button onclick="startMonitoring()" id="startBtn">Start Monitoring</button>
+        <button onclick="stopMonitoring()" class="stop" id="stopBtn">Stop Monitoring</button>
+        <button onclick="forceGC()">Force GC</button>
+        <button onclick="clearLog()">Clear Log</button>
+        <label>
+            Interval: 
+            <select id="intervalSelect" onchange="updateInterval()">
+                <option value="1000">1s</option>
+                <option value="2000" selected>2s</option>
+                <option value="5000">5s</option>
+                <option value="10000">10s</option>
+            </select>
+        </label>
+    </div>
+    
+    <div class="dashboard">
+        <!-- Process Metrics -->
+        <div class="metric-card">
+            <h3>🖥️ Process Metrics</h3>
+            <div class="metric-item">
+                <span class="metric-label">Process ID:</span>
+                <span class="metric-value" id="processId">-</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Working Memory:</span>
+                <div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="memoryProgress"></div>
+                    </div>
+                    <span class="metric-value" id="workingMemory">- MB</span>
+                </div>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Private Memory:</span>
+                <span class="metric-value" id="privateMemory">- MB</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Virtual Memory:</span>
+                <span class="metric-value" id="virtualMemory">- MB</span>
+            </div>
+        </div>
+        
+        <!-- ThreadPool Metrics -->
+        <div class="metric-card">
+            <h3>🧵 ThreadPool Status</h3>
+            <div class="metric-item">
+                <span class="metric-label">Worker Threads:</span>
+                <span class="metric-value" id="workerThreads">-</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Completion Threads:</span>
+                <span class="metric-value" id="completionThreads">-</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Available Threads:</span>
+                <span class="metric-value" id="availableThreads">-</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Pending Work:</span>
+                <div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="pendingWorkProgress"></div>
+                    </div>
+                    <span class="metric-value" id="pendingWork">-</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- GC Metrics -->
+        <div class="metric-card">
+            <h3>🗑️ Garbage Collection</h3>
+            <div class="metric-item">
+                <span class="metric-label">Gen 0 Collections:</span>
+                <span class="metric-value" id="gcGen0">-</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Gen 1 Collections:</span>
+                <span class="metric-value" id="gcGen1">-</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Gen 2 Collections:</span>
+                <span class="metric-value" id="gcGen2">-</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Total Memory:</span>
+                <div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="gcMemoryProgress"></div>
+                    </div>
+                    <span class="metric-value" id="gcTotalMemory">- MB</span>
+                </div>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Allocated Memory:</span>
+                <span class="metric-value" id="totalAllocated">- MB</span>
+            </div>
+        </div>
+        
+        <!-- System Info -->
+        <div class="metric-card">
+            <h3>🖥️ System Information</h3>
+            <div class="metric-item">
+                <span class="metric-label">CPU Count:</span>
+                <span class="metric-value" id="cpuCount">-</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Machine Name:</span>
+                <span class="metric-value" id="machineName">-</span>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Environment:</span>
+                <span class="metric-value" id="environment">LoadTest</span>
+            </div>
+        </div>
+        
+        <!-- Alerts and Log -->
+        <div class="metric-card">
+            <h3>⚠️ Alerts & Log</h3>
+            <div id="alerts"></div>
+            <div class="log" id="logContainer">
+                <div class="log-entry log-info">Performance monitoring dashboard ready</div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="metric-card">
+            <h3>⚡ Quick Actions</h3>
+            <div class="metric-item">
+                <span class="metric-label">API Health:</span>
+                <button onclick="checkHealth()" style="background-color: #58a6ff; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer;">Check</button>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">Detailed Health:</span>
+                <button onclick="checkDetailedHealth()" style="background-color: #58a6ff; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer;">Check</button>
+            </div>
+            <div class="metric-item">
+                <span class="metric-label">ThreadPool Info:</span>
+                <button onclick="getThreadPoolInfo()" style="background-color: #58a6ff; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer;">View</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let monitoringInterval = null;
+        let refreshInterval = 2000; // 2 seconds
+        const apiUrl = 'http://localhost:7804';
+        let previousMetrics = null;
+        
+        function updateInterval() {
+            refreshInterval = parseInt(document.getElementById('intervalSelect').value);
+            if (monitoringInterval) {
+                stopMonitoring();
+                startMonitoring();
+            }
+        }
+        
+        function startMonitoring() {
+            if (monitoringInterval) return;
+            
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            
+            logMessage('Starting performance monitoring...', 'info');
+            
+            monitoringInterval = setInterval(fetchMetrics, refreshInterval);
+            fetchMetrics(); // Initial fetch
+        }
+        
+        function stopMonitoring() {
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+                monitoringInterval = null;
+                
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                
+                logMessage('Monitoring stopped', 'warning');
+                updateConnectionStatus('offline');
+            }
+        }
+        
+        async function fetchMetrics() {
+            try {
+                const response = await fetch(`${apiUrl}/api/v1/monitoring/metrics`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const metrics = await response.json();
+                updateDashboard(metrics);
+                updateConnectionStatus('online');
+                
+                // Check for alerts
+                checkAlerts(metrics);
+                
+                previousMetrics = metrics;
+                
+            } catch (error) {
+                logMessage(`Failed to fetch metrics: ${error.message}`, 'error');
+                updateConnectionStatus('offline');
+            }
+        }
+        
+        function updateDashboard(metrics) {
+            // Process metrics
+            document.getElementById('processId').textContent = metrics.process.id;
+            document.getElementById('workingMemory').textContent = `${metrics.process.workingSetMemoryMB} MB`;
+            document.getElementById('privateMemory').textContent = `${metrics.process.privateMemoryMB} MB`;
+            document.getElementById('virtualMemory').textContent = `${metrics.process.virtualMemoryMB} MB`;
+            
+            // ThreadPool metrics
+            document.getElementById('workerThreads').textContent = metrics.threadPool.workerThreads;
+            document.getElementById('completionThreads').textContent = metrics.threadPool.completionPortThreads;
+            document.getElementById('availableThreads').textContent = metrics.threadPool.availableThreads;
+            document.getElementById('pendingWork').textContent = metrics.threadPool.pendingWorkItems;
+            
+            // GC metrics
+            document.getElementById('gcGen0').textContent = formatDelta(metrics.gc.gen0Collections, previousMetrics?.gc.gen0Collections);
+            document.getElementById('gcGen1').textContent = formatDelta(metrics.gc.gen1Collections, previousMetrics?.gc.gen1Collections);
+            document.getElementById('gcGen2').textContent = formatDelta(metrics.gc.gen2Collections, previousMetrics?.gc.gen2Collections);
+            document.getElementById('gcTotalMemory').textContent = `${metrics.gc.totalMemoryMB} MB`;
+            document.getElementById('totalAllocated').textContent = `${metrics.gc.totalAllocatedBytesMB} MB`;
+            
+            // System info
+            document.getElementById('cpuCount').textContent = metrics.system.cpuCount;
+            document.getElementById('machineName').textContent = metrics.system.machineName;
+            
+            // Progress bars
+            updateProgressBar('memoryProgress', metrics.process.workingSetMemoryMB, 1000);
+            updateProgressBar('pendingWorkProgress', metrics.threadPool.pendingWorkItems, 100);
+            updateProgressBar('gcMemoryProgress', metrics.gc.totalMemoryMB, 500);
+            
+            // Last update timestamp
+            document.getElementById('lastUpdate').textContent = `Last Update: ${new Date().toLocaleTimeString()}`;
+        }
+        
+        function formatDelta(current, previous) {
+            if (previous === undefined || previous === null) return current;
+            const delta = current - previous;
+            return `${current} (+${delta})`;
+        }
+        
+        function updateProgressBar(elementId, value, max) {
+            const percentage = Math.min(100, (value / max) * 100);
+            document.getElementById(elementId).style.width = `${percentage}%`;
+        }
+        
+        function checkAlerts(metrics) {
+            const alertsContainer = document.getElementById('alerts');
+            alertsContainer.innerHTML = '';
+            
+            let alerts = [];
+            
+            if (metrics.process.workingSetMemoryMB > 500) {
+                alerts.push('High memory usage detected');
+            }
+            
+            if (metrics.threadPool.pendingWorkItems > 50) {
+                alerts.push('High work queue detected');
+            }
+            
+            if (metrics.threadPool.availableThreads < 20) {
+                alerts.push('Low thread availability');
+            }
+            
+            if (previousMetrics) {
+                const gen2Delta = metrics.gc.gen2Collections - previousMetrics.gc.gen2Collections;
+                if (gen2Delta > 0) {
+                    alerts.push(`Gen 2 GC occurred (+${gen2Delta})`);
+                }
+            }
+            
+            alerts.forEach(alert => {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert';
+                alertDiv.textContent = alert;
+                alertsContainer.appendChild(alertDiv);
+                
+                logMessage(`ALERT: ${alert}`, 'error');
+            });
+        }
+        
+        function updateConnectionStatus(status) {
+            const statusElement = document.getElementById('connectionStatus');
+            statusElement.className = `status ${status}`;
+            statusElement.textContent = status === 'online' ? 'Connected' : 'Disconnected';
+        }
+        
+        function logMessage(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // Keep only last 50 entries
+            while (logContainer.children.length > 50) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+        }
+        
+        function clearLog() {
+            document.getElementById('logContainer').innerHTML = '<div class="log-entry log-info">Log cleared</div>';
+        }
+        
+        async function forceGC() {
+            try {
+                const response = await fetch(`${apiUrl}/api/v1/monitoring/gc?force=true`);
+                if (response.ok) {
+                    logMessage('Forced GC completed', 'info');
+                } else {
+                    logMessage('Failed to force GC', 'error');
+                }
+            } catch (error) {
+                logMessage(`GC force failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${apiUrl}/health`);
+                const health = await response.json();
+                logMessage(`Health check: ${health.status || health.Status}`, 'info');
+            } catch (error) {
+                logMessage(`Health check failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkDetailedHealth() {
+            try {
+                const response = await fetch(`${apiUrl}/api/v1/monitoring/health-detailed`);
+                const health = await response.json();
+                logMessage(`Detailed health: ${health.status}`, health.warnings?.length > 0 ? 'warning' : 'info');
+                
+                if (health.warnings) {
+                    health.warnings.forEach(warning => logMessage(`WARNING: ${warning}`, 'warning'));
+                }
+            } catch (error) {
+                logMessage(`Detailed health check failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function getThreadPoolInfo() {
+            try {
+                const response = await fetch(`${apiUrl}/api/v1/monitoring/threadpool`);
+                const info = await response.json();
+                
+                logMessage(`ThreadPool - Workers: ${info.workerThreads.inUse}/${info.workerThreads.max}, CP: ${info.completionPortThreads.inUse}/${info.completionPortThreads.max}`, 'info');
+            } catch (error) {
+                logMessage(`ThreadPool info failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-start monitoring when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            logMessage('ProjectVG Performance Dashboard initialized', 'info');
+            startMonitoring();
+        });
+        
+        // Cleanup when page unloads
+        window.addEventListener('beforeunload', () => {
+            stopMonitoring();
+        });
+    </script>
+</body>
+</html>
