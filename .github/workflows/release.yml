@@ -105,7 +105,8 @@ jobs:
       
     - name: Cleanup
       run: |
-        docker system prune -af --volumes
+        docker image prune -f
+        docker builder prune -f
         
     - name: Deploy Success Status
       if: success()

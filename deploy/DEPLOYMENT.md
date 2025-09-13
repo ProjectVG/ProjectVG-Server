@@ -50,16 +50,17 @@ git push origin release
 # 1. 최신 코드 가져오기
 git pull origin release
 
-# 2. 환경 설정 파일 준비
-cp env.prod.example .env
-cp docker-compose.prod.yml docker-compose.yml
+# 2. DB/Redis 서비스 시작 (최초 1회만 실행)
+docker-compose -f docker-compose.db.yml up -d
 
+# 3. 환경 설정 파일 준비
+cp env.prod.example .env
 # 실제 환경변수 값으로 수정
 vi .env
 
-# 3. 배포 스크립트 실행
-chmod +x deploy.sh
-./deploy.sh
+# 4. API 서비스 배포
+chmod +x deploy/deploy.sh
+./deploy/deploy.sh
 ```
 
 ### 개발 환경 배포
@@ -73,8 +74,9 @@ chmod +x deploy-dev.sh
 ## 📋 배포 스크립트 상세
 
 ### `deploy.sh` (프로덕션)
-- **용도**: 프로덕션 환경 배포
+- **용도**: API 서비스만 배포 (DB/Redis는 별도 관리)
 - **이미지**: GHCR에서 최신 이미지 풀
+- **네트워크**: `projectvg-external-db` 네트워크로 DB/Redis 연결
 - **헬스체크**: 30회 재시도 (최대 2.5분)
 - **로그**: 배포 후 최근 로그 20줄 출력
 
@@ -139,6 +141,11 @@ docker-compose up -d
 - `.env` 파일은 GitHub Secrets로 관리
 - 민감한 정보는 평문으로 저장하지 않음
 - 프로덕션과 개발 환경 분리
+
+### 인프라 분리
+- **DB/Redis**: `docker-compose.db.yml`로 별도 관리 (영구 실행)
+- **API 서비스**: `docker-compose.prod.yml`로 배포시에만 재시작
+- **외부 DB/Cache**: AWS RDS, ElastiCache 등으로 쉽게 대체 가능
 
 ### Docker 이미지
 - GHCR을 통한 이미지 배포

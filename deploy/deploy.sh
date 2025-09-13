@@ -20,14 +20,10 @@ if [ ! -f "deploy/docker-compose.prod.yml" ]; then
     exit 1
 fi
 
-# 현재 실행 중인 컨테이너 중지 및 제거
-echo "기존 컨테이너 중지 중..."
-docker-compose -f deploy/docker-compose.prod.yml down --remove-orphans || true
-
-# GitHub Container Registry에서 최신 이미지 풀
+# GitHub Container Registry에서 최신 이미지 풀 (Zero-downtime을 위해 먼저 실행)
 echo "최신 이미지 다운로드 중..."
-echo "GHCR 이미진 Pull: ghcr.io/projectvg/projectvgapi:latest"
-docker-compose -f deploy/docker-compose.prod.yml pull
+echo "GHCR 이미지 Pull: ghcr.io/projectvg/projectvgapi:latest"
+docker-compose -f deploy/docker-compose.prod.yml pull projectvg-api
 
 # 이미지 풀 후 확인
 if ! docker images ghcr.io/projectvg/projectvgapi:latest | grep -q latest; then
@@ -35,16 +31,36 @@ if ! docker images ghcr.io/projectvg/projectvgapi:latest | grep -q latest; then
     exit 1
 fi
 
-# 서비스 시작
-echo "서비스 시작 중..."
-docker-compose -f deploy/docker-compose.prod.yml up -d
+# 기존 API 컨테이너만 중지 및 제거 (Zero-downtime strategy)
+echo "기존 API 컨테이너 교체 중..."
+echo "현재 실행중인 컨테이너 확인:"
+docker ps -f "name=projectvg-api"
+
+docker-compose -f deploy/docker-compose.prod.yml stop projectvg-api || true
+docker-compose -f deploy/docker-compose.prod.yml rm -f projectvg-api || true
+
+# 새 이미지로 API 서비스만 시작
+echo "새 이미지로 API 서비스 시작 중..."
+docker-compose -f deploy/docker-compose.prod.yml up -d projectvg-api
 
 # 서비스 상태 확인
-echo "서비스 상태 확인 중..."
-sleep 10
+# 빌드 후 불필요한 이미지 정리
+echo "이전 이미지 정리 중..."
+old_images=$(docker images ghcr.io/projectvg/projectvgapi -f "dangling=true" -q)
+if [ ! -z "$old_images" ]; then
+    docker rmi $old_images -f 2>/dev/null || true
+    echo "이전 이미지 정리 완료"
+else
+    echo "정리할 이전 이미지 없음"
+fi
 
-# 컨테이너 상태 출력
-docker-compose -f deploy/docker-compose.prod.yml ps
+# 컨테이너 상태 확인
+echo "API 컨테이너 상태 확인 중..."
+sleep 3
+
+# API 컨테이너 상태만 출력
+echo "API 컨테이너 상태:"
+docker ps -f "name=projectvg-api"
 
 # 헬스체크 (API가 응답하는지 확인)
 echo "헬스체크 수행 중..."
@@ -70,11 +86,12 @@ done
 
 if [ $retry_count -eq $max_retries ]; then
     echo "ERROR: API 서버가 시작되지 않았습니다. 로그를 확인하세요."
-    echo "API 컨테이너 로그:"
-    echo "Docker 컨테이너 상태:"
+    echo "API 컨테이너 상태:"
     docker ps -a --filter name=projectvg-api
-    echo ""
+    echo "API 컨테이너 로그 (최근 50줄):"
     docker-compose -f deploy/docker-compose.prod.yml logs --tail=50 projectvg-api
+    
+    echo "롤백을 수행하시겠습니까? 이전 이미지로 복구할 수 있습니다."
     exit 1
 fi
 
@@ -83,6 +100,14 @@ echo "배포가 성공적으로 완료되었습니다!"
 echo "API 엔드포인트: http://localhost:7910"
 echo "헬스체크: http://localhost:7910/health"
 
-# 로그 출력 (선택적)
-echo "최근 로그:"
-docker-compose -f deploy/docker-compose.prod.yml logs --tail=20
+# 최근 API 로그 출력
+echo "최근 API 로그 (20줄):"
+docker-compose -f deploy/docker-compose.prod.yml logs --tail=20 projectvg-api
+
+# 배포 완료 상태 요약
+echo ""
+echo "=== 배포 완료 상태 요약 ==="
+echo "API 컨테이너:"
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" -f "name=projectvg-api"
+echo "이미지 정보:"
+docker images --format "table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}\t{{.Size}}" ghcr.io/projectvg/projectvgapi:latest
