@@ -65,8 +65,10 @@ namespace ProjectVG.Infrastructure
         /// </summary>
         private static void AddExternalApiClients(IServiceCollection services, IConfiguration configuration)
         {
-            var llmBaseUrl = configuration.GetValue<string>("LLM:BaseUrl") ?? Environment.GetEnvironmentVariable("LLM_BASE_URL") ?? "http://localhost:5601";
-            var memoryBaseUrl = configuration.GetValue<string>("MEMORY:BaseUrl") ?? Environment.GetEnvironmentVariable("MEMORY_BASE_URL") ?? "http://localhost:5602";
+            var llmBaseUrl = configuration.GetValue<string>("LLM:BaseUrl") ?? Environment.GetEnvironmentVariable("LLM_BASE_URL") 
+                ?? throw new InvalidOperationException("LLM_BASE_URL environment variable or LLM:BaseUrl configuration is required");
+            var memoryBaseUrl = configuration.GetValue<string>("MEMORY:BaseUrl") ?? Environment.GetEnvironmentVariable("MEMORY_BASE_URL")
+                ?? throw new InvalidOperationException("MEMORY_BASE_URL environment variable or MEMORY:BaseUrl configuration is required");
 
             services.AddHttpClient<ILLMClient, LLMClient>(client => {
                 client.BaseAddress = new Uri(llmBaseUrl);
@@ -76,7 +78,8 @@ namespace ProjectVG.Infrastructure
                 client.BaseAddress = new Uri(memoryBaseUrl);
             });
 
-            var ttsBaseUrl = configuration.GetValue<string>("TTS:BaseUrl") ?? Environment.GetEnvironmentVariable("TTS_BASE_URL") ?? "https://supertoneapi.com";
+            var ttsBaseUrl = configuration.GetValue<string>("TTS:BaseUrl") ?? Environment.GetEnvironmentVariable("TTS_BASE_URL")
+                ?? throw new InvalidOperationException("TTS_BASE_URL environment variable or TTS:BaseUrl configuration is required");
 
             services.AddHttpClient<ITextToSpeechClient, TextToSpeechClient>((sp, client) => {
                 client.BaseAddress = new Uri(ttsBaseUrl);
