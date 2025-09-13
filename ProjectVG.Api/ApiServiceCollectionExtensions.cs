@@ -75,5 +75,14 @@ namespace ProjectVG.Api
 
             return services;
         }
+
+        /// <summary>
+        /// 부하테스트 전용 성능 모니터링 서비스
+        /// </summary>
+        public static IServiceCollection AddLoadTestPerformanceServices(this IServiceCollection services)
+        {
+            services.AddSingleton<PerformanceCounterService>();
+            return services;
+        }
     }
 }

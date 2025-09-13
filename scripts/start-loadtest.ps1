@@ -28,8 +28,8 @@ docker rmi projectvg-dummy-llm:latest -f 2>$null
 docker rmi projectvg-dummy-memory:latest -f 2>$null
 docker rmi projectvg-dummy-tts:latest -f 2>$null
 
-# Build and start load test environment
-Write-Host "Building load test environment..." -ForegroundColor Yellow
+# Build and start load test environment with performance monitoring
+Write-Host "Building load test environment with performance monitoring..." -ForegroundColor Yellow
 docker-compose -p projectvg-loadtest --env-file env.loadtest -f docker-compose.loadtest.yml build --no-cache 2>$null
 docker-compose -p projectvg-loadtest --env-file env.loadtest -f docker-compose.loadtest.yml up -d
 
@@ -70,6 +70,18 @@ if ($allHealthy) {
     Write-Host "  - LLM Server: http://localhost:7808" -ForegroundColor White  
     Write-Host "  - Memory Server: http://localhost:7812" -ForegroundColor White
     Write-Host "  - TTS Server: http://localhost:7816" -ForegroundColor White
+    
+    Write-Host "`nPerformance Monitoring:" -ForegroundColor Cyan
+    Write-Host "  - Performance API: http://localhost:7804/api/v1/monitoring/metrics" -ForegroundColor White
+    Write-Host "  - Detailed Health: http://localhost:7804/api/v1/monitoring/health-detailed" -ForegroundColor White
+    Write-Host "  - GC Info: http://localhost:7804/api/v1/monitoring/gc" -ForegroundColor White
+    Write-Host "  - ThreadPool Info: http://localhost:7804/api/v1/monitoring/threadpool" -ForegroundColor White
+    
+    Write-Host "`nMonitoring Scripts:" -ForegroundColor Cyan
+    Write-Host "  - Quick Monitor: .\scripts\quick-monitor.ps1" -ForegroundColor White
+    Write-Host "  - Detailed Monitor: .\scripts\monitor-performance.ps1" -ForegroundColor White
+    Write-Host "  - Docker Monitor: .\scripts\docker-monitor.ps1" -ForegroundColor White
+    Write-Host "  - Load Test + Monitor: .\scripts\loadtest-with-monitoring.ps1" -ForegroundColor White
     
     Write-Host "`nYou can now start load testing!" -ForegroundColor Green
     Write-Host "To stop: scripts\stop-loadtest.ps1" -ForegroundColor Yellow
