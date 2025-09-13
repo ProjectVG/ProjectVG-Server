@@ -42,6 +42,6 @@ namespace ProjectVG.Application.Services.Auth
         public TokenResponse Tokens { get; set; } = null!;
         
         /// <summary>사용자 정보</summary>
-        public UserDto User { get; set; } = null!;
+        public UserDto? User { get; set; }
     }
 }

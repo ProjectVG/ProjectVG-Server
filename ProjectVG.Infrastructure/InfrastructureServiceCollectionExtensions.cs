@@ -53,11 +53,26 @@ namespace ProjectVG.Infrastructure
         private static void AddDatabaseServices(IServiceCollection services, IConfiguration configuration)
         {
             services.AddDbContext<ProjectVGDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"), 
-                    sqlOptions => sqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 3,
-                        maxRetryDelay: TimeSpan.FromSeconds(10),
-                        errorNumbersToAdd: null)));
+                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"),
+                    sqlOptions => {
+                        sqlOptions.EnableRetryOnFailure(
+                            maxRetryCount: 5,
+                            maxRetryDelay: TimeSpan.FromSeconds(30),
+                            errorNumbersToAdd: new int[] {
+                                2,      // System.Data.SqlClient.SqlException: Connection timeout
+                                20,     // The instance of SQL Server you attempted to connect to does not support encryption
+                                64,     // A connection was successfully established with the server, but then an error occurred during the login process
+                                233,    // The client was unable to establish a connection because of an error during connection initialization process before login
+                                10053,  // A transport-level error has occurred when receiving results from the server
+                                10054,  // The connection was forcibly closed by the remote host
+                                10060,  // A network-related or instance-specific error occurred while establishing a connection to SQL Server
+                                40197,  // The service has encountered an error processing your request. Please try again (Azure SQL)
+                                40501,  // The service is currently busy. Retry the request after 10 seconds (Azure SQL)
+                                40613   // Database is currently unavailable (Azure SQL)
+                            });
+                        sqlOptions.CommandTimeout(120);
+                        sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "dbo");
+                    }));
         }
 
         /// <summary>
@@ -138,8 +153,10 @@ namespace ProjectVG.Infrastructure
             };
 
             services.AddSingleton(jwtSettings);
-            services.AddScoped<IJwtProvider, JwtProvider>(sp => 
-                new JwtProvider(jwtKey, jwtSettings.Issuer, jwtSettings.Audience, jwtSettings.AccessTokenExpirationMinutes, jwtSettings.RefreshTokenExpirationMinutes));
+            services.AddScoped<IJwtProvider, JwtProvider>(sp => {
+                var logger = sp.GetRequiredService<ILogger<JwtProvider>>();
+                return new JwtProvider(jwtKey, jwtSettings.Issuer, jwtSettings.Audience, jwtSettings.AccessTokenExpirationMinutes, jwtSettings.RefreshTokenExpirationMinutes, logger);
+            });
             
             services.AddScoped<ITokenService, TokenService>();
 

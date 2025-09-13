@@ -34,22 +34,23 @@ namespace ProjectVG.Application.Services.Chat.Validators
 
         public async Task ValidateAsync(ChatRequestCommand command)
         {
-            // TODO : 세션 검증
+            // 세션 검증 - 사용자 활성 세션 확인
+            await ValidateUserSessionAsync(command.UserId).ConfigureAwait(false);
 
-            var userExists = await _userService.ExistsByIdAsync(command.UserId);
+            var userExists = await _userService.ExistsByIdAsync(command.UserId).ConfigureAwait(false);
             if (!userExists) {
                 _logger.LogWarning("사용자 ID 검증 실패: {UserId}", command.UserId);
                 throw new NotFoundException(ErrorCode.USER_NOT_FOUND, command.UserId);
             }
 
-            var characterExists = await _characterService.CharacterExistsAsync(command.CharacterId);
+            var characterExists = await _characterService.CharacterExistsAsync(command.CharacterId).ConfigureAwait(false);
             if (!characterExists) {
                 _logger.LogWarning("캐릭터 ID 검증 실패: {CharacterId}", command.CharacterId);
                 throw new NotFoundException(ErrorCode.CHARACTER_NOT_FOUND, command.CharacterId);
             }
 
             // 토큰 잔액 검증 - 예상 비용으로 미리 확인
-            var balance = await _tokenManagementService.GetCreditBalanceAsync(command.UserId);
+            var balance = await _tokenManagementService.GetCreditBalanceAsync(command.UserId).ConfigureAwait(false);
             var currentBalance = balance.CurrentBalance;
             
             if (currentBalance <= 0) {
@@ -65,6 +66,36 @@ namespace ProjectVG.Application.Services.Chat.Validators
             }
 
             _logger.LogDebug("채팅 요청 검증 완료: {UserId}, {CharacterId}", command.UserId, command.CharacterId);
+        }
+
+        /// <summary>
+        /// 사용자 세션 유효성 검증
+        /// </summary>
+        private async Task ValidateUserSessionAsync(Guid userId)
+        {
+            try {
+                // 사용자 ID를 기반으로 세션 조회
+                var userSessions = (await _sessionStorage
+                    .GetSessionsByUserIdAsync(userId.ToString())
+                    .ConfigureAwait(false))
+                    .ToList();
+
+                if (userSessions.Count == 0) {
+                    _logger.LogWarning("유효하지 않은 사용자 세션: {UserId}", userId);
+                    throw new ValidationException(ErrorCode.SESSION_EXPIRED, "세션이 만료되었습니다. 다시 로그인해 주세요.");
+                }
+
+                // 세션이 존재하면 로그 기록
+                _logger.LogDebug("세션 검증 성공: {UserId}, 활성 세션 수: {SessionCount}", userId, userSessions.Count);
+            }
+            catch (ValidationException) {
+                throw; // 검증 예외는 그대로 전파
+            }
+            catch (Exception ex) {
+                _logger.LogError(ex, "세션 검증 중 예상치 못한 오류: {UserId}", userId);
+                // 세션 스토리지 오류 시에는 검증을 통과시키되 로그는 남김 (서비스 가용성 우선)
+                _logger.LogWarning("세션 스토리지 오류로 인해 세션 검증을 건너뜁니다: {UserId}", userId);
+            }
         }
     }
 }

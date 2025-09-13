@@ -50,6 +50,8 @@ namespace ProjectVG.Tests.Services.Chat.Validators
             var character = CreateValidCharacterDto(command.CharacterId);
             var creditBalance = CreateCreditBalance(command.UserId, 1000);
 
+            SetupValidSession(command.UserId);
+
             _mockUserService.Setup(x => x.ExistsByIdAsync(command.UserId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
@@ -61,7 +63,9 @@ namespace ProjectVG.Tests.Services.Chat.Validators
 
             // Act & Assert
             await _validator.ValidateAsync(command); // Should not throw
-            
+
+            _mockSessionStorage.Verify(x => x.GetSessionsByUserIdAsync(command.UserId.ToString()), Times.Once);
+            _mockUserService.Verify(x => x.ExistsByIdAsync(command.UserId), Times.Once);
             _mockCharacterService.Verify(x => x.CharacterExistsAsync(command.CharacterId), Times.Once);
             _mockCreditManagementService.Verify(x => x.GetCreditBalanceAsync(command.UserId), Times.Once);
         }
@@ -71,6 +75,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
         {
             // Arrange
             var command = CreateValidChatCommand();
+            SetupValidSession(command.UserId);
             _mockUserService.Setup(x => x.ExistsByIdAsync(command.UserId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
@@ -96,6 +101,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
                 requestedAt: DateTime.UtcNow,
                 useTTS: false
             );
+            SetupValidSession(command.UserId);
             _mockUserService.Setup(x => x.ExistsByIdAsync(command.UserId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
@@ -106,7 +112,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
 
             // Act & Assert - 현재 ChatRequestValidator에는 빈 prompt 검증이 없으므로 통과해야 함
             await _validator.ValidateAsync(command);
-            
+
             // 검증: 모든 단계가 정상적으로 실행되어야 함
             _mockUserService.Verify(x => x.ExistsByIdAsync(command.UserId), Times.Once);
             _mockCharacterService.Verify(x => x.CharacterExistsAsync(command.CharacterId), Times.Once);
@@ -124,6 +130,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
                 requestedAt: DateTime.UtcNow,
                 useTTS: false
             );
+            SetupValidSession(command.UserId);
             _mockUserService.Setup(x => x.ExistsByIdAsync(command.UserId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
@@ -134,7 +141,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
 
             // Act & Assert - 현재 ChatRequestValidator에는 whitespace 검증이 없으므로 통과해야 함
             await _validator.ValidateAsync(command);
-            
+
             // 검증: 모든 단계가 정상적으로 실행되어야 함
             _mockUserService.Verify(x => x.ExistsByIdAsync(command.UserId), Times.Once);
             _mockCharacterService.Verify(x => x.CharacterExistsAsync(command.CharacterId), Times.Once);
@@ -153,6 +160,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
             var character = CreateValidCharacterDto(command.CharacterId);
             var creditBalance = CreateCreditBalance(command.UserId, 0); // Zero balance
 
+            SetupValidSession(command.UserId);
             _mockUserService.Setup(x => x.ExistsByIdAsync(command.UserId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
@@ -183,6 +191,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
             var character = CreateValidCharacterDto(command.CharacterId);
             var creditBalance = CreateCreditBalance(command.UserId, 5); // Less than required 10 credits
 
+            SetupValidSession(command.UserId);
             _mockUserService.Setup(x => x.ExistsByIdAsync(command.UserId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
@@ -213,6 +222,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
             var character = CreateValidCharacterDto(command.CharacterId);
             var creditBalance = CreateCreditBalance(command.UserId, 10); // Exactly required amount
 
+            SetupValidSession(command.UserId);
             _mockUserService.Setup(x => x.ExistsByIdAsync(command.UserId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
@@ -237,6 +247,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
             var character = CreateValidCharacterDto(command.CharacterId);
             var creditBalance = CreateCreditBalance(command.UserId, 100); // More than enough
 
+            SetupValidSession(command.UserId);
             _mockUserService.Setup(x => x.ExistsByIdAsync(command.UserId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
@@ -264,6 +275,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
             var command = CreateValidChatCommand();
             var character = CreateValidCharacterDto(command.CharacterId);
 
+            SetupValidSession(command.UserId);
             _mockUserService.Setup(x => x.ExistsByIdAsync(command.UserId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
@@ -286,6 +298,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
             // Arrange
             var command = CreateValidChatCommand();
 
+            SetupValidSession(command.UserId);
             _mockUserService.Setup(x => x.ExistsByIdAsync(command.UserId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
@@ -307,6 +320,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
             var character = CreateValidCharacterDto(command.CharacterId);
             var creditBalance = CreateCreditBalance(command.UserId, -5); // Negative balance
 
+            SetupValidSession(command.UserId);
             _mockUserService.Setup(x => x.ExistsByIdAsync(command.UserId))
                 .ReturnsAsync(true);
             _mockCharacterService.Setup(x => x.CharacterExistsAsync(command.CharacterId))
@@ -411,6 +425,21 @@ namespace ProjectVG.Tests.Services.Chat.Validators
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);
+        }
+
+        private void SetupValidSession(Guid userId)
+        {
+            var sessionInfos = new List<ProjectVG.Common.Models.Session.SessionInfo>
+            {
+                new ProjectVG.Common.Models.Session.SessionInfo
+                {
+                    SessionId = Guid.NewGuid().ToString(),
+                    UserId = userId.ToString(),
+                    ConnectedAt = DateTime.UtcNow
+                }
+            };
+            _mockSessionStorage.Setup(x => x.GetSessionsByUserIdAsync(userId.ToString()))
+                .ReturnsAsync(sessionInfos);
         }
 
         #endregion

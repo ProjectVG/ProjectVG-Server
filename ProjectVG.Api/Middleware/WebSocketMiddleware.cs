@@ -103,28 +103,97 @@ namespace ProjectVG.Api.Middleware
             await _webSocketService.ConnectAsync(userId.ToString());
         }
 
-        /// <summary> 
-        /// 세션 루프 실행 
+        /// <summary>
+        /// 세션 루프 실행
         /// </summary>
         private async Task RunSessionLoop(WebSocket socket, string userId)
         {
-            var buffer = new byte[1024];
-            try {
-                while (socket.State == WebSocketState.Open) {
-                    var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            var buffer = new byte[1024 * 4]; // Increase buffer size for better performance
+            var cancellationTokenSource = new CancellationTokenSource();
 
-                    if (result.MessageType == WebSocketMessageType.Close) {
-                        _logger.LogInformation("연결 종료 요청: {UserId}", userId);
-                        break;
+            // Set a reasonable timeout for WebSocket operations
+            cancellationTokenSource.CancelAfter(TimeSpan.FromMinutes(30));
+
+            try {
+                _logger.LogInformation("WebSocket 세션 시작: {UserId}", userId);
+
+                // Send initial connection confirmation without exposing user ID
+                var welcomeMessage = System.Text.Encoding.UTF8.GetBytes("{\"type\":\"connected\",\"status\":\"success\"}");
+                await socket.SendAsync(
+                    new ArraySegment<byte>(welcomeMessage),
+                    WebSocketMessageType.Text,
+                    true,
+                    cancellationTokenSource.Token).ConfigureAwait(false);
+
+                while (socket.State == WebSocketState.Open && !cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    WebSocketReceiveResult result;
+                    using var ms = new MemoryStream();
+                    do
+                    {
+                        result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationTokenSource.Token)
+                            .ConfigureAwait(false);
+                        if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            _logger.LogInformation("연결 종료 요청: {UserId}", userId);
+                            break;
+                        }
+                        ms.Write(buffer, 0, result.Count);
+                    } while (!result.EndOfMessage);
+
+                    if (result.MessageType == WebSocketMessageType.Close) break;
+
+                    // WebSocket의 기본 제어 메시지들 처리
+                    if (result.MessageType == WebSocketMessageType.Binary) {
+                        _logger.LogDebug("Binary 메시지 받음: {UserId}", userId);
+                        continue;
+                    }
+
+                    // Handle heartbeat/ping messages
+                    if (result.MessageType == WebSocketMessageType.Text) {
+                        var message = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+                        // 매우 단순한 ping 판별 → 추후 JSON 파싱으로 교체 권장
+                        if (string.Equals(message, "ping", StringComparison.OrdinalIgnoreCase) ||
+                            message.Contains("\"type\":\"ping\"", StringComparison.OrdinalIgnoreCase)) {
+                            var pongMessage = System.Text.Encoding.UTF8.GetBytes("{\"type\":\"pong\"}");
+                            await socket.SendAsync(
+                                new ArraySegment<byte>(pongMessage),
+                                WebSocketMessageType.Text,
+                                true,
+                                cancellationTokenSource.Token).ConfigureAwait(false);
+                        }
                     }
                 }
             }
+            catch (OperationCanceledException) {
+                _logger.LogWarning("WebSocket 세션 타임아웃: {UserId}", userId);
+            }
+            catch (WebSocketException ex) {
+                _logger.LogWarning(ex, "WebSocket 연결 오류: {UserId}", userId);
+            }
             catch (Exception ex) {
-                _logger.LogError(ex, "세션 루프 오류: {UserId}", userId);
+                _logger.LogError(ex, "세션 루프 예상치 못한 오류: {UserId}", userId);
             }
             finally {
-                _logger.LogInformation("연결 해제: {UserId}", userId);
-                await _webSocketService.DisconnectAsync(userId);
+                _logger.LogInformation("WebSocket 연결 해제: {UserId}", userId);
+
+                try {
+                    await _webSocketService.DisconnectAsync(userId).ConfigureAwait(false);
+                    _connectionRegistry.Unregister(userId);
+
+                    if (socket.State == WebSocketState.Open || socket.State == WebSocketState.CloseReceived) {
+                        await socket.CloseAsync(
+                            WebSocketCloseStatus.NormalClosure,
+                            "Connection closed",
+                            CancellationToken.None).ConfigureAwait(false);
+                    }
+                }
+                catch (Exception ex) {
+                    _logger.LogError(ex, "WebSocket 정리 중 오류: {UserId}", userId);
+                }
+                finally {
+                    cancellationTokenSource?.Dispose();
+                }
             }
         }
     }
