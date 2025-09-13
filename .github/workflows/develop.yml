@@ -1,0 +1,72 @@
+name: Develop
+
+on:
+  pull_request:
+    branches: [develop]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'scripts/**'
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Cache NuGet
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+          
+    - name: Restore
+      run: |
+        echo "복원 중..."
+        start_time=$(date +%s)
+        dotnet restore ProjectVG.sln
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        echo "복원 완료 (${duration}초)"
+      
+    - name: Build
+      run: |
+        echo "🔨 빌드 중..."
+        start_time=$(date +%s)
+        dotnet build ProjectVG.sln --no-restore --configuration Release
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        echo "빌드 완료 (${duration}초)"
+      
+    - name: Test
+      run: |
+        echo "테스트 중..."
+        start_time=$(date +%s)
+        dotnet test --no-build --configuration Release --verbosity normal
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        echo "테스트 완료 (${duration}초)"
+        
+    - name: Success Status
+      if: success()
+      run: |
+        echo "✅ 빌드 및 테스트 성공"
+
+    - name: Build Status
+      if: failure()
+      run: |
+        echo "❌ 빌드 실패"
+        exit 1

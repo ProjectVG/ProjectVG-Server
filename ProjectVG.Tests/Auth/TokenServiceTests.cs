@@ -81,10 +81,13 @@ namespace ProjectVG.Tests.Auth
             var refreshToken = "refresh.token.here";
             var newAccessToken = "new.access.token.here";
 
+            var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(30);
+            
             var principal = CreateValidPrincipal(userId, "refresh");
             _mockJwtProvider.Setup(x => x.ValidateToken(refreshToken)).Returns(principal);
             _mockRefreshTokenStorage.Setup(x => x.IsRefreshTokenValidAsync(refreshToken)).ReturnsAsync(true);
             _mockRefreshTokenStorage.Setup(x => x.GetUserIdFromRefreshTokenAsync(refreshToken)).ReturnsAsync(userId);
+            _mockRefreshTokenStorage.Setup(x => x.GetRefreshTokenExpiresAtAsync(refreshToken)).ReturnsAsync(refreshTokenExpiresAt);
             _mockJwtProvider.Setup(x => x.GenerateAccessToken(userId)).Returns(newAccessToken);
 
             // Act
