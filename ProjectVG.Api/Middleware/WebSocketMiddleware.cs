@@ -117,8 +117,8 @@ namespace ProjectVG.Api.Middleware
             try {
                 _logger.LogInformation("WebSocket 세션 시작: {UserId}", userId);
 
-                // Send initial connection confirmation
-                var welcomeMessage = System.Text.Encoding.UTF8.GetBytes($"{{\"type\":\"connected\",\"userId\":\"{userId}\"}}");
+                // Send initial connection confirmation without exposing user ID
+                var welcomeMessage = System.Text.Encoding.UTF8.GetBytes("{\"type\":\"connected\",\"status\":\"success\"}");
                 await socket.SendAsync(
                     new ArraySegment<byte>(welcomeMessage),
                     WebSocketMessageType.Text,
