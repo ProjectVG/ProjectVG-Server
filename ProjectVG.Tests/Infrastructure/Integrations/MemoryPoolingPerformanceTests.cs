@@ -85,6 +85,46 @@ namespace ProjectVG.Tests.Infrastructure.Integrations
             _output.WriteLine($"최적화 방식 - HasAudio: {segment2.HasAudio}, 데이터 크기: {segment2.AudioDataSize}");
         }
 
+        [Fact]
+        public void ChatSegment_GetAudioSpan_SafetyBoundaryTest()
+        {
+            // 경계 조건 테스트: AudioDataSize가 실제 메모리보다 큰 경우
+            var testData = GenerateTestAudioData(1000);
+            using var memoryOwner = MemoryPool<byte>.Shared.Rent(500); // 더 작은 메모리 할당
+            var actualMemorySize = memoryOwner.Memory.Length; // 실제 할당된 메모리 크기
+            var copySize = Math.Min(500, actualMemorySize);
+            testData.AsSpan(0, copySize).CopyTo(memoryOwner.Memory.Span);
+
+            // AudioDataSize를 실제 메모리보다 크게 설정 (위험한 상황 시뮬레이션)
+            var oversizedRequest = actualMemorySize + 100;
+            var segment = ChatSegment.CreateText("Test content")
+                .WithAudioMemory(memoryOwner, oversizedRequest, "audio/wav", 5.0f); // oversizedRequest > actualMemorySize
+
+            // GetAudioSpan이 예외 없이 안전하게 처리되어야 함
+            var span = segment.GetAudioSpan();
+
+            // 실제 메모리 크기만큼만 반환되어야 함 (Math.Min 적용됨)
+            Assert.Equal(actualMemorySize, span.Length);
+            _output.WriteLine($"요청 크기: {oversizedRequest}, 실제 메모리: {actualMemorySize}, 반환된 span 크기: {span.Length}");
+        }
+
+        [Fact]
+        public void ChatSegment_GetAudioSpan_EmptyAndNullSafetyTest()
+        {
+            // null AudioMemoryOwner 테스트
+            var segment1 = ChatSegment.CreateText("Test").WithAudioMemory(null!, 100, "audio/wav", 1.0f);
+            var span1 = segment1.GetAudioSpan();
+            Assert.True(span1.IsEmpty);
+
+            // AudioDataSize가 0인 경우
+            using var memoryOwner = MemoryPool<byte>.Shared.Rent(100);
+            var segment2 = ChatSegment.CreateText("Test").WithAudioMemory(memoryOwner, 0, "audio/wav", 1.0f);
+            var span2 = segment2.GetAudioSpan();
+            Assert.True(span2.IsEmpty);
+
+            _output.WriteLine("빈 케이스들이 모두 안전하게 처리됨");
+        }
+
         private byte[] GenerateTestAudioData(int size)
         {
             var random = new Random(12345); // 고정 시드로 일관된 테스트

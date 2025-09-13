@@ -37,7 +37,9 @@ namespace ProjectVG.Application.Models.Chat
         {
             if (AudioMemoryOwner != null && AudioDataSize > 0)
             {
-                return AudioMemoryOwner.Memory.Span.Slice(0, AudioDataSize);
+                var memory = AudioMemoryOwner.Memory;
+                var safeSize = Math.Min(AudioDataSize, memory.Length);
+                return memory.Span.Slice(0, safeSize);
             }
             if (AudioData != null)
             {
