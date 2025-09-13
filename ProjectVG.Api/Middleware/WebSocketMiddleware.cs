@@ -125,15 +125,23 @@ namespace ProjectVG.Api.Middleware
                     true,
                     cancellationTokenSource.Token).ConfigureAwait(false);
 
-                while (socket.State == WebSocketState.Open && !cancellationTokenSource.Token.IsCancellationRequested) {
-                    var result = await socket.ReceiveAsync(
-                        new ArraySegment<byte>(buffer),
-                        cancellationTokenSource.Token).ConfigureAwait(false);
+                while (socket.State == WebSocketState.Open && !cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    WebSocketReceiveResult result;
+                    using var ms = new MemoryStream();
+                    do
+                    {
+                        result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationTokenSource.Token)
+                            .ConfigureAwait(false);
+                        if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            _logger.LogInformation("연결 종료 요청: {UserId}", userId);
+                            break;
+                        }
+                        ms.Write(buffer, 0, result.Count);
+                    } while (!result.EndOfMessage);
 
-                    if (result.MessageType == WebSocketMessageType.Close) {
-                        _logger.LogInformation("연결 종료 요청: {UserId}", userId);
-                        break;
-                    }
+                    if (result.MessageType == WebSocketMessageType.Close) break;
 
                     // WebSocket의 기본 제어 메시지들 처리
                     if (result.MessageType == WebSocketMessageType.Binary) {
@@ -143,8 +151,10 @@ namespace ProjectVG.Api.Middleware
 
                     // Handle heartbeat/ping messages
                     if (result.MessageType == WebSocketMessageType.Text) {
-                        var message = System.Text.Encoding.UTF8.GetString(buffer, 0, result.Count);
-                        if (message.Contains("ping")) {
+                        var message = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+                        // 매우 단순한 ping 판별 → 추후 JSON 파싱으로 교체 권장
+                        if (string.Equals(message, "ping", StringComparison.OrdinalIgnoreCase) ||
+                            message.Contains("\"type\":\"ping\"", StringComparison.OrdinalIgnoreCase)) {
                             var pongMessage = System.Text.Encoding.UTF8.GetBytes("{\"type\":\"pong\"}");
                             await socket.SendAsync(
                                 new ArraySegment<byte>(pongMessage),
