@@ -23,14 +23,36 @@ namespace ProjectVG.Infrastructure.Auth
         private readonly string _audience;
         private readonly int _accessTokenExpirationMinutes;
         private readonly int _refreshTokenExpirationMinutes;
+        private readonly ILogger<JwtProvider> _logger;
 
-        public JwtProvider(string jwtKey, string issuer, string audience, int accessTokenExpirationMinutes, int refreshTokenExpirationMinutes)
+        public JwtProvider(string jwtKey, string issuer, string audience, int accessTokenExpirationMinutes, int refreshTokenExpirationMinutes, ILogger<JwtProvider> logger)
         {
+            ValidateJwtKey(jwtKey);
+
             _jwtKey = jwtKey;
             _issuer = issuer;
             _audience = audience;
             _accessTokenExpirationMinutes = accessTokenExpirationMinutes;
             _refreshTokenExpirationMinutes = refreshTokenExpirationMinutes;
+            _logger = logger;
+        }
+
+        private static void ValidateJwtKey(string jwtKey)
+        {
+            if (string.IsNullOrEmpty(jwtKey))
+            {
+                throw new ArgumentException("JWT key cannot be null or empty", nameof(jwtKey));
+            }
+
+            if (jwtKey.Length < 32)
+            {
+                throw new ArgumentException("JWT key must be at least 32 characters long for security", nameof(jwtKey));
+            }
+
+            if (jwtKey.Contains("fallback") || jwtKey.Contains("default") || jwtKey.Contains("sample"))
+            {
+                throw new ArgumentException("JWT key appears to be a fallback/default value. Use a secure random key in production", nameof(jwtKey));
+            }
         }
 
         /// <summary>
@@ -120,11 +142,21 @@ namespace ProjectVG.Infrastructure.Auth
             try
             {
                 var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
-
                 return principal;
+            }
+            catch (SecurityTokenValidationException ex)
+            {
+                _logger.LogWarning("JWT token validation failed: {Error}", ex.Message);
+                return null;
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Invalid JWT token format: {Error}", ex.Message);
+                return null;
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Unexpected error during JWT token validation");
                 return null;
             }
         }
