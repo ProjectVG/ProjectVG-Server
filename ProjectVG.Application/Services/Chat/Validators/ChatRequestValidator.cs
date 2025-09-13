@@ -34,22 +34,23 @@ namespace ProjectVG.Application.Services.Chat.Validators
 
         public async Task ValidateAsync(ChatRequestCommand command)
         {
-            // TODO : 세션 검증
+            // 세션 검증 - 사용자 활성 세션 확인
+            await ValidateUserSessionAsync(command.UserId).ConfigureAwait(false);
 
-            var userExists = await _userService.ExistsByIdAsync(command.UserId);
+            var userExists = await _userService.ExistsByIdAsync(command.UserId).ConfigureAwait(false);
             if (!userExists) {
                 _logger.LogWarning("사용자 ID 검증 실패: {UserId}", command.UserId);
                 throw new NotFoundException(ErrorCode.USER_NOT_FOUND, command.UserId);
             }
 
-            var characterExists = await _characterService.CharacterExistsAsync(command.CharacterId);
+            var characterExists = await _characterService.CharacterExistsAsync(command.CharacterId).ConfigureAwait(false);
             if (!characterExists) {
                 _logger.LogWarning("캐릭터 ID 검증 실패: {CharacterId}", command.CharacterId);
                 throw new NotFoundException(ErrorCode.CHARACTER_NOT_FOUND, command.CharacterId);
             }
 
             // 토큰 잔액 검증 - 예상 비용으로 미리 확인
-            var balance = await _tokenManagementService.GetCreditBalanceAsync(command.UserId);
+            var balance = await _tokenManagementService.GetCreditBalanceAsync(command.UserId).ConfigureAwait(false);
             var currentBalance = balance.CurrentBalance;
             
             if (currentBalance <= 0) {
@@ -65,6 +66,36 @@ namespace ProjectVG.Application.Services.Chat.Validators
             }
 
             _logger.LogDebug("채팅 요청 검증 완료: {UserId}, {CharacterId}", command.UserId, command.CharacterId);
+        }
+
+        /// <summary>
+        /// 사용자 세션 유효성 검증
+        /// </summary>
+        private async Task ValidateUserSessionAsync(Guid userId)
+        {
+            try {
+                var sessionKey = $"user_session:{userId}";
+                var sessionData = await _sessionStorage.GetAsync<string>(sessionKey).ConfigureAwait(false);
+
+                if (sessionData == null) {
+                    _logger.LogWarning("유효하지 않은 사용자 세션: {UserId}", userId);
+                    throw new ValidationException(ErrorCode.INVALID_SESSION, "유효하지 않은 세션입니다. 다시 로그인해 주세요.");
+                }
+
+                // 세션이 존재한다면 마지막 활동 시간을 업데이트
+                var lastActivity = DateTime.UtcNow.ToString("O"); // ISO 8601 format
+                await _sessionStorage.SetAsync(sessionKey, lastActivity, TimeSpan.FromHours(2)).ConfigureAwait(false);
+
+                _logger.LogDebug("세션 검증 성공 및 활동 시간 업데이트: {UserId}", userId);
+            }
+            catch (ValidationException) {
+                throw; // 검증 예외는 그대로 전파
+            }
+            catch (Exception ex) {
+                _logger.LogError(ex, "세션 검증 중 예상치 못한 오류: {UserId}", userId);
+                // 세션 스토리지 오류 시에는 검증을 통과시키되 로그는 남김 (서비스 가용성 우선)
+                _logger.LogWarning("세션 스토리지 오류로 인해 세션 검증을 건너뜁니다: {UserId}", userId);
+            }
         }
     }
 }
