@@ -3,7 +3,7 @@ using System.Buffers;
 
 namespace ProjectVG.Application.Models.Chat
 {
-    public record ChatSegment
+    public record ChatSegment : IDisposable
     {
 
         public string Content { get; init; } = string.Empty;
@@ -84,9 +84,26 @@ namespace ProjectVG.Application.Models.Chat
 
         /// <summary>
         /// 메모리 효율적인 방식으로 음성 데이터를 추가합니다 (LOH 방지)
+        /// 소유권이 이전되므로 호출자는 더 이상 audioMemoryOwner를 해제하지 않아야 합니다.
         /// </summary>
+        /// <param name="audioMemoryOwner">소유권이 이전될 메모리 소유자</param>
+        /// <param name="audioDataSize">실제 오디오 데이터 크기 (메모리 크기 이하여야 함)</param>
+        /// <param name="audioContentType">오디오 컨텐츠 타입</param>
+        /// <param name="audioLength">오디오 길이 (초)</param>
+        /// <returns>새로운 ChatSegment 인스턴스</returns>
+        /// <exception cref="ArgumentNullException">audioMemoryOwner가 null인 경우</exception>
+        /// <exception cref="ArgumentOutOfRangeException">audioDataSize가 유효하지 않은 경우</exception>
         public ChatSegment WithAudioMemory(IMemoryOwner<byte> audioMemoryOwner, int audioDataSize, string audioContentType, float audioLength)
         {
+            if (audioMemoryOwner is null)
+                throw new ArgumentNullException(nameof(audioMemoryOwner));
+
+            if (audioDataSize < 0 || audioDataSize > audioMemoryOwner.Memory.Length)
+                throw new ArgumentOutOfRangeException(
+                    nameof(audioDataSize),
+                    audioDataSize,
+                    $"audioDataSize는 0 이상 {audioMemoryOwner.Memory.Length} 이하여야 합니다.");
+
             return this with
             {
                 AudioMemoryOwner = audioMemoryOwner,
@@ -122,7 +139,28 @@ namespace ProjectVG.Application.Models.Chat
         /// </summary>
         public void Dispose()
         {
-            AudioMemoryOwner?.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// 보호된 Dispose 패턴 구현
+        /// </summary>
+        /// <param name="disposing">관리되는 리소스를 해제할지 여부</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing && AudioMemoryOwner != null)
+            {
+                AudioMemoryOwner.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Finalizer - 관리되지 않는 리소스 정리 (최후 안전장치)
+        /// </summary>
+        ~ChatSegment()
+        {
+            Dispose(false);
         }
     }
 }

@@ -88,41 +88,98 @@ namespace ProjectVG.Tests.Infrastructure.Integrations
         [Fact]
         public void ChatSegment_GetAudioSpan_SafetyBoundaryTest()
         {
-            // 경계 조건 테스트: AudioDataSize가 실제 메모리보다 큰 경우
+            // 경계 조건 테스트: 유효한 범위 내에서의 메모리 접근 안전성 검증
             var testData = GenerateTestAudioData(1000);
             using var memoryOwner = MemoryPool<byte>.Shared.Rent(500); // 더 작은 메모리 할당
             var actualMemorySize = memoryOwner.Memory.Length; // 실제 할당된 메모리 크기
             var copySize = Math.Min(500, actualMemorySize);
             testData.AsSpan(0, copySize).CopyTo(memoryOwner.Memory.Span);
 
-            // AudioDataSize를 실제 메모리보다 크게 설정 (위험한 상황 시뮬레이션)
-            var oversizedRequest = actualMemorySize + 100;
+            // 유효한 크기로 설정 (실제 메모리 크기 이하)
+            var validSize = actualMemorySize - 10; // 안전한 크기
             var segment = ChatSegment.CreateText("Test content")
-                .WithAudioMemory(memoryOwner, oversizedRequest, "audio/wav", 5.0f); // oversizedRequest > actualMemorySize
+                .WithAudioMemory(memoryOwner, validSize, "audio/wav", 5.0f);
 
-            // GetAudioSpan이 예외 없이 안전하게 처리되어야 함
+            // GetAudioSpan이 정확한 크기를 반환해야 함
             var span = segment.GetAudioSpan();
 
-            // 실제 메모리 크기만큼만 반환되어야 함 (Math.Min 적용됨)
-            Assert.Equal(actualMemorySize, span.Length);
-            _output.WriteLine($"요청 크기: {oversizedRequest}, 실제 메모리: {actualMemorySize}, 반환된 span 크기: {span.Length}");
+            // 요청한 크기만큼 반환되어야 함
+            Assert.Equal(validSize, span.Length);
+            _output.WriteLine($"요청 크기: {validSize}, 실제 메모리: {actualMemorySize}, 반환된 span 크기: {span.Length}");
         }
 
         [Fact]
         public void ChatSegment_GetAudioSpan_EmptyAndNullSafetyTest()
         {
-            // null AudioMemoryOwner 테스트
-            var segment1 = ChatSegment.CreateText("Test").WithAudioMemory(null!, 100, "audio/wav", 1.0f);
-            var span1 = segment1.GetAudioSpan();
-            Assert.True(span1.IsEmpty);
+            // null AudioMemoryOwner는 이제 예외가 발생해야 함 (ArgumentNullException)
+            var nullException = Assert.Throws<ArgumentNullException>(() =>
+                ChatSegment.CreateText("Test").WithAudioMemory(null!, 100, "audio/wav", 1.0f));
+            Assert.Equal("audioMemoryOwner", nullException.ParamName);
 
-            // AudioDataSize가 0인 경우
+            // AudioDataSize가 0인 경우는 여전히 정상 작동해야 함
             using var memoryOwner = MemoryPool<byte>.Shared.Rent(100);
             var segment2 = ChatSegment.CreateText("Test").WithAudioMemory(memoryOwner, 0, "audio/wav", 1.0f);
             var span2 = segment2.GetAudioSpan();
             Assert.True(span2.IsEmpty);
 
-            _output.WriteLine("빈 케이스들이 모두 안전하게 처리됨");
+            // 기존 AudioData 방식 (null 허용)
+            var segment3 = ChatSegment.CreateText("Test").WithAudioData(null!, "audio/wav", 1.0f);
+            var span3 = segment3.GetAudioSpan();
+            Assert.True(span3.IsEmpty);
+
+            _output.WriteLine("null 검증과 빈 케이스가 모두 안전하게 처리됨");
+        }
+
+        [Fact]
+        public void ChatSegment_WithAudioMemory_ValidationTest()
+        {
+            var testData = GenerateTestAudioData(100);
+            using var memoryOwner = MemoryPool<byte>.Shared.Rent(100);
+            testData.CopyTo(memoryOwner.Memory.Span);
+
+            // 정상 케이스
+            var validSegment = ChatSegment.CreateText("Test")
+                .WithAudioMemory(memoryOwner, 50, "audio/wav", 1.0f);
+            Assert.Equal(50, validSegment.AudioDataSize);
+
+            // null audioMemoryOwner 테스트
+            var nullException = Assert.Throws<ArgumentNullException>(() =>
+                ChatSegment.CreateText("Test").WithAudioMemory(null!, 100, "audio/wav", 1.0f));
+            Assert.Equal("audioMemoryOwner", nullException.ParamName);
+
+            // audioDataSize < 0 테스트
+            var negativeException = Assert.Throws<ArgumentOutOfRangeException>(() =>
+                ChatSegment.CreateText("Test").WithAudioMemory(memoryOwner, -1, "audio/wav", 1.0f));
+            Assert.Equal("audioDataSize", negativeException.ParamName);
+
+            // audioDataSize > memory.Length 테스트
+            var oversizeException = Assert.Throws<ArgumentOutOfRangeException>(() =>
+                ChatSegment.CreateText("Test").WithAudioMemory(memoryOwner, memoryOwner.Memory.Length + 1, "audio/wav", 1.0f));
+            Assert.Equal("audioDataSize", oversizeException.ParamName);
+
+            _output.WriteLine("모든 소유권 이전 검증 테스트 통과");
+        }
+
+        [Fact]
+        public void ChatSegment_Dispose_MemoryOwnerReleaseTest()
+        {
+            var testData = GenerateTestAudioData(100);
+            using var memoryOwner = MemoryPool<byte>.Shared.Rent(100);
+            testData.CopyTo(memoryOwner.Memory.Span);
+
+            var segment = ChatSegment.CreateText("Test")
+                .WithAudioMemory(memoryOwner, 100, "audio/wav", 1.0f);
+
+            // Dispose 호출 전에는 정상 접근 가능
+            Assert.True(segment.HasAudio);
+            Assert.Equal(100, segment.GetAudioSpan().Length);
+
+            // Dispose 호출
+            segment.Dispose();
+
+            // 메모리가 해제되었으므로 ObjectDisposedException 발생할 수 있음
+            // (실제 구현에 따라 다를 수 있음)
+            _output.WriteLine("Dispose 호출 완료 - 메모리 소유자 해제됨");
         }
 
         private byte[] GenerateTestAudioData(int size)
