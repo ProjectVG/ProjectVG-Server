@@ -35,10 +35,21 @@ docker-compose -p projectvg-loadtest --env-file env.loadtest -f docker-compose.l
 
 # Wait for services to start
 Write-Host "Waiting for services to start..." -ForegroundColor Yellow
-Start-Sleep -Seconds 3
 
-# Check service status
-Write-Host "Checking service status..." -ForegroundColor Yellow
+function Wait-ForUrl {
+    param([string]$url, [int]$timeoutSec=120)
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    while ($stopwatch.Elapsed.TotalSeconds -lt $timeoutSec) {
+        try {
+            $resp = Invoke-WebRequest -Uri $url -TimeoutSec 3 -UseBasicParsing
+            if ($resp.StatusCode -eq 200) { return $true }
+        } catch { Start-Sleep -Milliseconds 500 }
+    }
+    return $false
+}
+
+# Check service status with retry
+Write-Host "Checking service status with retry..." -ForegroundColor Yellow
 
 $services = @(
     @{Name="LLM Server"; Url="http://localhost:7808/health"},
@@ -49,16 +60,13 @@ $services = @(
 
 $allHealthy = $true
 foreach ($service in $services) {
-    try {
-        $response = Invoke-RestMethod -Uri $service.Url -TimeoutSec 3
-        if ($response.status -eq "ok" -or $response.Status -eq "Healthy") {
-            Write-Host "$($service.Name): OK" -ForegroundColor Green
-        } else {
-            Write-Host "$($service.Name): FAILED" -ForegroundColor Red
-            $allHealthy = $false
-        }
-    } catch {
-        Write-Host "$($service.Name): CONNECTION FAILED" -ForegroundColor Red
+    Write-Host "Waiting for $($service.Name)..." -ForegroundColor Cyan
+    $isHealthy = Wait-ForUrl -url $service.Url -timeoutSec 120
+    
+    if ($isHealthy) {
+        Write-Host "$($service.Name): OK" -ForegroundColor Green
+    } else {
+        Write-Host "$($service.Name): TIMEOUT (120s)" -ForegroundColor Red
         $allHealthy = $false
     }
 }
