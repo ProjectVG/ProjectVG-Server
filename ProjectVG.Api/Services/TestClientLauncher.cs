@@ -4,7 +4,7 @@ public class TestClientLauncher
 {
     public void Launch()
     {
-        Task.Delay(1000).ContinueWith(_ => {
+        _ = Task.Delay(1000).ContinueWith(_ => {
             try
             {
                 var htmlPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "test-clients", "test-client.html");
