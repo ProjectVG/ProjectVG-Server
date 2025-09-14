@@ -1,0 +1,222 @@
+using System.Buffers;
+using System.Diagnostics;
+using System.Text;
+using Xunit;
+using Xunit.Abstractions;
+using ProjectVG.Application.Models.Chat;
+
+namespace ProjectVG.Tests.Infrastructure.Integrations
+{
+    public class MemoryPoolingPerformanceTests
+    {
+        private readonly ITestOutputHelper _output;
+        private const int TestIterations = 1000;
+        private const int AudioDataSize = 128 * 1024; // 128KB 테스트 데이터
+
+        public MemoryPoolingPerformanceTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
+        [Fact]
+        public void ArrayPool_vs_DirectAllocation_PerformanceTest()
+        {
+            // 준비: 테스트 데이터 생성
+            var testData = GenerateTestAudioData(AudioDataSize);
+
+            // 테스트 1: 직접 할당 방식
+            var directAllocationTime = MeasureDirectAllocation(testData);
+
+            // 테스트 2: ArrayPool 방식
+            var arrayPoolTime = MeasureArrayPoolAllocation(testData);
+
+            // 결과 출력
+            _output.WriteLine($"직접 할당 방식: {directAllocationTime.TotalMilliseconds:F2}ms");
+            _output.WriteLine($"ArrayPool 방식: {arrayPoolTime.TotalMilliseconds:F2}ms");
+            _output.WriteLine($"성능 개선: {((directAllocationTime.TotalMilliseconds - arrayPoolTime.TotalMilliseconds) / directAllocationTime.TotalMilliseconds * 100):F1}%");
+
+            // ArrayPool이 더 빨라야 함
+            Assert.True(arrayPoolTime < directAllocationTime,
+                $"ArrayPool 방식({arrayPoolTime.TotalMilliseconds}ms)이 직접 할당({directAllocationTime.TotalMilliseconds}ms)보다 느립니다.");
+        }
+
+        [Fact]
+        public void Base64Encoding_ArrayPool_vs_Convert_PerformanceTest()
+        {
+            var testData = GenerateTestAudioData(AudioDataSize);
+
+            // 테스트 1: 기존 Convert.ToBase64String 방식
+            var convertTime = MeasureConvertToBase64(testData);
+
+            // 테스트 2: ArrayPool을 사용한 Base64 인코딩 방식
+            var pooledBase64Time = MeasurePooledBase64Encoding(testData);
+
+            _output.WriteLine($"Convert.ToBase64String: {convertTime.TotalMilliseconds:F2}ms");
+            _output.WriteLine($"ArrayPool Base64: {pooledBase64Time.TotalMilliseconds:F2}ms");
+            _output.WriteLine($"성능 개선: {((convertTime.TotalMilliseconds - pooledBase64Time.TotalMilliseconds) / convertTime.TotalMilliseconds * 100):F1}%");
+
+            // 메모리 효율성 테스트 (GC 압박 감소)
+            AssertLessGCPressure(() => MeasurePooledBase64Encoding(testData),
+                                () => MeasureConvertToBase64(testData),
+                                "ArrayPool Base64 인코딩이 GC 압박을 덜 줘야 합니다.");
+        }
+
+        [Fact]
+        public void ChatSegment_MemoryOwner_vs_ByteArray_Test()
+        {
+            var testData = GenerateTestAudioData(AudioDataSize);
+
+            // 테스트 1: 기존 byte[] 방식
+            var segment1 = ChatSegment.CreateText("Test content")
+                .WithAudioData(testData, "audio/wav", 5.0f);
+
+            // 테스트 2: IMemoryOwner<byte> 방식
+            using var memoryOwner = MemoryPool<byte>.Shared.Rent(testData.Length);
+            testData.CopyTo(memoryOwner.Memory.Span);
+            var segment2 = ChatSegment.CreateText("Test content")
+                .WithAudioMemory(memoryOwner, testData.Length, "audio/wav", 5.0f);
+
+            // 둘 다 동일한 오디오 데이터를 가져야 함
+            Assert.True(segment1.HasAudio);
+            Assert.True(segment2.HasAudio);
+            Assert.Equal(segment1.GetAudioSpan().ToArray(), segment2.GetAudioSpan().ToArray());
+
+            _output.WriteLine($"기존 방식 - HasAudio: {segment1.HasAudio}, 데이터 크기: {segment1.AudioData?.Length ?? 0}");
+            _output.WriteLine($"최적화 방식 - HasAudio: {segment2.HasAudio}, 데이터 크기: {segment2.AudioDataSize}");
+        }
+
+        private byte[] GenerateTestAudioData(int size)
+        {
+            var random = new Random(12345); // 고정 시드로 일관된 테스트
+            var data = new byte[size];
+            random.NextBytes(data);
+            return data;
+        }
+
+        private TimeSpan MeasureDirectAllocation(byte[] testData)
+        {
+            var sw = Stopwatch.StartNew();
+
+            for (int i = 0; i < TestIterations; i++)
+            {
+                // 직접 할당 시뮬레이션
+                var buffer = new byte[testData.Length * 2]; // Base64로 변환하면 크기가 증가
+                Array.Copy(testData, 0, buffer, 0, testData.Length);
+
+                // 메모리 사용 시뮬레이션
+                var result = Convert.ToBase64String(buffer, 0, testData.Length);
+                GC.KeepAlive(result);
+            }
+
+            sw.Stop();
+            return sw.Elapsed;
+        }
+
+        private TimeSpan MeasureArrayPoolAllocation(byte[] testData)
+        {
+            var arrayPool = ArrayPool<byte>.Shared;
+            var sw = Stopwatch.StartNew();
+
+            for (int i = 0; i < TestIterations; i++)
+            {
+                var buffer = arrayPool.Rent(testData.Length * 2);
+                try
+                {
+                    Array.Copy(testData, 0, buffer, 0, testData.Length);
+                    var result = Convert.ToBase64String(buffer, 0, testData.Length);
+                    GC.KeepAlive(result);
+                }
+                finally
+                {
+                    arrayPool.Return(buffer);
+                }
+            }
+
+            sw.Stop();
+            return sw.Elapsed;
+        }
+
+        private TimeSpan MeasureConvertToBase64(byte[] testData)
+        {
+            var sw = Stopwatch.StartNew();
+
+            for (int i = 0; i < TestIterations; i++)
+            {
+                var result = Convert.ToBase64String(testData);
+                GC.KeepAlive(result);
+            }
+
+            sw.Stop();
+            return sw.Elapsed;
+        }
+
+        private TimeSpan MeasurePooledBase64Encoding(byte[] testData)
+        {
+            var arrayPool = ArrayPool<byte>.Shared;
+            var sw = Stopwatch.StartNew();
+
+            for (int i = 0; i < TestIterations; i++)
+            {
+                var base64Length = ((testData.Length + 2) / 3) * 4;
+                var buffer = arrayPool.Rent(base64Length);
+
+                try
+                {
+                    if (System.Buffers.Text.Base64.EncodeToUtf8(testData, buffer, out _, out var bytesWritten) == System.Buffers.OperationStatus.Done)
+                    {
+                        var result = Encoding.UTF8.GetString(buffer, 0, bytesWritten);
+                        GC.KeepAlive(result);
+                    }
+                }
+                finally
+                {
+                    arrayPool.Return(buffer);
+                }
+            }
+
+            sw.Stop();
+            return sw.Elapsed;
+        }
+
+        private void AssertLessGCPressure(Func<TimeSpan> optimizedMethod, Func<TimeSpan> standardMethod, string message)
+        {
+            // GC 정리
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            var beforeGen0 = GC.CollectionCount(0);
+            var beforeGen1 = GC.CollectionCount(1);
+            var beforeGen2 = GC.CollectionCount(2);
+
+            // 최적화된 방법 실행
+            var optimizedTime = optimizedMethod();
+
+            var optimizedGen0 = GC.CollectionCount(0) - beforeGen0;
+            var optimizedGen1 = GC.CollectionCount(1) - beforeGen1;
+            var optimizedGen2 = GC.CollectionCount(2) - beforeGen2;
+
+            // GC 정리
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            beforeGen0 = GC.CollectionCount(0);
+            beforeGen1 = GC.CollectionCount(1);
+            beforeGen2 = GC.CollectionCount(2);
+
+            // 표준 방법 실행
+            var standardTime = standardMethod();
+
+            var standardGen0 = GC.CollectionCount(0) - beforeGen0;
+            var standardGen1 = GC.CollectionCount(1) - beforeGen1;
+            var standardGen2 = GC.CollectionCount(2) - beforeGen2;
+
+            _output.WriteLine($"최적화 방법 - Gen0: {optimizedGen0}, Gen1: {optimizedGen1}, Gen2: {optimizedGen2}");
+            _output.WriteLine($"표준 방법 - Gen0: {standardGen0}, Gen1: {standardGen1}, Gen2: {standardGen2}");
+
+            // Gen2 수집이 적거나 같아야 함 (LOH 압박 감소)
+            Assert.True(optimizedGen2 <= standardGen2, $"{message} (Gen2 수집: 최적화={optimizedGen2}, 표준={standardGen2})");
+        }
+    }
+}

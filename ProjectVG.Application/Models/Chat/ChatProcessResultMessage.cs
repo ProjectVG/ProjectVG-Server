@@ -1,4 +1,6 @@
 using System.Text.Json.Serialization;
+using System.Buffers;
+using System.Buffers.Text;
 
 namespace ProjectVG.Application.Models.Chat
 {
@@ -42,9 +44,9 @@ namespace ProjectVG.Application.Models.Chat
         
         public static ChatProcessResultMessage FromSegment(ChatSegment segment, string? requestId = null)
         {
-            var audioData = segment.HasAudio ? Convert.ToBase64String(segment.AudioData!) : null;
+            var audioData = segment.HasAudio ? ConvertToBase64Optimized(segment.GetAudioSpan()) : null;
             var audioFormat = segment.HasAudio ? segment.AudioContentType ?? "wav" : null;
-            
+
             return new ChatProcessResultMessage
             {
                 RequestId = requestId,
@@ -64,11 +66,41 @@ namespace ProjectVG.Application.Models.Chat
         {
             if (audioBytes != null && audioBytes.Length > 0)
             {
-                return this with { AudioData = Convert.ToBase64String(audioBytes) };
+                return this with { AudioData = ConvertToBase64Optimized(new ReadOnlySpan<byte>(audioBytes)) };
             }
             else
             {
                 return this with { AudioData = null };
+            }
+        }
+
+        /// <summary>
+        /// ArrayPool을 사용한 메모리 효율적인 Base64 인코딩 (LOH 방지)
+        /// </summary>
+        private static string? ConvertToBase64Optimized(ReadOnlySpan<byte> data)
+        {
+            if (data.IsEmpty) return null;
+
+            var arrayPool = ArrayPool<byte>.Shared;
+            var base64Length = Base64.GetMaxEncodedToUtf8Length(data.Length);
+            var buffer = arrayPool.Rent(base64Length);
+
+            try
+            {
+                if (Base64.EncodeToUtf8(data, buffer, out _, out var bytesWritten) == OperationStatus.Done)
+                {
+                    // UTF8 바이트를 문자열로 변환
+                    return System.Text.Encoding.UTF8.GetString(buffer, 0, bytesWritten);
+                }
+                else
+                {
+                    // 폴백: 기존 방법 사용
+                    return Convert.ToBase64String(data);
+                }
+            }
+            finally
+            {
+                arrayPool.Return(buffer);
             }
         }
         

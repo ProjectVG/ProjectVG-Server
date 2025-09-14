@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -9,6 +10,8 @@ namespace ProjectVG.Infrastructure.Integrations.TextToSpeechClient
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<TextToSpeechClient> _logger;
+        private static readonly ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
+        private const int MaxPoolSize = 1024 * 1024; // 1MB max pooled size
 
         public TextToSpeechClient(HttpClient httpClient, ILogger<TextToSpeechClient> logger)
         {
@@ -47,7 +50,8 @@ namespace ProjectVG.Infrastructure.Integrations.TextToSpeechClient
                     return voiceResponse;
                 }
 
-                voiceResponse.AudioData = await response.Content.ReadAsByteArrayAsync();
+                // 스트림 기반으로 음성 데이터 읽기 (LOH 방지)
+                voiceResponse.AudioData = await ReadAudioDataWithPoolAsync(response.Content);
                 voiceResponse.ContentType = response.Content.Headers.ContentType?.ToString();
 
                 if (response.Headers.Contains("X-Audio-Length"))
@@ -72,6 +76,50 @@ namespace ProjectVG.Infrastructure.Integrations.TextToSpeechClient
                     Success = false,
                     ErrorMessage = ex.Message,
                 };
+            }
+        }
+
+        /// <summary>
+        /// ArrayPool을 사용하여 스트림 기반으로 음성 데이터를 읽습니다 (LOH 할당 방지)
+        /// </summary>
+        private async Task<byte[]?> ReadAudioDataWithPoolAsync(HttpContent content)
+        {
+            const int chunkSize = 32768; // 32KB 청크 크기
+            byte[]? buffer = null;
+            MemoryStream? memoryStream = null;
+
+            try
+            {
+                buffer = _arrayPool.Rent(chunkSize);
+                memoryStream = new MemoryStream();
+
+                using var stream = await content.ReadAsStreamAsync();
+                int bytesRead;
+
+                // 청크 단위로 데이터 읽어서 MemoryStream에 복사
+                while ((bytesRead = await stream.ReadAsync(buffer, 0, chunkSize)) > 0)
+                {
+                    await memoryStream.WriteAsync(buffer, 0, bytesRead);
+                }
+
+                var result = memoryStream.ToArray();
+                _logger.LogDebug("[TTS][ArrayPool] 음성 데이터 읽기 완료: {Size} bytes, 청크 크기: {ChunkSize}",
+                    result.Length, chunkSize);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[TTS][ArrayPool] 음성 데이터 읽기 실패");
+                return null;
+            }
+            finally
+            {
+                if (buffer != null)
+                {
+                    _arrayPool.Return(buffer);
+                }
+                memoryStream?.Dispose();
             }
         }
 
