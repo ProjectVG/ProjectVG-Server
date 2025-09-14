@@ -46,10 +46,14 @@ namespace ProjectVG.Application.Services.Chat.Processors
             var processedCount = 0;
 
             foreach (var (idx, ttsResult) in ttsResults.OrderBy(x => x.idx)) {
-                if (ttsResult.Success == true && ttsResult.AudioData != null) {
+                if (ttsResult.Success == true && ttsResult.AudioMemoryOwner != null) {
                     var segment = context.Segments?[idx];
                     if (segment != null && context.Segments != null) {
-                        context.Segments[idx] = segment.WithAudioData(ttsResult.AudioData, ttsResult.ContentType!, ttsResult.AudioLength ?? 0f);
+                        context.Segments[idx] = segment.WithAudioMemory(
+                            ttsResult.AudioMemoryOwner,
+                            ttsResult.AudioDataSize,
+                            ttsResult.ContentType!,
+                            ttsResult.AudioLength ?? 0f);
                     }
                     
                     if (ttsResult.AudioLength.HasValue) {

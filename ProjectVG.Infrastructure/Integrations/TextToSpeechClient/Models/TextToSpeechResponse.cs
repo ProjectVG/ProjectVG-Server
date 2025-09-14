@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.Buffers;
 
 namespace ProjectVG.Infrastructure.Integrations.TextToSpeechClient.Models
 {
@@ -17,10 +18,22 @@ namespace ProjectVG.Infrastructure.Integrations.TextToSpeechClient.Models
         public string? ErrorMessage { get; set; }
 
         /// <summary>
-        /// 오디오 데이터 (바이트 배열)
+        /// 오디오 데이터 (바이트 배열) - 레거시 호환성용
         /// </summary>
         [JsonIgnore]
         public byte[]? AudioData { get; set; }
+
+        /// <summary>
+        /// ArrayPool 기반 오디오 메모리 소유자 (LOH 방지)
+        /// </summary>
+        [JsonIgnore]
+        public IMemoryOwner<byte>? AudioMemoryOwner { get; set; }
+
+        /// <summary>
+        /// 실제 오디오 데이터 크기
+        /// </summary>
+        [JsonIgnore]
+        public int AudioDataSize { get; set; }
 
         /// <summary>
         /// 오디오 길이 (초)
