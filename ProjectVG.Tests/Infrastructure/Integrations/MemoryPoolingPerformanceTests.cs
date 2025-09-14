@@ -82,7 +82,7 @@ namespace ProjectVG.Tests.Infrastructure.Integrations
             Assert.Equal(segment1.GetAudioSpan().ToArray(), segment2.GetAudioSpan().ToArray());
 
             _output.WriteLine($"기존 방식 - HasAudio: {segment1.HasAudio}, 데이터 크기: {segment1.AudioData?.Length ?? 0}");
-            _output.WriteLine($"최적화 방식 - HasAudio: {segment2.HasAudio}, 데이터 크기: {segment2.AudioDataSize}");
+            _output.WriteLine($"최적화 방식 - HasAudio: {segment2.HasAudio}, 데이터 크기: {segment2.GetAudioSpan().Length}");
         }
 
         [Fact]
@@ -140,7 +140,7 @@ namespace ProjectVG.Tests.Infrastructure.Integrations
             // 정상 케이스
             var validSegment = ChatSegment.CreateText("Test")
                 .WithAudioMemory(memoryOwner, 50, "audio/wav", 1.0f);
-            Assert.Equal(50, validSegment.AudioDataSize);
+            Assert.Equal(50, validSegment.GetAudioSpan().Length);
 
             // null audioMemoryOwner 테스트
             var nullException = Assert.Throws<ArgumentNullException>(() =>
