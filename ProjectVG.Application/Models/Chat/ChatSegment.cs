@@ -3,24 +3,24 @@ using System.Buffers;
 
 namespace ProjectVG.Application.Models.Chat
 {
-    public record ChatSegment : IDisposable
+    public sealed class ChatSegment : IDisposable
     {
 
-        public string Content { get; init; } = string.Empty;
+        public string Content { get; private set; } = string.Empty;
 
-        public int Order { get; init; }
+        public int Order { get; private set; }
 
-        public string? Emotion { get; init; }
+        public string? Emotion { get; private set; }
 
-        public List<string>? Actions { get; init; }
+        public List<string>? Actions { get; private set; }
 
-        public byte[]? AudioData { get; init; }
-        public string? AudioContentType { get; init; }
-        public float? AudioLength { get; init; }
+        public byte[]? AudioData { get; private set; }
+        public string? AudioContentType { get; private set; }
+        public float? AudioLength { get; private set; }
 
         // 스트림 기반 음성 데이터 처리를 위한 새로운 프로퍼티
-        public IMemoryOwner<byte>? AudioMemoryOwner { get; init; }
-        public int AudioDataSize { get; init; }
+        internal IMemoryOwner<byte>? AudioMemoryOwner { get; private set; }
+        internal int AudioDataSize { get; private set; }
 
 
 
@@ -50,6 +50,8 @@ namespace ProjectVG.Application.Models.Chat
         
 
 
+        private ChatSegment() { }
+
         public static ChatSegment Create(string content, string? emotion = null, List<string>? actions = null, int order = 0)
         {
             return new ChatSegment
@@ -74,8 +76,12 @@ namespace ProjectVG.Application.Models.Chat
         // Method to add audio data (returns new record instance)
         public ChatSegment WithAudioData(byte[] audioData, string audioContentType, float audioLength)
         {
-            return this with
+            return new ChatSegment
             {
+                Content = this.Content,
+                Order = this.Order,
+                Emotion = this.Emotion,
+                Actions = this.Actions,
                 AudioData = audioData,
                 AudioContentType = audioContentType,
                 AudioLength = audioLength
@@ -104,8 +110,15 @@ namespace ProjectVG.Application.Models.Chat
                     audioDataSize,
                     $"audioDataSize는 0 이상 {audioMemoryOwner.Memory.Length} 이하여야 합니다.");
 
-            return this with
+            // 기존 AudioMemoryOwner가 있다면 해제 (소유권 이전)
+            this.AudioMemoryOwner?.Dispose();
+
+            return new ChatSegment
             {
+                Content = this.Content,
+                Order = this.Order,
+                Emotion = this.Emotion,
+                Actions = this.Actions,
                 AudioMemoryOwner = audioMemoryOwner,
                 AudioDataSize = audioDataSize,
                 AudioContentType = audioContentType,
@@ -147,7 +160,7 @@ namespace ProjectVG.Application.Models.Chat
         /// 보호된 Dispose 패턴 구현
         /// </summary>
         /// <param name="disposing">관리되는 리소스를 해제할지 여부</param>
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (disposing && AudioMemoryOwner != null)
             {
