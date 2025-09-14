@@ -70,8 +70,6 @@ namespace ProjectVG.Application.Services.Chat
 
             var preprocessContext = await PrepareChatRequestAsync(command);
 
-            LogChatRequestCommand(command);
-
             _ = Task.Run(async () => {
                 await ProcessChatRequestInternalAsync(preprocessContext).ConfigureAwait(false);
             });
@@ -123,20 +121,10 @@ namespace ProjectVG.Application.Services.Chat
                 await failureHandler.HandleAsync(context).ConfigureAwait(false);
             }
             finally {
-                LogChatProcessContext(context);
                 _metricsService.EndChatMetrics();
                 _metricsService.LogChatMetrics();
             }
         }
 
-        private void LogChatRequestCommand(ChatRequestCommand command)
-        {
-            _logger.LogInformation("Starting chat process: {CommandInfo}", command.ToDebugString());
-        }
-
-        private void LogChatProcessContext(ChatProcessContext context)
-        {
-            _logger.LogInformation("Chat process completed: {ContextInfo}", context.ToDebugString());
-        }
     }
 }
