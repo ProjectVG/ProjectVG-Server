@@ -70,8 +70,6 @@ namespace ProjectVG.Application.Services.Chat
 
             var preprocessContext = await PrepareChatRequestAsync(command);
 
-            LogChatRequestCommand(command);
-
             _ = Task.Run(async () => {
                 await ProcessChatRequestInternalAsync(preprocessContext);
             });
@@ -112,11 +110,9 @@ namespace ProjectVG.Application.Services.Chat
                 await _llmProcessor.ProcessAsync(context);
                 await _ttsProcessor.ProcessAsync(context);
 
-                // ChatSuccessHandler와 ChatResultProcessor를 같은 스코프에서 실행
-                
                 var successHandler = scope.ServiceProvider.GetRequiredService<ChatSuccessHandler>();
                 var resultProcessor = scope.ServiceProvider.GetRequiredService<ChatResultProcessor>();
-                
+
                 await successHandler.HandleAsync(context);
                 await resultProcessor.PersistResultsAsync(context);
             }
@@ -125,20 +121,10 @@ namespace ProjectVG.Application.Services.Chat
                 await failureHandler.HandleAsync(context);
             }
             finally {
-                LogChatProcessContext(context);
                 _metricsService.EndChatMetrics();
                 _metricsService.LogChatMetrics();
             }
         }
 
-        private void LogChatRequestCommand(ChatRequestCommand command)
-        {
-            _logger.LogInformation("Starting chat process: {CommandInfo}", command.ToDebugString());
-        }
-
-        private void LogChatProcessContext(ChatProcessContext context)
-        {
-            _logger.LogInformation("Chat process completed: {ContextInfo}", context.ToDebugString());
-        }
     }
 }

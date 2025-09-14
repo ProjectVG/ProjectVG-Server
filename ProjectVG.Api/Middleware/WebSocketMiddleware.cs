@@ -123,7 +123,7 @@ namespace ProjectVG.Api.Middleware
                     new ArraySegment<byte>(welcomeMessage),
                     WebSocketMessageType.Text,
                     true,
-                    cancellationTokenSource.Token).ConfigureAwait(false);
+                    cancellationTokenSource.Token);
 
                 while (socket.State == WebSocketState.Open && !cancellationTokenSource.Token.IsCancellationRequested)
                 {
@@ -131,8 +131,7 @@ namespace ProjectVG.Api.Middleware
                     using var ms = new MemoryStream();
                     do
                     {
-                        result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationTokenSource.Token)
-                            .ConfigureAwait(false);
+                        result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationTokenSource.Token);
                         if (result.MessageType == WebSocketMessageType.Close)
                         {
                             _logger.LogInformation("연결 종료 요청: {UserId}", userId);
@@ -160,7 +159,7 @@ namespace ProjectVG.Api.Middleware
                                 new ArraySegment<byte>(pongMessage),
                                 WebSocketMessageType.Text,
                                 true,
-                                cancellationTokenSource.Token).ConfigureAwait(false);
+                                cancellationTokenSource.Token);
                         }
                     }
                 }
@@ -178,14 +177,14 @@ namespace ProjectVG.Api.Middleware
                 _logger.LogInformation("WebSocket 연결 해제: {UserId}", userId);
 
                 try {
-                    await _webSocketService.DisconnectAsync(userId).ConfigureAwait(false);
+                    await _webSocketService.DisconnectAsync(userId);
                     _connectionRegistry.Unregister(userId);
 
                     if (socket.State == WebSocketState.Open || socket.State == WebSocketState.CloseReceived) {
                         await socket.CloseAsync(
                             WebSocketCloseStatus.NormalClosure,
                             "Connection closed",
-                            CancellationToken.None).ConfigureAwait(false);
+                            CancellationToken.None);
                     }
                 }
                 catch (Exception ex) {

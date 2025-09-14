@@ -24,7 +24,7 @@ namespace ProjectVG.Infrastructure.Auth
             var accessTokenExpiresAt = DateTime.UtcNow.AddMinutes(15);
             var refreshTokenExpiresAt = DateTime.UtcNow.AddMinutes(1440);
 
-            var stored = await _refreshTokenStorage.StoreRefreshTokenAsync(refreshToken, userId, refreshTokenExpiresAt).ConfigureAwait(false);
+            var stored = await _refreshTokenStorage.StoreRefreshTokenAsync(refreshToken, userId, refreshTokenExpiresAt);
             if (!stored)
             {
                 _logger.LogError("Failed to store refresh token for user {UserId}", userId);
@@ -56,14 +56,14 @@ namespace ProjectVG.Infrastructure.Auth
                 return null;
             }
 
-            var isValid = await _refreshTokenStorage.IsRefreshTokenValidAsync(refreshToken).ConfigureAwait(false);
+            var isValid = await _refreshTokenStorage.IsRefreshTokenValidAsync(refreshToken);
             if (!isValid)
             {
                 _logger.LogWarning("Refresh token not found in storage");
                 return null;
             }
 
-            var userId = await _refreshTokenStorage.GetUserIdFromRefreshTokenAsync(refreshToken).ConfigureAwait(false);
+            var userId = await _refreshTokenStorage.GetUserIdFromRefreshTokenAsync(refreshToken);
             if (!userId.HasValue)
             {
                 _logger.LogWarning("User ID not found for refresh token");
@@ -75,7 +75,7 @@ namespace ProjectVG.Infrastructure.Auth
             var accessTokenExpiresAt = DateTime.UtcNow.AddMinutes(15);
 
             // 기존 Refresh Token의 만료 시간 조회
-            var refreshTokenExpiresAt = await _refreshTokenStorage.GetRefreshTokenExpiresAtAsync(refreshToken).ConfigureAwait(false);
+            var refreshTokenExpiresAt = await _refreshTokenStorage.GetRefreshTokenExpiresAtAsync(refreshToken);
             if (!refreshTokenExpiresAt.HasValue)
             {
                 _logger.LogWarning("Refresh token expiration time not found");
@@ -93,7 +93,7 @@ namespace ProjectVG.Infrastructure.Auth
 
         public async Task<bool> RevokeRefreshTokenAsync(string refreshToken)
         {
-            return await _refreshTokenStorage.RemoveRefreshTokenAsync(refreshToken).ConfigureAwait(false);
+            return await _refreshTokenStorage.RemoveRefreshTokenAsync(refreshToken);
         }
 
         public async Task<bool> ValidateRefreshTokenAsync(string refreshToken)
@@ -110,7 +110,7 @@ namespace ProjectVG.Infrastructure.Auth
                 return false;
             }
 
-            return await _refreshTokenStorage.IsRefreshTokenValidAsync(refreshToken).ConfigureAwait(false);
+            return await _refreshTokenStorage.IsRefreshTokenValidAsync(refreshToken);
         }
 
         public Task<bool> ValidateAccessTokenAsync(string accessToken)
