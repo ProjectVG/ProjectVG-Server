@@ -88,39 +88,50 @@ namespace ProjectVG.Infrastructure.Integrations.TextToSpeechClient
         {
             const int chunkSize = 32768; // 32KB 청크 크기
             byte[]? readBuffer = null;
-            MemoryStream? memoryStream = null;
+            IMemoryOwner<byte>? owner = null;
 
             try
             {
                 readBuffer = _arrayPool.Rent(chunkSize);
-                memoryStream = new MemoryStream();
-
                 using var stream = await content.ReadAsStreamAsync();
-                int bytesRead;
 
-                // 청크 단위로 데이터 읽어서 MemoryStream에 복사
-                while ((bytesRead = await stream.ReadAsync(readBuffer, 0, chunkSize)) > 0)
+                // 초기 버퍼 렌트(증분 확장 전략)
+                owner = MemoryPool<byte>.Shared.Rent(chunkSize);
+                int total = 0;
+                while (true)
                 {
-                    await memoryStream.WriteAsync(readBuffer, 0, bytesRead);
+                    // 여유 공간 없으면 확장
+                    if (total == owner.Memory.Length)
+                    {
+                        var newOwner = MemoryPool<byte>.Shared.Rent(Math.Min(owner.Memory.Length * 2, int.MaxValue));
+                        owner.Memory.Span.Slice(0, total).CopyTo(newOwner.Memory.Span);
+                        owner.Dispose();
+                        owner = newOwner;
+                    }
+
+                    int toRead = Math.Min(chunkSize, owner.Memory.Length - total);
+                    int bytesRead = await stream.ReadAsync(readBuffer, 0, toRead);
+                    if (bytesRead == 0) break;
+                    readBuffer.AsSpan(0, bytesRead).CopyTo(owner.Memory.Span.Slice(total));
+                    total += bytesRead;
                 }
 
-                var totalSize = (int)memoryStream.Length;
-
-                // ArrayPool에서 최종 데이터 크기만큼 메모리 할당
-                var resultMemoryOwner = MemoryPool<byte>.Shared.Rent(totalSize);
-
-                // MemoryStream에서 최종 메모리로 복사
-                memoryStream.Position = 0;
-                await memoryStream.ReadAsync(resultMemoryOwner.Memory.Slice(0, totalSize));
+                if (total == 0)
+                {
+                    owner.Dispose();
+                    _logger.LogDebug("[TTS][ArrayPool] 비어있는 오디오 스트림");
+                    return (null, 0);
+                }
 
                 _logger.LogDebug("[TTS][ArrayPool] 음성 데이터 읽기 완료: {Size} bytes, 청크 크기: {ChunkSize}",
-                    totalSize, chunkSize);
+                    total, chunkSize);
 
-                return (resultMemoryOwner, totalSize);
+                return (owner, total);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[TTS][ArrayPool] 음성 데이터 읽기 실패");
+                owner?.Dispose();
                 return (null, 0);
             }
             finally
@@ -129,7 +140,7 @@ namespace ProjectVG.Infrastructure.Integrations.TextToSpeechClient
                 {
                     _arrayPool.Return(readBuffer);
                 }
-                memoryStream?.Dispose();
+                // owner는 정상 경로에서 호출자에게 반환됨. 예외 시 위에서 Dispose 처리.
             }
         }
 
