@@ -73,7 +73,7 @@ namespace ProjectVG.Application.Services.Chat
             LogChatRequestCommand(command);
 
             _ = Task.Run(async () => {
-                await ProcessChatRequestInternalAsync(preprocessContext);
+                await ProcessChatRequestInternalAsync(preprocessContext).ConfigureAwait(false);
             });
 
             return ChatRequestResult.Accepted(command.Id.ToString(), command.UserId, command.CharacterId);
@@ -109,20 +109,18 @@ namespace ProjectVG.Application.Services.Chat
         {
             using var scope = _scopeFactory.CreateScope();
             try {
-                await _llmProcessor.ProcessAsync(context);
-                await _ttsProcessor.ProcessAsync(context);
+                await _llmProcessor.ProcessAsync(context).ConfigureAwait(false);
+                await _ttsProcessor.ProcessAsync(context).ConfigureAwait(false);
 
-                // ChatSuccessHandler와 ChatResultProcessor를 같은 스코프에서 실행
-                
                 var successHandler = scope.ServiceProvider.GetRequiredService<ChatSuccessHandler>();
                 var resultProcessor = scope.ServiceProvider.GetRequiredService<ChatResultProcessor>();
-                
-                await successHandler.HandleAsync(context);
-                await resultProcessor.PersistResultsAsync(context);
+
+                await successHandler.HandleAsync(context).ConfigureAwait(false);
+                await resultProcessor.PersistResultsAsync(context).ConfigureAwait(false);
             }
             catch (Exception) {
                 var failureHandler = scope.ServiceProvider.GetRequiredService<ChatFailureHandler>();
-                await failureHandler.HandleAsync(context);
+                await failureHandler.HandleAsync(context).ConfigureAwait(false);
             }
             finally {
                 LogChatProcessContext(context);
