@@ -35,22 +35,22 @@ namespace ProjectVG.Application.Services.Chat.Validators
         public async Task ValidateAsync(ChatRequestCommand command)
         {
             // 세션 검증 - 사용자 활성 세션 확인
-            await ValidateUserSessionAsync(command.UserId).ConfigureAwait(false);
+            await ValidateUserSessionAsync(command.UserId);
 
-            var userExists = await _userService.ExistsByIdAsync(command.UserId).ConfigureAwait(false);
+            var userExists = await _userService.ExistsByIdAsync(command.UserId);
             if (!userExists) {
                 _logger.LogWarning("사용자 ID 검증 실패: {UserId}", command.UserId);
                 throw new NotFoundException(ErrorCode.USER_NOT_FOUND, command.UserId);
             }
 
-            var characterExists = await _characterService.CharacterExistsAsync(command.CharacterId).ConfigureAwait(false);
+            var characterExists = await _characterService.CharacterExistsAsync(command.CharacterId);
             if (!characterExists) {
                 _logger.LogWarning("캐릭터 ID 검증 실패: {CharacterId}", command.CharacterId);
                 throw new NotFoundException(ErrorCode.CHARACTER_NOT_FOUND, command.CharacterId);
             }
 
             // 토큰 잔액 검증 - 예상 비용으로 미리 확인
-            var balance = await _tokenManagementService.GetCreditBalanceAsync(command.UserId).ConfigureAwait(false);
+            var balance = await _tokenManagementService.GetCreditBalanceAsync(command.UserId);
             var currentBalance = balance.CurrentBalance;
             
             if (currentBalance <= 0) {
@@ -76,8 +76,7 @@ namespace ProjectVG.Application.Services.Chat.Validators
             try {
                 // 사용자 ID를 기반으로 세션 조회
                 var userSessions = (await _sessionStorage
-                    .GetSessionsByUserIdAsync(userId.ToString())
-                    .ConfigureAwait(false))
+                    .GetSessionsByUserIdAsync(userId.ToString()))
                     .ToList();
 
                 if (userSessions.Count == 0) {

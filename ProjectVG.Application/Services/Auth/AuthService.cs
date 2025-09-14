@@ -30,7 +30,7 @@ namespace ProjectVG.Application.Services.Auth
                 throw new ValidationException(ErrorCode.GUEST_ID_INVALID);
             }
 
-            var user = await _userService.TryGetByProviderAsync("guest", guestId).ConfigureAwait(false);
+            var user = await _userService.TryGetByProviderAsync("guest", guestId);
 
             if (user == null) {
                 string uuid = GenerateGuestUuid(guestId);
@@ -41,23 +41,23 @@ namespace ProjectVG.Application.Services.Auth
                     Provider: "guest"
                 );
 
-                user = await _userService.CreateUserAsync(createCommand).ConfigureAwait(false);
+                user = await _userService.CreateUserAsync(createCommand);
                 _logger.LogInformation("새 게스트 사용자 생성됨: UserId={UserId}, GuestId={GuestId}", user.Id, guestId);
             }
 
-            return await FinalizeLoginAsync(user, "guest").ConfigureAwait(false);
+            return await FinalizeLoginAsync(user, "guest");
         }
 
         private async Task<AuthResult> FinalizeLoginAsync(UserDto user, string provider)
         {
             // 초기 크레딧 지급
-            var tokenGranted = await _tokenManagementService.GrantInitialCreditsAsync(user.Id).ConfigureAwait(false);
+            var tokenGranted = await _tokenManagementService.GrantInitialCreditsAsync(user.Id);
             if (tokenGranted) {
                 _logger.LogInformation("사용자 {UserId}에게 최초 크레딧 지급 완료", user.Id);
             }
 
             // 최종 JWT 토큰 발급
-            var tokens = await _tokenService.GenerateTokensAsync(user.Id).ConfigureAwait(false);
+            var tokens = await _tokenService.GenerateTokensAsync(user.Id);
 
             return new AuthResult {
                 Tokens = tokens,
@@ -71,13 +71,13 @@ namespace ProjectVG.Application.Services.Auth
                 throw new ValidationException(ErrorCode.TOKEN_MISSING);
             }
 
-            var tokens = await _tokenService.RefreshAccessTokenAsync(refreshToken).ConfigureAwait(false);
+            var tokens = await _tokenService.RefreshAccessTokenAsync(refreshToken);
             if (tokens == null) {
                 throw new ValidationException(ErrorCode.TOKEN_REFRESH_FAILED);
             }
 
-            var userId = await _tokenService.GetUserIdFromTokenAsync(refreshToken).ConfigureAwait(false);
-            var user = userId.HasValue ? await _userService.TryGetByIdAsync(userId.Value).ConfigureAwait(false) : null;
+            var userId = await _tokenService.GetUserIdFromTokenAsync(refreshToken);
+            var user = userId.HasValue ? await _userService.TryGetByIdAsync(userId.Value) : null;
 
             return new AuthResult {
                 Tokens = tokens,
@@ -91,9 +91,9 @@ namespace ProjectVG.Application.Services.Auth
                 throw new ValidationException(ErrorCode.TOKEN_MISSING);
             }
 
-            var revoked = await _tokenService.RevokeRefreshTokenAsync(refreshToken).ConfigureAwait(false);
+            var revoked = await _tokenService.RevokeRefreshTokenAsync(refreshToken);
             if (revoked) {
-                var userId = await _tokenService.GetUserIdFromTokenAsync(refreshToken).ConfigureAwait(false);
+                var userId = await _tokenService.GetUserIdFromTokenAsync(refreshToken);
             }
             return revoked;
         }

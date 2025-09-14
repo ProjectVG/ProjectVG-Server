@@ -71,7 +71,7 @@ namespace ProjectVG.Application.Services.Chat
             var preprocessContext = await PrepareChatRequestAsync(command);
 
             _ = Task.Run(async () => {
-                await ProcessChatRequestInternalAsync(preprocessContext).ConfigureAwait(false);
+                await ProcessChatRequestInternalAsync(preprocessContext);
             });
 
             return ChatRequestResult.Accepted(command.Id.ToString(), command.UserId, command.CharacterId);
@@ -107,18 +107,18 @@ namespace ProjectVG.Application.Services.Chat
         {
             using var scope = _scopeFactory.CreateScope();
             try {
-                await _llmProcessor.ProcessAsync(context).ConfigureAwait(false);
-                await _ttsProcessor.ProcessAsync(context).ConfigureAwait(false);
+                await _llmProcessor.ProcessAsync(context);
+                await _ttsProcessor.ProcessAsync(context);
 
                 var successHandler = scope.ServiceProvider.GetRequiredService<ChatSuccessHandler>();
                 var resultProcessor = scope.ServiceProvider.GetRequiredService<ChatResultProcessor>();
 
-                await successHandler.HandleAsync(context).ConfigureAwait(false);
-                await resultProcessor.PersistResultsAsync(context).ConfigureAwait(false);
+                await successHandler.HandleAsync(context);
+                await resultProcessor.PersistResultsAsync(context);
             }
             catch (Exception) {
                 var failureHandler = scope.ServiceProvider.GetRequiredService<ChatFailureHandler>();
-                await failureHandler.HandleAsync(context).ConfigureAwait(false);
+                await failureHandler.HandleAsync(context);
             }
             finally {
                 _metricsService.EndChatMetrics();
