@@ -22,6 +22,9 @@ namespace ProjectVG.Application.Models.Chat
         internal IMemoryOwner<byte>? AudioMemoryOwner { get; private set; }
         internal int AudioDataSize { get; private set; }
 
+        // Dispose 멱등성 보장을 위한 플래그
+        private bool _disposed;
+
 
 
         public bool HasContent => !string.IsNullOrEmpty(Content);
@@ -149,31 +152,17 @@ namespace ProjectVG.Application.Models.Chat
 
         /// <summary>
         /// 리소스 해제 (IMemoryOwner 해제)
+        /// 멱등성을 보장하여 여러 번 호출해도 안전합니다.
         /// </summary>
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
+            if (_disposed) return;
 
-        /// <summary>
-        /// 보호된 Dispose 패턴 구현
-        /// </summary>
-        /// <param name="disposing">관리되는 리소스를 해제할지 여부</param>
-        private void Dispose(bool disposing)
-        {
-            if (disposing && AudioMemoryOwner != null)
-            {
-                AudioMemoryOwner.Dispose();
-            }
-        }
+            // 관리형 리소스만 해제 (IMemoryOwner)
+            AudioMemoryOwner?.Dispose();
 
-        /// <summary>
-        /// Finalizer - 관리되지 않는 리소스 정리 (최후 안전장치)
-        /// </summary>
-        ~ChatSegment()
-        {
-            Dispose(false);
+            _disposed = true;
+            // 파이널라이저가 없으므로 GC.SuppressFinalize 불필요
         }
     }
 }
