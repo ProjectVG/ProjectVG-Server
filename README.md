@@ -1,10 +1,27 @@
 # ProjectVG API Server
 
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![.NET](https://img.shields.io/badge/.NET-8.0-purple)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 **Clean Architecture 기반 AI 채팅 플랫폼 백엔드 시스템**
 
 .NET 8.0 ASP.NET Core API 서버로, JWT/OAuth2 인증, WebSocket 실시간 통신, Redis 세션 관리를 구현한 AI 채팅 플랫폼입니다.
 
-## 🏗️ 시스템 아키텍처
+<br>
+
+## ⚙️ 기술 스택
+- **.NET 8.0**: C# 12, nullable reference types
+- **ASP.NET Core 8.0**: Controllers 기반 REST API
+- **Entity Framework Core 8.0**: Code-First, SQL Server
+- **Redis**: StackExchange.Redis 세션 관리
+- **Authentication**: JWT + Google OAuth2 PKCE
+- **Testing**: xUnit + Moq + FluentAssertions
+- **Container**: Docker + Docker Compose
+
+<br>
+
+## 🏢 시스템 아키텍처
 
 ### Clean Architecture 구현
 ```
@@ -19,16 +36,9 @@
 └─────────────────── Common/Tests ────────────────────────┘
 ```
 
-### 기술 스택
-- **.NET 8.0**: C# 12, nullable reference types
-- **ASP.NET Core 8.0**: Controllers 기반 REST API
-- **Entity Framework Core 8.0**: Code-First, SQL Server
-- **Redis**: StackExchange.Redis 세션 관리
-- **Authentication**: JWT + Google OAuth2 PKCE
-- **Testing**: xUnit + Moq + FluentAssertions
-- **Container**: Docker + Docker Compose
+<br>
 
-## 📋 핵심 기능
+## ✨ 핵심 기능
 
 ### 인증 시스템
 - **JWT 토큰**: Access (15분) + Refresh (30일) 이중 토큰
@@ -52,6 +62,8 @@
 - **거래 기록**: 완전한 audit trail
 - **동시성 제어**: Optimistic concurrency 지원
 
+<br>
+
 ## 🔧 기술 구현
 
 ### 성능 최적화
@@ -70,6 +82,26 @@
 - **다층 테스트**: Unit Tests (Mock), Integration Tests (실제 DB), End-to-End Tests (API)
 - **성능 테스트**: 메모리 최적화 검증
 
+<br>
+
+## 📝 API 엔드포인트
+
+| 분류 | 메소드 | 엔드포인트 | 설명 | 인증 |
+|------|--------|------------|------|------|
+| **인증** | POST | `/api/v1/auth/refresh` | Access Token 갱신 | ✓ |
+| | POST | `/api/v1/auth/logout` | 세션 종료 | ✓ |
+| | POST | `/api/v1/auth/guest-login` | 게스트 인증 | - |
+| | GET | `/auth/oauth2/authorize/{provider}` | OAuth2 시작 | - |
+| **캐릭터** | GET | `/api/v1/character` | 캐릭터 조회 | ✓ |
+| | POST | `/api/v1/character/individual` | JSON 설정 캐릭터 생성 | ✓ |
+| | POST | `/api/v1/character/systemprompt` | 시스템 프롬프트 캐릭터 생성 | ✓ |
+| | GET | `/api/v1/character/my` | 내 캐릭터 조회 | ✓ |
+| **채팅** | POST | `/api/v1/chat` | 채팅 메시지 처리 | ✓ |
+| **크레딧** | GET | `/api/v1/credits/balance` | 잔액 조회 | ✓ |
+| | GET | `/api/v1/credits/history` | 거래 내역 조회 | ✓ |
+
+<br>
+
 ## 🗄️ 데이터 모델
 
 ### Core Entities
@@ -84,24 +116,7 @@
 - **Decimal 정밀도**: Decimal(18,2) 크레딧 계산
 - **인덱스**: 사용자별, 캐릭터별 조회 최적화
 
-## 🌐 API 엔드포인트
-
-### 인증 (`/api/v1/auth`, `/auth`)
-- `POST /api/v1/auth/refresh` - Access Token 갱신
-- `POST /api/v1/auth/logout` - 세션 종료
-- `POST /api/v1/auth/guest-login` - 게스트 인증
-- `GET /auth/oauth2/authorize/{provider}` - OAuth2 시작
-
-### 캐릭터 (`/api/v1/character`)
-- `GET /api/v1/character` - 캐릭터 조회
-- `POST /api/v1/character/individual` - JSON 설정 캐릭터 생성
-- `POST /api/v1/character/systemprompt` - 시스템 프롬프트 캐릭터 생성
-- `GET /api/v1/character/my` - 내 캐릭터 조회
-
-### 채팅 및 크레딧
-- `POST /api/v1/chat` - 채팅 메시지 처리 (JWT 필수)
-- `GET /api/v1/credits/balance` - 크레딧 잔액 조회
-- `GET /api/v1/credits/history` - 거래 내역 조회 (페이지네이션)
+<br>
 
 ## 📁 프로젝트 구조
 
@@ -135,6 +150,8 @@ ProjectVG.Tests/              # Test Suite
 └── Infrastructure/          # 리포지토리, 외부 서비스 테스트
 ```
 
+<br>
+
 ## 🔄 외부 서비스 연동
 
 ### 연동 서비스
@@ -146,22 +163,4 @@ ProjectVG.Tests/              # Test Suite
 - **SQL Server**: 주 데이터베이스 (사용자, 캐릭터, 대화)
 - **Redis**: 세션 관리, 토큰 캐시
 
-## 💡 아키텍처 설계 원칙
-
-### Clean Architecture 적용
-- **의존성 역전**: Domain ← Application ← Infrastructure
-- **관심사 분리**: 각 레이어별 명확한 책임
-- **테스트 가능성**: Mock 기반 단위 테스트
-- **기술 독립성**: 프레임워크에 종속되지 않는 비즈니스 로직
-
-### 도메인 중심 설계
-- **Rich Domain Model**: 엔티티에 비즈니스 로직 캡슐화
-- **Repository Pattern**: 데이터 접근 추상화
-- **Value Objects**: 불변 도메인 개념
-- **Aggregate Root**: 일관성 경계 정의
-
-### 성능 고려사항
-- **비동기 처리**: I/O 바운드 작업 최적화
-- **메모리 효율성**: 스트리밍 처리 지원
-- **연결 풀링**: 데이터베이스 연결 최적화
-- **캐싱**: Redis 기반 세션 캐시
+<br>
