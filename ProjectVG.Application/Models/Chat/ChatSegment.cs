@@ -3,24 +3,25 @@ using System.Buffers;
 
 namespace ProjectVG.Application.Models.Chat
 {
-    public record ChatSegment
+    public sealed class ChatSegment : IDisposable
     {
 
-        public string Content { get; init; } = string.Empty;
+        public string Content { get; private set; } = string.Empty;
 
-        public int Order { get; init; }
+        public int Order { get; private set; }
 
-        public string? Emotion { get; init; }
+        public string? Emotion { get; private set; }
 
-        public List<string>? Actions { get; init; }
+        public List<string>? Actions { get; private set; }
 
-        public byte[]? AudioData { get; init; }
-        public string? AudioContentType { get; init; }
-        public float? AudioLength { get; init; }
+        public byte[]? AudioData { get; private set; }
+        public string? AudioContentType { get; private set; }
+        public float? AudioLength { get; private set; }
 
-        // 스트림 기반 음성 데이터 처리를 위한 새로운 프로퍼티
-        public IMemoryOwner<byte>? AudioMemoryOwner { get; init; }
-        public int AudioDataSize { get; init; }
+        // LOH 방지를 위한 ArrayPool 기반 메모리 관리
+        internal IMemoryOwner<byte>? AudioMemoryOwner { get; private set; }
+        internal int AudioDataSize { get; private set; }
+        private bool _disposed;
 
 
 
@@ -30,14 +31,13 @@ namespace ProjectVG.Application.Models.Chat
         public bool HasEmotion => !string.IsNullOrEmpty(Emotion);
         public bool HasActions => Actions != null && Actions.Any();
 
-        /// <summary>
-        /// 메모리 효율적인 방식으로 음성 데이터에 접근합니다
-        /// </summary>
         public ReadOnlySpan<byte> GetAudioSpan()
         {
             if (AudioMemoryOwner != null && AudioDataSize > 0)
             {
-                return AudioMemoryOwner.Memory.Span.Slice(0, AudioDataSize);
+                var memory = AudioMemoryOwner.Memory;
+                var safeSize = Math.Min(AudioDataSize, memory.Length);
+                return memory.Span.Slice(0, safeSize);
             }
             if (AudioData != null)
             {
@@ -47,6 +47,8 @@ namespace ProjectVG.Application.Models.Chat
         }
         
 
+
+        private ChatSegment() { }
 
         public static ChatSegment Create(string content, string? emotion = null, List<string>? actions = null, int order = 0)
         {
@@ -69,36 +71,80 @@ namespace ProjectVG.Application.Models.Chat
             return Create("", null, new List<string> { action }, order);
         }
 
-        // Method to add audio data (returns new record instance)
         public ChatSegment WithAudioData(byte[] audioData, string audioContentType, float audioLength)
         {
-            return this with
+            return new ChatSegment
             {
+                Content = this.Content,
+                Order = this.Order,
+                Emotion = this.Emotion,
+                Actions = this.Actions,
                 AudioData = audioData,
                 AudioContentType = audioContentType,
                 AudioLength = audioLength
             };
         }
 
-        /// <summary>
-        /// 메모리 효율적인 방식으로 음성 데이터를 추가합니다 (LOH 방지)
-        /// </summary>
+        // 주의: 원본 인스턴스의 AudioMemoryOwner 해제됨
         public ChatSegment WithAudioMemory(IMemoryOwner<byte> audioMemoryOwner, int audioDataSize, string audioContentType, float audioLength)
         {
-            return this with
+            if (audioMemoryOwner is null)
+                throw new ArgumentNullException(nameof(audioMemoryOwner));
+
+            if (audioDataSize < 0 || audioDataSize > audioMemoryOwner.Memory.Length)
+                throw new ArgumentOutOfRangeException(
+                    nameof(audioDataSize),
+                    audioDataSize,
+                    $"audioDataSize는 0 이상 {audioMemoryOwner.Memory.Length} 이하여야 합니다.");
+
+            // 기존 소유자 해제 및 상태 정리
+            this.AudioMemoryOwner?.Dispose();
+            this.AudioMemoryOwner = null;
+            this.AudioDataSize = 0;
+
+            return new ChatSegment
             {
+                Content = this.Content,
+                Order = this.Order,
+                Emotion = this.Emotion,
+                Actions = this.Actions,
                 AudioMemoryOwner = audioMemoryOwner,
                 AudioDataSize = audioDataSize,
                 AudioContentType = audioContentType,
                 AudioLength = audioLength,
-                // 기존 AudioData는 null로 설정하여 중복 저장 방지
                 AudioData = null
             };
         }
 
         /// <summary>
-        /// 음성 데이터를 배열로 변환합니다 (필요한 경우에만 사용)
+        /// 오디오 메모리를 부착한 새 인스턴스 생성 (원본 불변)
         /// </summary>
+        public ChatSegment AttachAudioMemory(IMemoryOwner<byte> audioMemoryOwner, int audioDataSize, string audioContentType, float audioLength)
+        {
+            if (audioMemoryOwner is null)
+                throw new ArgumentNullException(nameof(audioMemoryOwner));
+
+            if (audioDataSize < 0 || audioDataSize > audioMemoryOwner.Memory.Length)
+                throw new ArgumentOutOfRangeException(
+                    nameof(audioDataSize),
+                    audioDataSize,
+                    $"audioDataSize는 0 이상 {audioMemoryOwner.Memory.Length} 이하여야 합니다.");
+
+            return new ChatSegment
+            {
+                Content = this.Content,
+                Order = this.Order,
+                Emotion = this.Emotion,
+                Actions = this.Actions,
+                AudioMemoryOwner = audioMemoryOwner,
+                AudioDataSize = audioDataSize,
+                AudioContentType = audioContentType,
+                AudioLength = audioLength,
+                AudioData = null
+            };
+        }
+
+        // 필요시만 사용 - LOH 위험 있음
         public byte[]? GetAudioDataAsArray()
         {
             if (AudioData != null)
@@ -115,12 +161,11 @@ namespace ProjectVG.Application.Models.Chat
             return null;
         }
 
-        /// <summary>
-        /// 리소스 해제 (IMemoryOwner 해제)
-        /// </summary>
         public void Dispose()
         {
+            if (_disposed) return;
             AudioMemoryOwner?.Dispose();
+            _disposed = true;
         }
     }
 }
