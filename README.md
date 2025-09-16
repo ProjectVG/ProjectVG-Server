@@ -33,32 +33,31 @@
 ### 인증 시스템
 - **JWT 토큰**: Access (15분) + Refresh (30일) 이중 토큰
 - **OAuth2 PKCE**: Google 인증, 게스트 로그인
-- **Redis 세션**: 분산 환경 토큰 관리, blacklist 지원
+- **Redis 세션**: 토큰 관리 및 blacklist 지원
 - **다중 헤더**: Authorization, X-Access-Credit, X-Refresh-Credit
 
 ### AI 캐릭터 관리
 - **하이브리드 설정**: JSON 필드 구성 + 직접 프롬프트 입력
 - **소유권 모델**: 시스템/공개/개인 캐릭터 권한 관리
-- **실시간 프롬프트 생성**: 설정 기반 SystemPrompt 동적 구성
+- **프롬프트 생성**: 설정 기반 SystemPrompt 구성
 
 ### 채팅 시스템
 - **이중 프로토콜**: WebSocket + HTTP REST API
 - **메시지 관리**: User/Assistant/System 역할 기반 대화
-- **외부 서비스 통합**: LLM, Memory, TTS 서비스 연동
-- **페이지네이션**: 대화 기록 효율적 조회
+- **외부 서비스 연동**: LLM, Memory, TTS 서비스 통합
+- **페이지네이션**: 대화 기록 조회
 
 ### 크레딧 시스템
-- **금융급 정밀도**: Decimal(18,2) 정확한 잔액 관리
-- **불변 거래 기록**: 완전한 audit trail
-- **동시성 제어**: Optimistic concurrency 일관성 보장
+- **정밀 계산**: Decimal(18,2) 잔액 관리
+- **거래 기록**: 완전한 audit trail
+- **동시성 제어**: Optimistic concurrency 지원
 
 ## 🔧 기술 구현
 
 ### 성능 최적화
-- **메모리 관리**: IMemoryOwner<byte> LOH 회피, ArrayPool 버퍼 재사용
-- **비동기 패턴**: 모든 I/O 작업 async/await
-- **데이터베이스**: 연결 복원력 (지수 백오프 5회 재시도), 자동 마이그레이션
-- **ConfigureAwait 제거**: ASP.NET Core 환경 최적화로 가독성 향상
+- **메모리 관리**: ArrayPool 버퍼 재사용, IMemoryOwner 활용
+- **비동기 패턴**: I/O 작업 async/await 적용
+- **데이터베이스**: 연결 복원력 (지수 백오프 재시도), 자동 마이그레이션
 
 ### 보안 구현
 - **JWT 보안**: 32자 이상 암호키, 다중 소스 헤더 지원
@@ -67,23 +66,23 @@
 - **SQL Injection 방지**: EF Core 매개변수화 쿼리
 
 ### 테스트 전략
-- **100% 인증 커버리지**: JWT Provider (12), Token Service (15), Auth Service (15), JWT Filter (10) 테스트
+- **인증 시스템 테스트**: JWT Provider, Token Service, Auth Service, JWT Filter 테스트 포함
 - **다층 테스트**: Unit Tests (Mock), Integration Tests (실제 DB), End-to-End Tests (API)
-- **성능 검증**: Base64 인코딩 13.5% 성능 향상 측정
+- **성능 테스트**: 메모리 최적화 검증
 
 ## 🗄️ 데이터 모델
 
 ### Core Entities
-- **User**: OAuth2 기반 사용자, 16자 고유 UID, 크레딧 잔액
+- **User**: OAuth2 기반 사용자, 고유 UID, 크레딧 잔액
 - **Character**: 하이브리드 구성 (JSON/Direct), 공개/개인 구분
-- **ConversationHistory**: 역할별 메시지, 10,000자 제한
-- **CreditTransaction**: 불변 거래 기록, 소스 추적
+- **ConversationHistory**: 역할별 메시지 저장
+- **CreditTransaction**: 거래 기록, 소스 추적
 
 ### 데이터베이스 설계
 - **Optimistic Concurrency**: RowVersion 타임스탬프
-- **JSON 컬럼**: 유연한 캐릭터 설정 저장
-- **정밀 Decimal**: 금융 거래 정확성
-- **인덱스 전략**: 사용자별, 캐릭터별 효율적 조회
+- **JSON 컬럼**: 캐릭터 설정 저장
+- **Decimal 정밀도**: Decimal(18,2) 크레딧 계산
+- **인덱스**: 사용자별, 캐릭터별 조회 최적화
 
 ## 🌐 API 엔드포인트
 
@@ -94,15 +93,15 @@
 - `GET /auth/oauth2/authorize/{provider}` - OAuth2 시작
 
 ### 캐릭터 (`/api/v1/character`)
-- `GET /api/v1/character` - 전체 캐릭터 조회
+- `GET /api/v1/character` - 캐릭터 조회
 - `POST /api/v1/character/individual` - JSON 설정 캐릭터 생성
-- `POST /api/v1/character/systemprompt` - 직접 프롬프트 캐릭터 생성
-- `GET /api/v1/character/my` - 내 캐릭터 관리
+- `POST /api/v1/character/systemprompt` - 시스템 프롬프트 캐릭터 생성
+- `GET /api/v1/character/my` - 내 캐릭터 조회
 
 ### 채팅 및 크레딧
 - `POST /api/v1/chat` - 채팅 메시지 처리 (JWT 필수)
-- `GET /api/v1/credits/balance` - 크레딧 잔액
-- `GET /api/v1/credits/history` - 거래 내역 (페이지네이션)
+- `GET /api/v1/credits/balance` - 크레딧 잔액 조회
+- `GET /api/v1/credits/history` - 거래 내역 조회 (페이지네이션)
 
 ## 📁 프로젝트 구조
 
@@ -163,6 +162,6 @@ ProjectVG.Tests/              # Test Suite
 
 ### 성능 고려사항
 - **비동기 처리**: I/O 바운드 작업 최적화
-- **메모리 효율성**: 대용량 데이터 스트리밍 처리
+- **메모리 효율성**: 스트리밍 처리 지원
 - **연결 풀링**: 데이터베이스 연결 최적화
-- **캐싱 전략**: Redis 기반 세션/데이터 캐시
+- **캐싱**: Redis 기반 세션 캐시
