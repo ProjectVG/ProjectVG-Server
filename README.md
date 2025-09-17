@@ -23,7 +23,7 @@
 
 ## 🏢 시스템 아키텍처
 
-### API Architecture
+### API 서버 아키택처
 ```
 ┌─────────────────── Presentation Layer ──────────────────┐
 │ ProjectVG.Api (Controllers, Middleware, Authentication)  │
