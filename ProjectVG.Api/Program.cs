@@ -37,7 +37,7 @@ if (oauth2Enabled)
     builder.Services.AddOAuth2Authentication();
 }
 
-var distributedEnabled = builder.Configuration.GetValue<bool>("Distributed:Enabled", false);
+var distributedEnabled = builder.Configuration.GetValue<bool>("Distributed:Enabled", true);
 
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices();

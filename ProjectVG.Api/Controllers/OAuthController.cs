@@ -70,7 +70,7 @@ namespace ProjectVG.Api.Controllers
             string? provider,
             [FromQuery] string code,
             [FromQuery] string state,
-            [FromQuery] string error = null)
+            [FromQuery] string? error = null)
         {
             if (!string.IsNullOrEmpty(error))
             {

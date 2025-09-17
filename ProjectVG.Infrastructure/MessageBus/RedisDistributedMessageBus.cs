@@ -131,7 +131,7 @@ namespace ProjectVG.Infrastructure.MessageBus
                     {
                         if (_channelHandlers.TryGetValue(channel, out var channelHandler))
                         {
-                            var distributedMessage = DeserializeMessage(message);
+                            var distributedMessage = DeserializeMessage(message.HasValue ? message.ToString() : string.Empty);
                             if (distributedMessage != null)
                             {
                                 await channelHandler(distributedMessage);
@@ -216,24 +216,26 @@ namespace ProjectVG.Infrastructure.MessageBus
             }
         }
 
-        private async Task HandleServerMessage(DistributedMessage message)
+        private Task HandleServerMessage(DistributedMessage message)
         {
             _logger.LogDebug("서버 메시지 수신: MessageType={MessageType}, FromServer={FromServer}",
                 message.MessageType, message.FromServer);
 
             // 서버별 메시지 처리 로직
             // 예: 설정 업데이트, 상태 동기화 등
+            return Task.CompletedTask;
         }
 
-        private async Task HandleBroadcastMessage(DistributedMessage message)
+        private Task HandleBroadcastMessage(DistributedMessage message)
         {
             _logger.LogDebug("브로드캐스트 메시지 수신: MessageType={MessageType}, FromServer={FromServer}",
                 message.MessageType, message.FromServer);
 
             // 브로드캐스트 메시지 처리 로직
+            return Task.CompletedTask;
         }
 
-        private async Task HandleServerDiscoveryMessage(DistributedMessage message)
+        private Task HandleServerDiscoveryMessage(DistributedMessage message)
         {
             if (message is ServerStatusMessage statusMessage)
             {
@@ -246,6 +248,7 @@ namespace ProjectVG.Infrastructure.MessageBus
                     // 오프라인된 서버의 세션들을 정리하거나 다른 서버로 마이그레이션
                 }
             }
+            return Task.CompletedTask;
         }
 
         private async Task HandleSessionUpdateMessage(DistributedMessage message)
@@ -267,12 +270,13 @@ namespace ProjectVG.Infrastructure.MessageBus
             }
         }
 
-        private async Task HandleUserMessage(DistributedMessage message)
+        private Task HandleUserMessage(DistributedMessage message)
         {
             _logger.LogDebug("사용자 메시지 수신: MessageType={MessageType}", message.MessageType);
 
             // 사용자별 메시지 처리 로직
             // WebSocket 메시지 전달, 채팅 결과 전달 등
+            return Task.CompletedTask;
         }
 
         public async Task StopAsync()

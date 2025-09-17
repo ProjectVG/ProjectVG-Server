@@ -4,12 +4,14 @@ using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.Credit;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Chat;
+using ProjectVG.Domain.Services.Session;
 
 namespace ProjectVG.Application.Services.Chat.Validators
 {
     public class ChatRequestValidator
     {
         private readonly ISessionStorage _sessionStorage;
+        private readonly IDistributedSessionManager? _distributedSessionManager;
         private readonly IUserService _userService;
         private readonly ICharacterService _characterService;
         private readonly ICreditManagementService _tokenManagementService;
@@ -23,9 +25,11 @@ namespace ProjectVG.Application.Services.Chat.Validators
             IUserService userService,
             ICharacterService characterService,
             ICreditManagementService tokenManagementService,
-            ILogger<ChatRequestValidator> logger)
+            ILogger<ChatRequestValidator> logger,
+            IDistributedSessionManager? distributedSessionManager = null)
         {
             _sessionStorage = sessionStorage;
+            _distributedSessionManager = distributedSessionManager;
             _userService = userService;
             _characterService = characterService;
             _tokenManagementService = tokenManagementService;
@@ -74,18 +78,30 @@ namespace ProjectVG.Application.Services.Chat.Validators
         private async Task ValidateUserSessionAsync(Guid userId)
         {
             try {
-                // 사용자 ID를 기반으로 세션 조회
-                var userSessions = (await _sessionStorage
-                    .GetSessionsByUserIdAsync(userId.ToString()))
-                    .ToList();
+                bool hasValidSession = false;
 
-                if (userSessions.Count == 0) {
+                // 분산 세션 관리자가 있으면 분산 세션 확인
+                if (_distributedSessionManager != null)
+                {
+                    hasValidSession = await _distributedSessionManager.IsSessionActiveAsync(userId.ToString());
+                    _logger.LogDebug("분산 세션 검증: {UserId}, 연결됨: {IsConnected}", userId, hasValidSession);
+                }
+                else
+                {
+                    // 레거시 모드: 로컬 세션 저장소 사용
+                    var userSessions = (await _sessionStorage
+                        .GetSessionsByUserIdAsync(userId.ToString()))
+                        .ToList();
+                    hasValidSession = userSessions.Count > 0;
+                    _logger.LogDebug("로컬 세션 검증: {UserId}, 활성 세션 수: {SessionCount}", userId, userSessions.Count);
+                }
+
+                if (!hasValidSession) {
                     _logger.LogWarning("유효하지 않은 사용자 세션: {UserId}", userId);
                     throw new ValidationException(ErrorCode.SESSION_EXPIRED, "세션이 만료되었습니다. 다시 로그인해 주세요.");
                 }
 
-                // 세션이 존재하면 로그 기록
-                _logger.LogDebug("세션 검증 성공: {UserId}, 활성 세션 수: {SessionCount}", userId, userSessions.Count);
+                _logger.LogDebug("세션 검증 성공: {UserId}", userId);
             }
             catch (ValidationException) {
                 throw; // 검증 예외는 그대로 전파

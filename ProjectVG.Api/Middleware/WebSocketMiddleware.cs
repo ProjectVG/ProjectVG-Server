@@ -11,6 +11,7 @@ namespace ProjectVG.Api.Middleware
         private readonly RequestDelegate _next;
         private readonly ILogger<WebSocketMiddleware> _logger;
         private readonly IWebSocketManager _webSocketService;
+        private readonly IDistributedWebSocketManager _distributedWebSocketManager;
         private readonly IConnectionRegistry _connectionRegistry;
         private readonly IJwtProvider _jwtProvider;
 
@@ -18,12 +19,14 @@ namespace ProjectVG.Api.Middleware
             RequestDelegate next,
             ILogger<WebSocketMiddleware> logger,
             IWebSocketManager webSocketService,
+            IDistributedWebSocketManager distributedWebSocketManager,
             IConnectionRegistry connectionRegistry,
             IJwtProvider jwtProvider)
         {
             _next = next;
             _logger = logger;
             _webSocketService = webSocketService;
+            _distributedWebSocketManager = distributedWebSocketManager;
             _connectionRegistry = connectionRegistry;
             _jwtProvider = jwtProvider;
         }
@@ -88,19 +91,45 @@ namespace ProjectVG.Api.Middleware
             return string.Empty;
         }
 
-        /// <summary> 
-        /// 기존 연결 정리 후 새 연결 등록 
+        /// <summary>
+        /// 기존 연결 정리 후 새 연결 등록 (분산 세션 관리 포함)
         /// </summary>
         private async Task RegisterConnection(Guid userId, WebSocket socket)
         {
-            if (_connectionRegistry.TryGet(userId.ToString(), out var existing) && existing != null) {
-                _logger.LogInformation("기존 연결 정리: {UserId}", userId);
-                await _webSocketService.DisconnectAsync(userId.ToString());
-            }
+            var userIdString = userId.ToString();
 
-            var connection = new WebSocketClientConnection(userId.ToString(), socket);
-            _connectionRegistry.Register(userId.ToString(), connection);
-            await _webSocketService.ConnectAsync(userId.ToString());
+            try
+            {
+                // 1. 기존 로컬 연결 정리
+                if (_connectionRegistry.TryGet(userIdString, out var existing) && existing != null) {
+                    _logger.LogInformation("기존 로컬 연결 정리: {UserId}", userId);
+                    await _webSocketService.DisconnectAsync(userIdString);
+                }
+
+                // 2. 기존 분산 세션 정리
+                if (await _distributedWebSocketManager.IsSessionActiveAsync(userIdString))
+                {
+                    _logger.LogInformation("기존 분산 세션 정리: {UserId}", userId);
+                    await _distributedWebSocketManager.DisconnectAsync(userIdString);
+                }
+
+                // 3. 새 로컬 연결 등록
+                var connection = new WebSocketClientConnection(userIdString, socket);
+                _connectionRegistry.Register(userIdString, connection);
+
+                // 4. 로컬 WebSocket 서비스에 연결
+                await _webSocketService.ConnectAsync(userIdString);
+
+                // 5. 분산 세션 관리자에 등록
+                await _distributedWebSocketManager.ConnectAsync(userIdString, Environment.MachineName);
+
+                _logger.LogInformation("WebSocket 연결 등록 완료: {UserId}", userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "WebSocket 연결 등록 실패: {UserId}", userId);
+                throw;
+            }
         }
 
         /// <summary>
@@ -177,15 +206,24 @@ namespace ProjectVG.Api.Middleware
                 _logger.LogInformation("WebSocket 연결 해제: {UserId}", userId);
 
                 try {
+                    // 1. 로컬 WebSocket 서비스에서 연결 해제
                     await _webSocketService.DisconnectAsync(userId);
+
+                    // 2. 로컬 연결 레지스트리에서 해제
                     _connectionRegistry.Unregister(userId);
 
+                    // 3. 분산 세션 관리자에서 해제
+                    await _distributedWebSocketManager.DisconnectAsync(userId);
+
+                    // 4. WebSocket 연결 정리
                     if (socket.State == WebSocketState.Open || socket.State == WebSocketState.CloseReceived) {
                         await socket.CloseAsync(
                             WebSocketCloseStatus.NormalClosure,
                             "Connection closed",
                             CancellationToken.None);
                     }
+
+                    _logger.LogInformation("WebSocket 연결 정리 완료: {UserId}", userId);
                 }
                 catch (Exception ex) {
                     _logger.LogError(ex, "WebSocket 정리 중 오류: {UserId}", userId);

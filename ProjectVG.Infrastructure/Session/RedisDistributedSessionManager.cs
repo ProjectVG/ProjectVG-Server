@@ -173,8 +173,8 @@ namespace ProjectVG.Infrastructure.Session
                 var transaction = _database.CreateTransaction();
 
                 var serverJson = JsonSerializer.Serialize(serverInfo);
-                transaction.StringSetAsync(SERVER_INFO_KEY_PREFIX + serverId, serverJson, TimeSpan.FromHours(1));
-                transaction.SetAddAsync(ACTIVE_SERVERS_KEY, serverId);
+                _ = transaction.StringSetAsync(SERVER_INFO_KEY_PREFIX + serverId, serverJson, TimeSpan.FromHours(1));
+                _ = transaction.SetAddAsync(ACTIVE_SERVERS_KEY, serverId);
 
                 await transaction.ExecuteAsync();
 
@@ -198,9 +198,9 @@ namespace ProjectVG.Infrastructure.Session
 
                 // 2. 서버 정보 정리
                 var transaction = _database.CreateTransaction();
-                transaction.KeyDeleteAsync(SERVER_INFO_KEY_PREFIX + serverId);
-                transaction.KeyDeleteAsync(SERVER_USERS_KEY_PREFIX + serverId);
-                transaction.SetRemoveAsync(ACTIVE_SERVERS_KEY, serverId);
+                _ = transaction.KeyDeleteAsync(SERVER_INFO_KEY_PREFIX + serverId);
+                _ = transaction.KeyDeleteAsync(SERVER_USERS_KEY_PREFIX + serverId);
+                _ = transaction.SetRemoveAsync(ACTIVE_SERVERS_KEY, serverId);
 
                 await transaction.ExecuteAsync();
 

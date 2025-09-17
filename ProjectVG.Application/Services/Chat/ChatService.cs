@@ -110,7 +110,7 @@ namespace ProjectVG.Application.Services.Chat
                 await _llmProcessor.ProcessAsync(context);
                 await _ttsProcessor.ProcessAsync(context);
 
-                var successHandler = scope.ServiceProvider.GetRequiredService<ChatSuccessHandler>();
+                var successHandler = scope.ServiceProvider.GetRequiredService<DistributedChatSuccessHandler>();
                 var resultProcessor = scope.ServiceProvider.GetRequiredService<ChatResultProcessor>();
 
                 await successHandler.HandleAsync(context);

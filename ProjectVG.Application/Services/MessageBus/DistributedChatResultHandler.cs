@@ -128,7 +128,7 @@ namespace ProjectVG.Application.Services.MessageBus
         /// <summary>
         /// 세션 업데이트 메시지를 처리합니다
         /// </summary>
-        public async Task HandleSessionUpdateAsync(SessionUpdateMessage sessionUpdate)
+        public Task HandleSessionUpdateAsync(SessionUpdateMessage sessionUpdate)
         {
             try
             {
@@ -165,6 +165,8 @@ namespace ProjectVG.Application.Services.MessageBus
                 _logger.LogError(ex, "세션 업데이트 처리 실패: UserId={UserId}, Action={Action}",
                     sessionUpdate.UserId, sessionUpdate.Action);
             }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -210,7 +212,7 @@ namespace ProjectVG.Application.Services.MessageBus
         /// <summary>
         /// 서버 오프라인 상황을 처리합니다
         /// </summary>
-        private async Task HandleServerOfflineAsync(string offlineServerId)
+        private Task HandleServerOfflineAsync(string offlineServerId)
         {
             try
             {
@@ -226,6 +228,8 @@ namespace ProjectVG.Application.Services.MessageBus
             {
                 _logger.LogError(ex, "서버 오프라인 처리 실패: ServerId={ServerId}", offlineServerId);
             }
+
+            return Task.CompletedTask;
         }
     }
 }

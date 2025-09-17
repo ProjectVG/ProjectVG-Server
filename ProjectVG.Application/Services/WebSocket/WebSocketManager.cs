@@ -36,7 +36,7 @@ namespace ProjectVG.Application.Services.WebSocket
             // 분산 관리자가 있으면 분산 모드로 동작
             if (_distributedManager != null)
             {
-                return await _distributedManager.ConnectAsync(userId, null);
+                return await _distributedManager.ConnectAsync(userId, Environment.MachineName);
             }
 
             // 레거시 모드: 로컬 세션만 관리
