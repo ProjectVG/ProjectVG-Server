@@ -16,6 +16,11 @@ using ProjectVG.Infrastructure.Auth;
 using ProjectVG.Common.Configuration;
 using StackExchange.Redis;
 using Microsoft.EntityFrameworkCore;
+using ProjectVG.Domain.Services.Session;
+using ProjectVG.Domain.Services.MessageBus;
+using ProjectVG.Infrastructure.Session;
+using ProjectVG.Infrastructure.MessageBus;
+using ProjectVG.Infrastructure.Services;
 
 namespace ProjectVG.Infrastructure
 {
@@ -212,5 +217,24 @@ namespace ProjectVG.Infrastructure
                 services.AddScoped<IRefreshTokenStorage, InMemoryRefreshTokenStorage>();
             }
         }
+
+        /// <summary>
+        /// 분산 시스템 서비스 등록
+        /// </summary>
+        public static IServiceCollection AddDistributedServices(this IServiceCollection services)
+        {
+            // 분산 세션 관리자
+            services.AddScoped<IDistributedSessionManager, RedisDistributedSessionManager>();
+
+            // 분산 메시지 버스
+            services.AddScoped<IDistributedMessageBus, RedisDistributedMessageBus>();
+
+
+            // 분산 서버 관리자 (Background Service)
+            services.AddHostedService<DistributedServerManager>();
+
+            return services;
+        }
+
     }
 }

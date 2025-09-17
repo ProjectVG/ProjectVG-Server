@@ -12,6 +12,8 @@ using ProjectVG.Application.Services.Session;
 using ProjectVG.Application.Services.Credit;
 using ProjectVG.Application.Services.Users;
 using ProjectVG.Application.Services.WebSocket;
+using ProjectVG.Domain.Services.MessageBus;
+using ProjectVG.Domain.Services.Session;
 
 namespace ProjectVG.Application
 {
@@ -74,6 +76,52 @@ namespace ProjectVG.Application
 
             // WebSocket Services
             services.AddScoped<IWebSocketManager, WebSocketManager>();
+
+            return services;
+        }
+
+        /// <summary>
+        /// 분산 시스템 서비스들을 추가합니다
+        /// </summary>
+        public static IServiceCollection AddDistributedServices(this IServiceCollection services)
+        {
+            // 분산 세션 관리
+            services.AddSingleton<IDistributedSessionManager, Infrastructure.Session.RedisDistributedSessionManager>();
+
+            // 분산 메시지 버스
+            services.AddSingleton<IDistributedMessageBus, Infrastructure.MessageBus.RedisDistributedMessageBus>();
+
+            // 분산 WebSocket 관리
+            services.AddScoped<IDistributedWebSocketManager, DistributedWebSocketManager>();
+
+            // 분산 채팅 결과 핸들러
+            services.AddScoped<DistributedChatSuccessHandler>();
+
+            // 메시지 버스 결과 핸들러
+            services.AddScoped<Services.MessageBus.DistributedChatResultHandler>();
+
+            // 분산 서버 관리자 (백그라운드 서비스)
+            services.AddHostedService<Infrastructure.Services.DistributedServerManager>();
+
+            return services;
+        }
+
+        /// <summary>
+        /// 레거시 WebSocketManager에 분산 기능을 추가합니다
+        /// 기존 코드 호환성을 위해 WebSocketManager를 분산 기능과 함께 등록합니다
+        /// </summary>
+        public static IServiceCollection AddDistributedWebSocketManager(this IServiceCollection services)
+        {
+            // 기존 WebSocketManager를 분산 기능과 함께 재등록
+            services.AddScoped<IWebSocketManager>(provider =>
+            {
+                var logger = provider.GetRequiredService<ILogger<IWebSocketManager>>();
+                var connectionRegistry = provider.GetRequiredService<IConnectionRegistry>();
+                var sessionStorage = provider.GetRequiredService<Infrastructure.Persistence.Session.ISessionStorage>();
+                var distributedManager = provider.GetRequiredService<IDistributedWebSocketManager>();
+
+                return new WebSocketManager(logger, connectionRegistry, sessionStorage, distributedManager);
+            });
 
             return services;
         }

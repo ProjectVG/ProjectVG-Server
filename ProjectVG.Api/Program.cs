@@ -37,8 +37,13 @@ if (oauth2Enabled)
     builder.Services.AddOAuth2Authentication();
 }
 
+var distributedEnabled = builder.Configuration.GetValue<bool>("Distributed:Enabled", false);
+
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices();
+
+builder.Services.AddDistributedFeatures(distributedEnabled);
+
 builder.Services.AddDevelopmentCors();
 
 // 부하테스트 환경에서 성능 모니터링 서비스 추가

@@ -4,6 +4,7 @@ using ProjectVG.Api.Filters;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.IdentityModel.Tokens;
+using ProjectVG.Application;
 
 namespace ProjectVG.Api
 {
@@ -82,6 +83,23 @@ namespace ProjectVG.Api
         public static IServiceCollection AddLoadTestPerformanceServices(this IServiceCollection services)
         {
             services.AddSingleton<PerformanceCounterService>();
+            return services;
+        }
+
+        /// <summary>
+        /// 분산 시스템 기능을 활성화합니다
+        /// </summary>
+        public static IServiceCollection AddDistributedFeatures(this IServiceCollection services, bool enableDistributed = false)
+        {
+            if (enableDistributed)
+            {
+                services.AddDistributedServices();
+
+                services.AddDistributedWebSocketManager();
+
+                // services.AddScoped<Application.Services.Chat.Handlers.DistributedChatSuccessHandler>();
+            }
+
             return services;
         }
     }
