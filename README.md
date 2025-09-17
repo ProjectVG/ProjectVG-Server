@@ -23,7 +23,7 @@
 
 ## 🏢 시스템 아키텍처
 
-### Clean Architecture 구현
+### API Architecture
 ```
 ┌─────────────────── Presentation Layer ──────────────────┐
 │ ProjectVG.Api (Controllers, Middleware, Authentication)  │
@@ -35,6 +35,11 @@
 │ ProjectVG.Infrastructure (Database, External Services)  │
 └─────────────────── Common/Tests ────────────────────────┘
 ```
+
+
+### 전체 시스템 아키텍처
+
+<img width="689" height="459" alt="ProjectVG - Server drawio" src="https://github.com/user-attachments/assets/44f6a86d-2d4d-4a9d-a9f3-c86abadc1c26" />
 
 <br>
 
