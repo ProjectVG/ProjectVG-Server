@@ -1,16 +1,16 @@
-# ProjectVG API Server
-
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-**Clean Architecture 기반 AI 채팅 플랫폼 백엔드 시스템**
+# ProjectVG API Server
 
-.NET 8.0 ASP.NET Core API 서버로, JWT/OAuth2 인증, WebSocket 실시간 통신, Redis 세션 관리를 구현한 AI 채팅 플랫폼입니다.
+### AI 캐릭터 채팅 서비스를 위한 중앙 오케스트레이션 API 서버
+
+여러 외부 서비스(LLM, Memory, TTS)를 통합하여 AI 캐릭터와의 채팅 프로세스를 처리하고 클라이언트에게 제공하는 Clean Architecture 기반 .NET 8.0 API 서버입니다.
 
 <br>
 
-## ⚙️ 기술 스택
+## 기술 스택
 - **.NET 8.0**: C# 12, nullable reference types
 - **ASP.NET Core 8.0**: Controllers 기반 REST API
 - **Entity Framework Core 8.0**: Code-First, SQL Server
@@ -21,7 +21,7 @@
 
 <br>
 
-## 🏢 시스템 아키텍처
+## 시스템 아키텍처
 
 ### API 서버 아키택처
 ```
@@ -43,7 +43,7 @@
 
 <br>
 
-## ✨ 핵심 기능
+## 핵심 기능
 
 ### 채팅 시스템
 - **HTTP-WebSocket Bridge**: 비동기 장기 실행 작업의 브리지 패턴
@@ -70,7 +70,7 @@
 
 <br>
 
-## 🔧 기술 구현
+## 기술 구현
 
 ### 성능 최적화
 - **메모리 관리**: ArrayPool 버퍼 재사용, IMemoryOwner 활용
@@ -90,7 +90,7 @@
 
 <br>
 
-## 📝 API 엔드포인트
+## API 엔드포인트
 
 | 분류 | 메소드 | 엔드포인트 | 설명 | 인증 |
 |------|--------|------------|------|------|
@@ -108,7 +108,7 @@
 
 <br>
 
-## 🗄️ 데이터 모델
+## 데이터 모델
 
 ### Core Entities
 - **User**: OAuth2 기반 사용자, 고유 UID, 크레딧 잔액
@@ -124,7 +124,7 @@
 
 <br>
 
-## 📁 프로젝트 구조
+## 프로젝트 구조
 
 ```
 ProjectVG.Api/                 # Presentation Layer
@@ -158,7 +158,7 @@ ProjectVG.Tests/              # Test Suite
 
 <br>
 
-## 🔄 외부 서비스 연동
+## 외부 서비스 연동
 
 ### 연동 서비스
 - **LLM Service**: AI 모델 추론 처리
