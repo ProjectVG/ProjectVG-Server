@@ -13,148 +13,156 @@
 
 ## 1. 채팅 시스템
 
-### 이중 프로토콜: WebSocket + HTTP REST API
+### HTTP-WebSocket Bridge 패턴: 비동기 장시간 작업 처리
 
-**설명**: 실시간 WebSocket 통신과 HTTP REST API를 모두 지원하는 하이브리드 채팅 시스템
+**설명**: HTTP 요청으로 채팅을 시작하고 WebSocket으로 결과를 전송하는 비동기 아키텍처. 장시간 소요되는 LLM 처리를 논블로킹 방식으로 구현하여 클라이언트 타임아웃을 방지합니다.
+
+**아키텍처 플로우**:
+```
+Client ──HTTP POST──→ ChatController ──Enqueue──→ Background Processing
+   ↑                                                      ↓
+   └──WebSocket Push────← WebSocketManager ←──Result────┘
+```
 
 **구현 위치**:
-- **WebSocket 미들웨어**: [`ProjectVG.Api/Middleware/WebSocketMiddleware.cs`](../../ProjectVG.Api/Middleware/WebSocketMiddleware.cs)
-- **HTTP 채팅 컨트롤러**: [`ProjectVG.Api/Controllers/ChatController.cs`](../../ProjectVG.Api/Controllers/ChatController.cs)
-- **WebSocket 매니저**: [`ProjectVG.Application/Services/WebSocket/WebSocketManager.cs`](../../ProjectVG.Application/Services/WebSocket/WebSocketManager.cs)
+- **HTTP 진입점**: [`ProjectVG.Api/Controllers/ChatController.cs`](../../ProjectVG.Api/Controllers/ChatController.cs)
+- **WebSocket 결과 전송**: [`ProjectVG.Application/Services/WebSocket/WebSocketManager.cs`](../../ProjectVG.Application/Services/WebSocket/WebSocketManager.cs)
+- **비동기 처리 오케스트레이션**: [`ProjectVG.Application/Services/Chat/ChatService.cs`](../../ProjectVG.Application/Services/Chat/ChatService.cs)
 
 **핵심 코드**:
 ```csharp
-// WebSocket 연결 처리
-public async Task InvokeAsync(HttpContext context)
-{
-    if (context.Request.Path == "/ws" && context.WebSockets.IsWebSocketRequest)
-    {
-        var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-        var userId = await AuthenticateWebSocketAsync(context);
-
-        if (userId.HasValue)
-        {
-            await _webSocketManager.AddConnectionAsync(userId.Value, webSocket);
-            await HandleWebSocketCommunication(webSocket, userId.Value);
-        }
-    }
-}
-
-// HTTP 채팅 처리
+// HTTP로 요청 접수 (즉시 응답)
 [HttpPost]
 [JwtAuthentication]
 public async Task<IActionResult> ProcessChat([FromBody] ChatRequest request)
 {
-    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-    var command = new ChatRequestCommand(userGuid, request.CharacterId, request.Message);
+    var command = new ChatRequestCommand(userId, request.CharacterId, request.Message);
+
+    // 백그라운드 처리 시작 (논블로킹)
     var result = await _chatService.EnqueueChatRequestAsync(command);
-    return Ok(result);
+
+    // 즉시 Accepted 응답 반환
+    return Ok(new { status = "ACCEPTED", sessionId = result.SessionId });
+}
+
+// 백그라운드에서 비동기 처리 후 WebSocket으로 결과 전송
+public async Task<ChatRequestResult> EnqueueChatRequestAsync(ChatRequestCommand command)
+{
+    await _validator.ValidateAsync(command);
+    var context = await PrepareChatRequestAsync(command);
+
+    // 백그라운드 태스크로 장시간 작업 실행
+    _ = Task.Run(async () => await ProcessChatRequestInternalAsync(context));
+
+    return ChatRequestResult.Accepted(command.Id.ToString(), command.UserId, command.CharacterId);
 }
 ```
 
-### 메시지 관리: User/Assistant/System 역할 기반 대화
+### ChatService 오케스트레이션 패턴: 복합 서비스 조율
 
-**설명**: 대화의 각 메시지를 User, Assistant, System 역할로 구분하여 관리하는 시스템
+**설명**: ChatService는 Facade 패턴을 구현하여 채팅 처리에 필요한 여러 서비스들을 단일 인터페이스로 추상화합니다. 비용 추적 데코레이터를 통해 LLM과 TTS 비용을 자동으로 추적합니다.
+
+**실제 처리 플로우**:
+```
+1. 전처리 단계:
+   - Validation: ChatRequestValidator
+   - Input Analysis: UserInputAnalysisProcessor (+ Cost Tracking)
+   - Action Processing: UserInputActionProcessor
+   - Memory Context: MemoryContextPreprocessor
+   - Character/Conversation Info
+
+2. 백그라운드 처리:
+   - LLM Processing: ChatLLMProcessor (+ Cost Tracking)
+   - TTS Processing: ChatTTSProcessor (+ Cost Tracking)
+   - Success Handling: ChatSuccessHandler
+   - Result Persistence: ChatResultProcessor
+```
 
 **구현 위치**:
-- **대화 엔티티**: [`ProjectVG.Domain/Entities/Conversation/ConversationHistory.cs`](../../ProjectVG.Domain/Entities/Conversation/ConversationHistory.cs)
-- **채팅 역할**: [`ProjectVG.Domain/Entities/Conversation/ChatRole.cs`](../../ProjectVG.Domain/Entities/Conversation/ChatRole.cs)
-- **대화 서비스**: [`ProjectVG.Application/Services/Conversation/ConversationService.cs`](../../ProjectVG.Application/Services/Conversation/ConversationService.cs)
+- **메인 오케스트레이터**: [`ProjectVG.Application/Services/Chat/ChatService.cs`](../../ProjectVG.Application/Services/Chat/ChatService.cs)
+- **비용 추적 데코레이터**: [`ProjectVG.Application/Services/Chat/CostTracking/`](../../ProjectVG.Application/Services/Chat/CostTracking/)
 
 **핵심 코드**:
 ```csharp
-public static class ChatRole
+// Facade 패턴으로 채팅 처리 추상화
+public async Task<ChatRequestResult> EnqueueChatRequestAsync(ChatRequestCommand command)
 {
-    public const string User = "User";
-    public const string Assistant = "Assistant";
-    public const string System = "System";
+    // 1. 즉시 검증
+    await _validator.ValidateAsync(command);
 
-    public static bool IsValid(string role) =>
-        role == User || role == Assistant || role == System;
+    // 2. 전처리 (context 준비)
+    var preprocessContext = await PrepareChatRequestAsync(command);
+
+    // 3. 백그라운드에서 비동기 처리
+    _ = Task.Run(async () => {
+        await ProcessChatRequestInternalAsync(preprocessContext);
+    });
+
+    // 4. 즉시 Accepted 응답
+    return ChatRequestResult.Accepted(command.Id.ToString(), command.UserId, command.CharacterId);
 }
 
-// 대화 히스토리 엔티티
-public class ConversationHistory : BaseEntity
+// 실제 백그라운드 처리
+private async Task ProcessChatRequestInternalAsync(ChatProcessContext context)
 {
-    [Required]
-    [RegularExpression("^(User|Assistant|System)$")]
-    public string Role { get; set; } = string.Empty;
+    try {
+        await _llmProcessor.ProcessAsync(context);  // 비용 추적 있음
+        await _ttsProcessor.ProcessAsync(context);  // 비용 추적 있음
 
-    [Required]
-    [StringLength(10000)]
-    public string Content { get; set; } = string.Empty;
+        var successHandler = scope.ServiceProvider.GetRequiredService<ChatSuccessHandler>();
+        var resultProcessor = scope.ServiceProvider.GetRequiredService<ChatResultProcessor>();
 
-    public Guid? ConversationId { get; set; }  // 대화 세션 그룹핑
+        await successHandler.HandleAsync(context);
+        await resultProcessor.PersistResultsAsync(context);
+    }
+    catch (Exception) {
+        var failureHandler = scope.ServiceProvider.GetRequiredService<ChatFailureHandler>();
+        await failureHandler.HandleAsync(context);
+    }
+    finally {
+        _metricsService.EndChatMetrics();
+    }
 }
 ```
 
-### 외부 서비스 연동: LLM, Memory, TTS 서비스 통합
+### WebSocket 세션 관리: 실시간 결과 전송
 
-**설명**: LLM(언어모델), Memory(벡터 메모리), TTS(음성 합성) 외부 서비스와의 통합
+**설명**: WebSocket을 통한 실시간 채팅 결과 전송 시스템. 클라이언트가 `/ws` 엔드포인트로 연결하면 채팅 처리 완료 시 결과를 자동으로 수신합니다.
 
 **구현 위치**:
-- **LLM 클라이언트**: [`ProjectVG.Infrastructure/Integrations/LLMClient/`](../../ProjectVG.Infrastructure/Integrations/LLMClient/)
-- **Memory 클라이언트**: [`ProjectVG.Infrastructure/Integrations/MemoryClient/VectorMemoryClient.cs`](../../ProjectVG.Infrastructure/Integrations/MemoryClient/VectorMemoryClient.cs)
-- **TTS 클라이언트**: [`ProjectVG.Infrastructure/Integrations/TextToSpeechClient/`](../../ProjectVG.Infrastructure/Integrations/TextToSpeechClient/)
+- **WebSocket 미들웨어**: [`ProjectVG.Api/Middleware/WebSocketMiddleware.cs`](../../ProjectVG.Api/Middleware/WebSocketMiddleware.cs)
+- **WebSocket 매니저**: [`ProjectVG.Application/Services/WebSocket/WebSocketManager.cs`](../../ProjectVG.Application/Services/WebSocket/WebSocketManager.cs)
+- **연결 관리**: [`ProjectVG.Infrastructure/Realtime/WebSocketConnection/WebSocketClientConnection.cs`](../../ProjectVG.Infrastructure/Realtime/WebSocketConnection/WebSocketClientConnection.cs)
 
 **핵심 코드**:
 ```csharp
-// LLM 서비스 호출
-public async Task<LLMResponse> CreateTextResponseAsync(string systemMessage, string userMessage, List<History> conversationHistory)
+// WebSocket 연결 처리 (미들웨어)
+if (context.Request.Path == "/ws" && context.WebSockets.IsWebSocketRequest)
 {
-    var request = new LLMRequest
+    var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+    var userId = await AuthenticateWebSocketAsync(context);
+
+    if (userId.HasValue)
     {
-        SystemMessage = systemMessage,
-        UserMessage = userMessage,
-        ConversationHistory = conversationHistory,
-        Model = "gpt-4o-mini",
-        MaxTokens = 1000
-    };
-
-    var response = await _httpClient.PostAsJsonAsync("/api/v1/chat", request);
-    return await response.Content.ReadFromJsonAsync<LLMResponse>();
+        await _webSocketManager.AddConnectionAsync(userId.Value, webSocket);
+        await HandleWebSocketCommunication(webSocket, userId.Value);
+    }
 }
 
-// Memory 서비스 연동
-public async Task<MemoryInsertResponse> InsertAutoAsync(MemoryInsertRequest request)
+// 채팅 결과 WebSocket으로 전송
+public async Task SendChatResultAsync(Guid userId, ChatResult result)
 {
-    var response = await _httpClient.PostAsync("/api/memory", content);
-    return MapInsertResponse(response);
-}
-```
+    var connection = _connections.GetValueOrDefault(userId);
+    if (connection != null)
+    {
+        var message = JsonSerializer.Serialize(new WebSocketMessage
+        {
+            Type = "chat_result",
+            Data = result
+        });
 
-### 페이지네이션: 대화 기록 조회
-
-**설명**: 대화 기록의 효율적인 페이지네이션 조회 시스템
-
-**구현 위치**:
-- **대화 리포지토리**: [`ProjectVG.Infrastructure/Persistence/Repositories/Conversation/SqlServerConversationRepository.cs`](../../ProjectVG.Infrastructure/Persistence/Repositories/Conversation/SqlServerConversationRepository.cs)
-- **대화 컨트롤러**: [`ProjectVG.Api/Controllers/ConversationController.cs`](../../ProjectVG.Api/Controllers/ConversationController.cs)
-
-**핵심 코드**:
-```csharp
-// 페이지네이션 조회
-public async Task<IEnumerable<ConversationHistory>> GetConversationHistoryAsync(
-    Guid userId, Guid characterId, int page = 1, int pageSize = 10)
-{
-    return await _context.ConversationHistories
-        .Where(c => c.UserId == userId && c.CharacterId == characterId)
-        .OrderByDescending(c => c.CreatedAt)
-        .Skip((page - 1) * pageSize)
-        .Take(pageSize)
-        .ToListAsync();
-}
-
-// API 엔드포인트
-[HttpGet("{characterId}")]
-[JwtAuthentication]
-public async Task<ActionResult<ConversationHistoryListResponse>> GetConversationHistory(
-    Guid characterId, [FromQuery] GetConversationHistoryRequest request)
-{
-    var conversations = await _conversationService.GetConversationHistoryAsync(
-        userId.Value, characterId, request.Page, request.PageSize);
-
-    return Ok(new ConversationHistoryListResponse { Conversations = conversations });
+        await connection.SendAsync(message);
+    }
 }
 ```
 
