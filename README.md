@@ -67,7 +67,7 @@
 - **소유권 모델**: 시스템/공개/개인 캐릭터 권한 관리
 - **프롬프트 생성**: 설정 기반 SystemPrompt 구성
 
-> **상세 구현**: 각 기능의 구체적인 코드 구현과 아키텍처는 [FEATURES.md](docs/FEATURES.md)를 참고하세요.
+> **상세 구현**: 각 기능의 구체적인 코드 구현과 아키텍처는 [features.md](docs/overview/features.md)를 참고하세요.
 
 <br>
 

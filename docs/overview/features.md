@@ -18,9 +18,9 @@
 **설명**: 실시간 WebSocket 통신과 HTTP REST API를 모두 지원하는 하이브리드 채팅 시스템
 
 **구현 위치**:
-- **WebSocket 미들웨어**: [`ProjectVG.Api/Middleware/WebSocketMiddleware.cs`](ProjectVG.Api/Middleware/WebSocketMiddleware.cs)
-- **HTTP 채팅 컨트롤러**: [`ProjectVG.Api/Controllers/ChatController.cs`](ProjectVG.Api/Controllers/ChatController.cs)
-- **WebSocket 매니저**: [`ProjectVG.Application/Services/WebSocket/WebSocketManager.cs`](ProjectVG.Application/Services/WebSocket/WebSocketManager.cs)
+- **WebSocket 미들웨어**: [`ProjectVG.Api/Middleware/WebSocketMiddleware.cs`](../../ProjectVG.Api/Middleware/WebSocketMiddleware.cs)
+- **HTTP 채팅 컨트롤러**: [`ProjectVG.Api/Controllers/ChatController.cs`](../../ProjectVG.Api/Controllers/ChatController.cs)
+- **WebSocket 매니저**: [`ProjectVG.Application/Services/WebSocket/WebSocketManager.cs`](../../ProjectVG.Application/Services/WebSocket/WebSocketManager.cs)
 
 **핵심 코드**:
 ```csharp
@@ -57,9 +57,9 @@ public async Task<IActionResult> ProcessChat([FromBody] ChatRequest request)
 **설명**: 대화의 각 메시지를 User, Assistant, System 역할로 구분하여 관리하는 시스템
 
 **구현 위치**:
-- **대화 엔티티**: [`ProjectVG.Domain/Entities/Conversation/ConversationHistory.cs`](ProjectVG.Domain/Entities/Conversation/ConversationHistory.cs)
-- **채팅 역할**: [`ProjectVG.Domain/Entities/Conversation/ChatRole.cs`](ProjectVG.Domain/Entities/Conversation/ChatRole.cs)
-- **대화 서비스**: [`ProjectVG.Application/Services/Conversation/ConversationService.cs`](ProjectVG.Application/Services/Conversation/ConversationService.cs)
+- **대화 엔티티**: [`ProjectVG.Domain/Entities/Conversation/ConversationHistory.cs`](../../ProjectVG.Domain/Entities/Conversation/ConversationHistory.cs)
+- **채팅 역할**: [`ProjectVG.Domain/Entities/Conversation/ChatRole.cs`](../../ProjectVG.Domain/Entities/Conversation/ChatRole.cs)
+- **대화 서비스**: [`ProjectVG.Application/Services/Conversation/ConversationService.cs`](../../ProjectVG.Application/Services/Conversation/ConversationService.cs)
 
 **핵심 코드**:
 ```csharp
@@ -93,9 +93,9 @@ public class ConversationHistory : BaseEntity
 **설명**: LLM(언어모델), Memory(벡터 메모리), TTS(음성 합성) 외부 서비스와의 통합
 
 **구현 위치**:
-- **LLM 클라이언트**: [`ProjectVG.Infrastructure/Integrations/LLMClient/`](ProjectVG.Infrastructure/Integrations/LLMClient/)
-- **Memory 클라이언트**: [`ProjectVG.Infrastructure/Integrations/MemoryClient/VectorMemoryClient.cs`](ProjectVG.Infrastructure/Integrations/MemoryClient/VectorMemoryClient.cs)
-- **TTS 클라이언트**: [`ProjectVG.Infrastructure/Integrations/TextToSpeechClient/`](ProjectVG.Infrastructure/Integrations/TextToSpeechClient/)
+- **LLM 클라이언트**: [`ProjectVG.Infrastructure/Integrations/LLMClient/`](../../ProjectVG.Infrastructure/Integrations/LLMClient/)
+- **Memory 클라이언트**: [`ProjectVG.Infrastructure/Integrations/MemoryClient/VectorMemoryClient.cs`](../../ProjectVG.Infrastructure/Integrations/MemoryClient/VectorMemoryClient.cs)
+- **TTS 클라이언트**: [`ProjectVG.Infrastructure/Integrations/TextToSpeechClient/`](../../ProjectVG.Infrastructure/Integrations/TextToSpeechClient/)
 
 **핵심 코드**:
 ```csharp
@@ -128,8 +128,8 @@ public async Task<MemoryInsertResponse> InsertAutoAsync(MemoryInsertRequest requ
 **설명**: 대화 기록의 효율적인 페이지네이션 조회 시스템
 
 **구현 위치**:
-- **대화 리포지토리**: [`ProjectVG.Infrastructure/Persistence/Repositories/Conversation/SqlServerConversationRepository.cs`](ProjectVG.Infrastructure/Persistence/Repositories/Conversation/SqlServerConversationRepository.cs)
-- **대화 컨트롤러**: [`ProjectVG.Api/Controllers/ConversationController.cs`](ProjectVG.Api/Controllers/ConversationController.cs)
+- **대화 리포지토리**: [`ProjectVG.Infrastructure/Persistence/Repositories/Conversation/SqlServerConversationRepository.cs`](../../ProjectVG.Infrastructure/Persistence/Repositories/Conversation/SqlServerConversationRepository.cs)
+- **대화 컨트롤러**: [`ProjectVG.Api/Controllers/ConversationController.cs`](../../ProjectVG.Api/Controllers/ConversationController.cs)
 
 **핵심 코드**:
 ```csharp
@@ -167,8 +167,8 @@ public async Task<ActionResult<ConversationHistoryListResponse>> GetConversation
 **설명**: 단기 Access Token과 장기 Refresh Token을 활용한 안전한 인증 시스템
 
 **구현 위치**:
-- **JWT 생성**: [`ProjectVG.Infrastructure/Auth/JwtProvider.cs`](ProjectVG.Infrastructure/Auth/JwtProvider.cs)
-- **토큰 서비스**: [`ProjectVG.Infrastructure/Auth/TokenService.cs`](ProjectVG.Infrastructure/Auth/TokenService.cs)
+- **JWT 생성**: [`ProjectVG.Infrastructure/Auth/JwtProvider.cs`](../../ProjectVG.Infrastructure/Auth/JwtProvider.cs)
+- **토큰 서비스**: [`ProjectVG.Infrastructure/Auth/TokenService.cs`](../../ProjectVG.Infrastructure/Auth/TokenService.cs)
 - **설정**: `appsettings.json` JWT 섹션
 
 **핵심 코드**:
@@ -196,9 +196,9 @@ public string GenerateRefreshToken(Guid userId)
 **설명**: Proof Key for Code Exchange를 활용한 안전한 OAuth2 인증과 게스트 로그인 지원
 
 **구현 위치**:
-- **OAuth2 컨트롤러**: [`ProjectVG.Api/Controllers/OAuthController.cs`](ProjectVG.Api/Controllers/OAuthController.cs)
-- **Google Provider**: [`ProjectVG.Application/Services/Auth/Providers/GoogleOAuth2Provider.cs`](ProjectVG.Application/Services/Auth/Providers/GoogleOAuth2Provider.cs)
-- **게스트 로그인**: [`ProjectVG.Api/Controllers/AuthController.cs`](ProjectVG.Api/Controllers/AuthController.cs)
+- **OAuth2 컨트롤러**: [`ProjectVG.Api/Controllers/OAuthController.cs`](../../ProjectVG.Api/Controllers/OAuthController.cs)
+- **Google Provider**: [`ProjectVG.Application/Services/Auth/Providers/GoogleOAuth2Provider.cs`](../../ProjectVG.Application/Services/Auth/Providers/GoogleOAuth2Provider.cs)
+- **게스트 로그인**: [`ProjectVG.Api/Controllers/AuthController.cs`](../../ProjectVG.Api/Controllers/AuthController.cs)
 
 **핵심 코드**:
 ```csharp
@@ -224,9 +224,9 @@ public async Task<IActionResult> GuestLogin([FromBody] string guestId)
 **설명**: Redis를 활용한 분산 세션 관리와 토큰 blacklist 기능
 
 **구현 위치**:
-- **Redis 토큰 저장소**: [`ProjectVG.Infrastructure/Auth/RedisRefreshTokenStorage.cs`](ProjectVG.Infrastructure/Auth/RedisRefreshTokenStorage.cs)
-- **메모리 fallback**: [`ProjectVG.Infrastructure/Auth/InMemoryRefreshTokenStorage.cs`](ProjectVG.Infrastructure/Auth/InMemoryRefreshTokenStorage.cs)
-- **서비스 등록**: [`ProjectVG.Infrastructure/InfrastructureServiceCollectionExtensions.cs`](ProjectVG.Infrastructure/InfrastructureServiceCollectionExtensions.cs)
+- **Redis 토큰 저장소**: [`ProjectVG.Infrastructure/Auth/RedisRefreshTokenStorage.cs`](../../ProjectVG.Infrastructure/Auth/RedisRefreshTokenStorage.cs)
+- **메모리 fallback**: [`ProjectVG.Infrastructure/Auth/InMemoryRefreshTokenStorage.cs`](../../ProjectVG.Infrastructure/Auth/InMemoryRefreshTokenStorage.cs)
+- **서비스 등록**: [`ProjectVG.Infrastructure/InfrastructureServiceCollectionExtensions.cs`](../../ProjectVG.Infrastructure/InfrastructureServiceCollectionExtensions.cs)
 
 **핵심 코드**:
 ```csharp
@@ -254,7 +254,7 @@ public async Task<bool> IsRefreshTokenValidAsync(string refreshToken)
 **설명**: 다양한 인프라 환경을 고려한 다중 헤더 지원 인증 필터
 
 **구현 위치**:
-- **JWT 인증 필터**: [`ProjectVG.Api/Filters/JwtAuthenticationFilter.cs`](ProjectVG.Api/Filters/JwtAuthenticationFilter.cs)
+- **JWT 인증 필터**: [`ProjectVG.Api/Filters/JwtAuthenticationFilter.cs`](../../ProjectVG.Api/Filters/JwtAuthenticationFilter.cs)
 
 **핵심 코드**:
 ```csharp
@@ -289,9 +289,9 @@ private string? ExtractToken(HttpRequest request)
 **설명**: 금융급 정밀도의 Decimal(18,2) 타입을 사용한 크레딧 잔액 관리
 
 **구현 위치**:
-- **사용자 엔티티**: [`ProjectVG.Domain/Entities/User/User.cs`](ProjectVG.Domain/Entities/User/User.cs)
-- **크레딧 거래 엔티티**: [`ProjectVG.Domain/Entities/Credit/CreditTransaction.cs`](ProjectVG.Domain/Entities/Credit/CreditTransaction.cs)
-- **크레딧 서비스**: [`ProjectVG.Application/Services/Credit/CreditService.cs`](ProjectVG.Application/Services/Credit/CreditService.cs)
+- **사용자 엔티티**: [`ProjectVG.Domain/Entities/User/User.cs`](../../ProjectVG.Domain/Entities/User/User.cs)
+- **크레딧 거래 엔티티**: [`ProjectVG.Domain/Entities/Credit/CreditTransaction.cs`](../../ProjectVG.Domain/Entities/Credit/CreditTransaction.cs)
+- **크레딧 서비스**: [`ProjectVG.Application/Services/Credit/CreditService.cs`](../../ProjectVG.Application/Services/Credit/CreditService.cs)
 
 **핵심 코드**:
 ```csharp
@@ -335,8 +335,8 @@ public async Task<decimal> AddCreditsAsync(Guid userId, decimal amount, string s
 **설명**: 모든 크레딧 변동 사항을 추적 가능한 거래 기록으로 관리
 
 **구현 위치**:
-- **크레딧 거래 엔티티**: [`ProjectVG.Domain/Entities/Credit/CreditTransaction.cs`](ProjectVG.Domain/Entities/Credit/CreditTransaction.cs)
-- **거래 리포지토리**: [`ProjectVG.Infrastructure/Persistence/Repositories/Credit/SqlServerCreditTransactionRepository.cs`](ProjectVG.Infrastructure/Persistence/Repositories/Credit/SqlServerCreditTransactionRepository.cs)
+- **크레딧 거래 엔티티**: [`ProjectVG.Domain/Entities/Credit/CreditTransaction.cs`](../../ProjectVG.Domain/Entities/Credit/CreditTransaction.cs)
+- **거래 리포지토리**: [`ProjectVG.Infrastructure/Persistence/Repositories/Credit/SqlServerCreditTransactionRepository.cs`](../../ProjectVG.Infrastructure/Persistence/Repositories/Credit/SqlServerCreditTransactionRepository.cs)
 
 **핵심 코드**:
 ```csharp
@@ -401,8 +401,8 @@ private async Task<CreditTransaction> CreateTransactionAsync(
 **설명**: RowVersion을 활용한 낙관적 동시성 제어로 크레딧 잔액 일관성 보장
 
 **구현 위치**:
-- **사용자 엔티티**: [`ProjectVG.Domain/Entities/User/User.cs`](ProjectVG.Domain/Entities/User/User.cs)
-- **사용자 리포지토리**: [`ProjectVG.Infrastructure/Persistence/Repositories/User/SqlServerUserRepository.cs`](ProjectVG.Infrastructure/Persistence/Repositories/User/SqlServerUserRepository.cs)
+- **사용자 엔티티**: [`ProjectVG.Domain/Entities/User/User.cs`](../../ProjectVG.Domain/Entities/User/User.cs)
+- **사용자 리포지토리**: [`ProjectVG.Infrastructure/Persistence/Repositories/User/SqlServerUserRepository.cs`](../../ProjectVG.Infrastructure/Persistence/Repositories/User/SqlServerUserRepository.cs)
 
 **핵심 코드**:
 ```csharp
@@ -481,9 +481,9 @@ public async Task<decimal> SpendCreditsAsync(Guid userId, decimal amount, string
 **설명**: 구조화된 JSON 설정과 자유형 SystemPrompt를 모두 지원하는 유연한 캐릭터 구성 시스템
 
 **구현 위치**:
-- **캐릭터 엔티티**: [`ProjectVG.Domain/Entities/Character/Character.cs`](ProjectVG.Domain/Entities/Character/Character.cs)
-- **개별 설정**: [`ProjectVG.Domain/Entities/Character/IndividualConfig.cs`](ProjectVG.Domain/Entities/Character/IndividualConfig.cs)
-- **설정 모드**: [`ProjectVG.Domain/Entities/Character/CharacterConfigMode.cs`](ProjectVG.Domain/Entities/Character/CharacterConfigMode.cs)
+- **캐릭터 엔티티**: [`ProjectVG.Domain/Entities/Character/Character.cs`](../../ProjectVG.Domain/Entities/Character/Character.cs)
+- **개별 설정**: [`ProjectVG.Domain/Entities/Character/IndividualConfig.cs`](../../ProjectVG.Domain/Entities/Character/IndividualConfig.cs)
+- **설정 모드**: [`ProjectVG.Domain/Entities/Character/CharacterConfigMode.cs`](../../ProjectVG.Domain/Entities/Character/CharacterConfigMode.cs)
 
 **핵심 코드**:
 ```csharp
@@ -518,9 +518,9 @@ public string GetEffectiveSystemPrompt()
 **설명**: 시스템 캐릭터, 공개 캐릭터, 개인 캐릭터의 3단계 소유권 및 접근 권한 관리
 
 **구현 위치**:
-- **캐릭터 엔티티**: [`ProjectVG.Domain/Entities/Character/Character.cs`](ProjectVG.Domain/Entities/Character/Character.cs)
-- **캐릭터 서비스**: [`ProjectVG.Application/Services/Character/CharacterService.cs`](ProjectVG.Application/Services/Character/CharacterService.cs)
-- **캐릭터 컨트롤러**: [`ProjectVG.Api/Controllers/CharacterController.cs`](ProjectVG.Api/Controllers/CharacterController.cs)
+- **캐릭터 엔티티**: [`ProjectVG.Domain/Entities/Character/Character.cs`](../../ProjectVG.Domain/Entities/Character/Character.cs)
+- **캐릭터 서비스**: [`ProjectVG.Application/Services/Character/CharacterService.cs`](../../ProjectVG.Application/Services/Character/CharacterService.cs)
+- **캐릭터 컨트롤러**: [`ProjectVG.Api/Controllers/CharacterController.cs`](../../ProjectVG.Api/Controllers/CharacterController.cs)
 
 **핵심 코드**:
 ```csharp
@@ -556,7 +556,7 @@ public bool CanBeEditedBy(Guid? userId)
 **설명**: IndividualConfig의 구조화된 필드들로부터 동적 SystemPrompt 생성
 
 **구현 위치**:
-- **개별 설정**: [`ProjectVG.Domain/Entities/Character/IndividualConfig.cs`](ProjectVG.Domain/Entities/Character/IndividualConfig.cs)
+- **개별 설정**: [`ProjectVG.Domain/Entities/Character/IndividualConfig.cs`](../../ProjectVG.Domain/Entities/Character/IndividualConfig.cs)
 
 **핵심 코드**:
 ```csharp
@@ -597,7 +597,7 @@ public string BuildSystemPrompt()
 
 ## 📚 추가 리소스
 
-- **API 문서**: [README.md](README.md)
-- **아키텍처 가이드**: [CLAUDE.md](CLAUDE.md)
-- **개발 환경 설정**: [scripts/](scripts/) 디렉토리
-- **테스트 가이드**: [ProjectVG.Tests/](ProjectVG.Tests/) 디렉토리
+- **API 문서**: [README.md](../../README.md)
+- **아키텍처 가이드**: [CLAUDE.md](../../CLAUDE.md)
+- **개발 환경 설정**: [scripts/](../../scripts/) 디렉토리
+- **테스트 가이드**: [ProjectVG.Tests/](../../ProjectVG.Tests/) 디렉토리
