@@ -125,44 +125,42 @@ private async Task ProcessChatRequestInternalAsync(ChatProcessContext context)
 }
 ```
 
-### WebSocket 세션 관리: 실시간 결과 전송
+### 페이지네이션: 대화 기록 조회
 
-**설명**: WebSocket을 통한 실시간 채팅 결과 전송 시스템. 클라이언트가 `/ws` 엔드포인트로 연결하면 채팅 처리 완료 시 결과를 자동으로 수신합니다.
+**설명**: 효율적인 대화 기록 조회를 위한 페이지네이션 시스템. 대용량 대화 기록을 페이지 단위로 나누어 조회하고 클라이언트에서 점진적으로 로드할 수 있습니다.
 
 **구현 위치**:
-- **WebSocket 미들웨어**: [`ProjectVG.Api/Middleware/WebSocketMiddleware.cs`](../../ProjectVG.Api/Middleware/WebSocketMiddleware.cs)
-- **WebSocket 매니저**: [`ProjectVG.Application/Services/WebSocket/WebSocketManager.cs`](../../ProjectVG.Application/Services/WebSocket/WebSocketManager.cs)
-- **연결 관리**: [`ProjectVG.Infrastructure/Realtime/WebSocketConnection/WebSocketClientConnection.cs`](../../ProjectVG.Infrastructure/Realtime/WebSocketConnection/WebSocketClientConnection.cs)
+- **대화 컨트롤러**: [`ProjectVG.Api/Controllers/ConversationController.cs`](../../ProjectVG.Api/Controllers/ConversationController.cs)
+- **대화 서비스**: [`ProjectVG.Application/Services/Conversation/ConversationService.cs`](../../ProjectVG.Application/Services/Conversation/ConversationService.cs)
+- **대화 리포지토리**: [`ProjectVG.Infrastructure/Persistence/Repositories/Conversation/SqlServerConversationRepository.cs`](../../ProjectVG.Infrastructure/Persistence/Repositories/Conversation/SqlServerConversationRepository.cs)
 
 **핵심 코드**:
 ```csharp
-// WebSocket 연결 처리 (미들웨어)
-if (context.Request.Path == "/ws" && context.WebSockets.IsWebSocketRequest)
+// 페이지네이션 조회 (컨트롤러)
+[HttpGet("{characterId}")]
+[JwtAuthentication]
+public async Task<ActionResult<ConversationHistoryResponse>> GetConversationHistory(
+    Guid characterId,
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 10)
 {
-    var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-    var userId = await AuthenticateWebSocketAsync(context);
+    var userId = GetCurrentUserId();
+    var history = await _conversationService.GetConversationHistoryAsync(
+        userId.Value, characterId, page, pageSize);
 
-    if (userId.HasValue)
-    {
-        await _webSocketManager.AddConnectionAsync(userId.Value, webSocket);
-        await HandleWebSocketCommunication(webSocket, userId.Value);
-    }
+    return Ok(history);
 }
 
-// 채팅 결과 WebSocket으로 전송
-public async Task SendChatResultAsync(Guid userId, ChatResult result)
+// 데이터베이스 페이지네이션 (리포지토리)
+public async Task<IEnumerable<ConversationHistory>> GetConversationHistoryAsync(
+    Guid userId, Guid characterId, int page, int pageSize)
 {
-    var connection = _connections.GetValueOrDefault(userId);
-    if (connection != null)
-    {
-        var message = JsonSerializer.Serialize(new WebSocketMessage
-        {
-            Type = "chat_result",
-            Data = result
-        });
-
-        await connection.SendAsync(message);
-    }
+    return await _context.ConversationHistories
+        .Where(ch => ch.UserId == userId && ch.CharacterId == characterId)
+        .OrderByDescending(ch => ch.Timestamp)
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .ToListAsync();
 }
 ```
 
@@ -292,51 +290,6 @@ private string? ExtractToken(HttpRequest request)
 
 ## 3. 크레딧 시스템
 
-### 정밀 계산: Decimal(18,2) 잔액 관리
-
-**설명**: 금융급 정밀도의 Decimal(18,2) 타입을 사용한 크레딧 잔액 관리
-
-**구현 위치**:
-- **사용자 엔티티**: [`ProjectVG.Domain/Entities/User/User.cs`](../../ProjectVG.Domain/Entities/User/User.cs)
-- **크레딧 거래 엔티티**: [`ProjectVG.Domain/Entities/Credit/CreditTransaction.cs`](../../ProjectVG.Domain/Entities/Credit/CreditTransaction.cs)
-- **크레딧 서비스**: [`ProjectVG.Application/Services/Credit/CreditService.cs`](../../ProjectVG.Application/Services/Credit/CreditService.cs)
-
-**핵심 코드**:
-```csharp
-// 사용자 엔티티의 크레딧 필드
-[Precision(18, 2)]
-public decimal CreditBalance { get; set; } = 0;
-
-[Precision(18, 2)]
-public decimal TotalCreditsEarned { get; set; } = 0;
-
-[Precision(18, 2)]
-public decimal TotalCreditsSpent { get; set; } = 0;
-
-// 크레딧 거래 엔티티
-public class CreditTransaction : BaseEntity
-{
-    [Precision(18, 2)]
-    public decimal Amount { get; set; }
-
-    [Precision(18, 2)]
-    public decimal BalanceAfter { get; set; }
-
-    public CreditTransactionType Type { get; set; }  // Earn = 1, Spend = 2
-}
-
-// 크레딧 계산 로직
-public async Task<decimal> AddCreditsAsync(Guid userId, decimal amount, string source, string description)
-{
-    var user = await _userRepository.GetByIdAsync(userId);
-    var newBalance = user.CreditBalance + amount;
-
-    user.CreditBalance = newBalance;
-    user.TotalCreditsEarned += amount;
-
-    return newBalance;
-}
-```
 
 ### 거래 기록: 완전한 audit trail
 
@@ -548,15 +501,6 @@ public bool CanBeViewedBy(Guid? userId)
     return userId.HasValue && IsOwnedBy(userId.Value);
 }
 
-// 편집 권한 확인
-public bool CanBeEditedBy(Guid? userId)
-{
-    // 시스템 캐릭터는 편집 불가
-    if (IsSystemCharacter()) return false;
-
-    // 소유자만 편집 가능
-    return userId.HasValue && IsOwnedBy(userId.Value);
-}
 ```
 
 ### 프롬프트 생성: 설정 기반 SystemPrompt 구성
@@ -601,11 +545,4 @@ public string BuildSystemPrompt()
 }
 ```
 
----
-
-## 📚 추가 리소스
-
-- **API 문서**: [README.md](../../README.md)
-- **아키텍처 가이드**: [CLAUDE.md](../../CLAUDE.md)
-- **개발 환경 설정**: [scripts/](../../scripts/) 디렉토리
-- **테스트 가이드**: [ProjectVG.Tests/](../../ProjectVG.Tests/) 디렉토리
+<br>

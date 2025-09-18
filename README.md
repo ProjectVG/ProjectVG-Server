@@ -46,8 +46,8 @@
 ## ✨ 핵심 기능
 
 ### 채팅 시스템
-- **이중 프로토콜**: WebSocket + HTTP REST API
-- **메시지 관리**: User/Assistant/System 역할 기반 대화
+- **HTTP-WebSocket Bridge**: 비동기 장기 실행 작업의 브리지 패턴
+- **ChatService 오케스트레이션**: Facade 패턴으로 복합 처리 파이프라인 관리
 - **외부 서비스 연동**: LLM, Memory, TTS 서비스 통합
 - **페이지네이션**: 대화 기록 조회
 
@@ -58,7 +58,6 @@
 - **다중 헤더**: Authorization, X-Access-Credit, X-Refresh-Credit
 
 ### 크레딧 시스템
-- **정밀 계산**: Decimal(18,2) 잔액 관리
 - **거래 기록**: 완전한 audit trail
 - **동시성 제어**: Optimistic concurrency 지원
 
