@@ -45,27 +45,29 @@
 
 ## ✨ 핵심 기능
 
-### 인증 시스템
-- **JWT 토큰**: Access (15분) + Refresh (30일) 이중 토큰
-- **OAuth2 PKCE**: Google 인증, 게스트 로그인
-- **Redis 세션**: 토큰 관리 및 blacklist 지원
-- **다중 헤더**: Authorization, X-Access-Credit, X-Refresh-Credit
-
-### AI 캐릭터 관리
-- **하이브리드 설정**: JSON 필드 구성 + 직접 프롬프트 입력
-- **소유권 모델**: 시스템/공개/개인 캐릭터 권한 관리
-- **프롬프트 생성**: 설정 기반 SystemPrompt 구성
-
 ### 채팅 시스템
 - **이중 프로토콜**: WebSocket + HTTP REST API
 - **메시지 관리**: User/Assistant/System 역할 기반 대화
 - **외부 서비스 연동**: LLM, Memory, TTS 서비스 통합
 - **페이지네이션**: 대화 기록 조회
 
+### 인증 시스템
+- **JWT 토큰**: Access (15분) + Refresh (30일) 이중 토큰
+- **OAuth2 PKCE**: Google 인증, 게스트 로그인
+- **Redis 세션**: 토큰 관리 및 blacklist 지원
+- **다중 헤더**: Authorization, X-Access-Credit, X-Refresh-Credit
+
 ### 크레딧 시스템
 - **정밀 계산**: Decimal(18,2) 잔액 관리
 - **거래 기록**: 완전한 audit trail
 - **동시성 제어**: Optimistic concurrency 지원
+
+### AI 캐릭터 관리
+- **하이브리드 설정**: JSON 필드 구성 + 직접 프롬프트 입력
+- **소유권 모델**: 시스템/공개/개인 캐릭터 권한 관리
+- **프롬프트 생성**: 설정 기반 SystemPrompt 구성
+
+> **상세 구현**: 각 기능의 구체적인 코드 구현과 아키텍처는 [FEATURES.md](docs/FEATURES.md)를 참고하세요.
 
 <br>
 
