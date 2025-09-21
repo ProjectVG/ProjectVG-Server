@@ -5,6 +5,14 @@ networks:
   projectvg-network:
     driver: bridge
 
+volumes:
+  projectvg-api-logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_PATH:-../data}/logs/api-server
+
 services:
   projectvg.api:
     image: projectvgapi:latest
@@ -20,10 +28,17 @@ services:
     mem_limit: ${API_MEMORY_LIMIT:-1g}
     memswap_limit: ${API_MEMORY_LIMIT:-1g}
     environment:
+      # 글로벌 환경 설정
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DEBUG_MODE=${DEBUG_MODE:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+      # ASP.NET Core 환경
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
       # 외부 서비스 연결
       - LLM_BASE_URL=${LLM_BASE_URL}
       - MEMORY_BASE_URL=${MEMORY_BASE_URL}
+      - STT_BASE_URL=${STT_BASE_URL}
       - TTS_BASE_URL=${TTS_BASE_URL}
       - TTS_API_KEY=${TTS_API_KEY}
       - DB_CONNECTION_STRING=${DB_CONNECTION_STRING}
@@ -38,9 +53,16 @@ services:
       - GOOGLE_OAUTH_REDIRECT_URI=${GOOGLE_OAUTH_REDIRECT_URI}
       - GOOGLE_OAUTH_AUTO_CREATE_USER=${GOOGLE_OAUTH_AUTO_CREATE_USER}
       - GOOGLE_OAUTH_DEFAULT_ROLE=${GOOGLE_OAUTH_DEFAULT_ROLE}
+    volumes:
+      - projectvg-api-logs:/app/logs
     networks:
       - projectvg-network
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
