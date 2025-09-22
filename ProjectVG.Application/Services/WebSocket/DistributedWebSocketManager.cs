@@ -35,8 +35,8 @@ namespace ProjectVG.Application.Services.WebSocket
             _sessionStorage = sessionStorage;
             _logger = logger;
 
-            // 서버 ID 생성 (환경변수나 설정에서 가져올 수도 있음)
-            _serverId = Environment.MachineName + "-" + Environment.ProcessId;
+            // 서버 ID 생성 (환경변수 우선, 표준화된 형식)
+            _serverId = GenerateServerId();
         }
 
         public async Task<string> ConnectAsync(string userId, string? serverId = null)
@@ -234,6 +234,26 @@ namespace ProjectVG.Application.Services.WebSocket
         public async Task<int> GetGlobalSessionCountAsync()
         {
             return await _sessionManager.GetActiveSessionCountAsync();
+        }
+
+        /// <summary>
+        /// 표준화된 서버 ID 생성
+        /// </summary>
+        private static string GenerateServerId()
+        {
+            // 1. 환경변수에서 서버 ID 조회 (최우선)
+            var envServerId = Environment.GetEnvironmentVariable("SERVER_ID");
+            if (!string.IsNullOrWhiteSpace(envServerId))
+            {
+                return envServerId.Trim();
+            }
+
+            // 2. 표준화된 형식으로 자동 생성
+            var machineName = Environment.MachineName.ToLowerInvariant();
+            var processId = Environment.ProcessId;
+            var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd-HHmm");
+
+            return $"api-server-{machineName}-{processId}-{timestamp}";
         }
     }
 }

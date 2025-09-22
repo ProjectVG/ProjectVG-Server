@@ -22,6 +22,16 @@ namespace ProjectVG.Application.Services.WebSocket
         /// <summary>
         /// 세션이 활성 상태인지 확인합니다
         /// </summary>
-        bool IsSessionActive(string userId);
+        Task<bool> IsSessionActiveAsync(string userId);
+
+        /// <summary>
+        /// 텍스트 메시지를 전송합니다
+        /// </summary>
+        Task SendTextAsync(string userId, string text);
+
+        /// <summary>
+        /// 바이너리 데이터를 전송합니다
+        /// </summary>
+        Task SendBinaryAsync(string userId, byte[] data);
     }
 }

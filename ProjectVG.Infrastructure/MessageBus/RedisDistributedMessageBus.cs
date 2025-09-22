@@ -18,6 +18,9 @@ namespace ProjectVG.Infrastructure.MessageBus
         private readonly IDistributedSessionManager _sessionManager;
         private readonly ILogger<RedisDistributedMessageBus> _logger;
 
+        // 메시지 핸들러를 위한 콜백 액션들
+        private Func<DistributedMessage, Task>? _messageHandler;
+
         // 채널 상수
         private const string USER_MESSAGE_CHANNEL_PREFIX = "channel:user:";        // channel:user:{userId}
         private const string SERVER_MESSAGE_CHANNEL_PREFIX = "channel:server:";    // channel:server:{serverId}
@@ -226,13 +229,44 @@ namespace ProjectVG.Infrastructure.MessageBus
             return Task.CompletedTask;
         }
 
-        private Task HandleBroadcastMessage(DistributedMessage message)
+        private async Task HandleBroadcastMessage(DistributedMessage message)
         {
             _logger.LogDebug("브로드캐스트 메시지 수신: MessageType={MessageType}, FromServer={FromServer}",
                 message.MessageType, message.FromServer);
 
-            // 브로드캐스트 메시지 처리 로직
-            return Task.CompletedTask;
+            try
+            {
+                // 자신이 보낸 메시지는 무시
+                if (message.FromServer == _currentServerId)
+                {
+                    return;
+                }
+
+                // 브로드캐스트 메시지 타입별 처리
+                switch (message.MessageType)
+                {
+                    case "ServerAnnouncement":
+                        _logger.LogInformation("서버 공지: {Message}", message.ToString());
+                        break;
+
+                    case "SystemMaintenance":
+                        _logger.LogWarning("시스템 유지보수 공지: {Message}", message.ToString());
+                        break;
+
+                    case "GlobalNotification":
+                        // 모든 로컬 연결에게 알림 전달
+                        _logger.LogInformation("글로벌 알림: {Message}", message.ToString());
+                        break;
+
+                    default:
+                        _logger.LogDebug("알 수 없는 브로드캐스트 메시지: {MessageType}", message.MessageType);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "브로드캐스트 메시지 처리 실패: MessageType={MessageType}", message.MessageType);
+            }
         }
 
         private Task HandleServerDiscoveryMessage(DistributedMessage message)
@@ -270,13 +304,34 @@ namespace ProjectVG.Infrastructure.MessageBus
             }
         }
 
-        private Task HandleUserMessage(DistributedMessage message)
+        private async Task HandleUserMessage(DistributedMessage message)
         {
             _logger.LogDebug("사용자 메시지 수신: MessageType={MessageType}", message.MessageType);
 
-            // 사용자별 메시지 처리 로직
-            // WebSocket 메시지 전달, 채팅 결과 전달 등
-            return Task.CompletedTask;
+            try
+            {
+                // 외부에서 등록된 메시지 핸들러가 있으면 사용
+                if (_messageHandler != null)
+                {
+                    await _messageHandler(message);
+                }
+                else
+                {
+                    _logger.LogWarning("메시지 핸들러가 등록되지 않음: MessageType={MessageType}", message.MessageType);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "사용자 메시지 처리 실패: MessageType={MessageType}", message.MessageType);
+            }
+        }
+
+        /// <summary>
+        /// 메시지 핸들러를 등록합니다
+        /// </summary>
+        public void SetMessageHandler(Func<DistributedMessage, Task> handler)
+        {
+            _messageHandler = handler;
         }
 
         public async Task StopAsync()

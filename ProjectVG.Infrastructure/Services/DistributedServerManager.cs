@@ -316,11 +316,19 @@ namespace ProjectVG.Infrastructure.Services
         /// </summary>
         private static string GenerateServerId()
         {
-            var hostname = Environment.MachineName;
-            var processId = Environment.ProcessId;
-            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            // 1. 환경변수에서 서버 ID 조회 (최우선)
+            var envServerId = Environment.GetEnvironmentVariable("SERVER_ID");
+            if (!string.IsNullOrWhiteSpace(envServerId))
+            {
+                return envServerId.Trim();
+            }
 
-            return $"{hostname}-{processId}-{timestamp}";
+            // 2. 표준화된 형식으로 자동 생성
+            var machineName = Environment.MachineName.ToLowerInvariant();
+            var processId = Environment.ProcessId;
+            var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd-HHmm");
+
+            return $"api-server-{machineName}-{processId}-{timestamp}";
         }
 
         /// <summary>

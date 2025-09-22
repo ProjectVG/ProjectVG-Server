@@ -120,8 +120,9 @@ namespace ProjectVG.Api.Middleware
                 // 4. 로컬 WebSocket 서비스에 연결
                 await _webSocketService.ConnectAsync(userIdString);
 
-                // 5. 분산 세션 관리자에 등록
-                await _distributedWebSocketManager.ConnectAsync(userIdString, Environment.MachineName);
+                // 5. 분산 세션 관리자에 등록 (표준화된 서버 ID 사용)
+                var serverId = GenerateServerId();
+                await _distributedWebSocketManager.ConnectAsync(userIdString, serverId);
 
                 _logger.LogInformation("WebSocket 연결 등록 완료: {UserId}", userId);
             }
@@ -232,6 +233,26 @@ namespace ProjectVG.Api.Middleware
                     cancellationTokenSource?.Dispose();
                 }
             }
+        }
+
+        /// <summary>
+        /// 표준화된 서버 ID 생성
+        /// </summary>
+        private static string GenerateServerId()
+        {
+            // 1. 환경변수에서 서버 ID 조회 (최우선)
+            var envServerId = Environment.GetEnvironmentVariable("SERVER_ID");
+            if (!string.IsNullOrWhiteSpace(envServerId))
+            {
+                return envServerId.Trim();
+            }
+
+            // 2. 표준화된 형식으로 자동 생성
+            var machineName = Environment.MachineName.ToLowerInvariant();
+            var processId = Environment.ProcessId;
+            var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd-HHmm");
+
+            return $"api-server-{machineName}-{processId}-{timestamp}";
         }
     }
 }

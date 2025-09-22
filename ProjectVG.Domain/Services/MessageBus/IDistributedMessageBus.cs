@@ -57,5 +57,10 @@ namespace ProjectVG.Domain.Services.MessageBus
         /// 메시지 버스를 중지합니다
         /// </summary>
         Task StopAsync();
+
+        /// <summary>
+        /// 메시지 핸들러를 설정합니다
+        /// </summary>
+        void SetMessageHandler(Func<DistributedMessage, Task> handler);
     }
 }

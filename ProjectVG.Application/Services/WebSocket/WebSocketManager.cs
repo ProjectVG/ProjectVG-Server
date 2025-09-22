@@ -36,7 +36,8 @@ namespace ProjectVG.Application.Services.WebSocket
             // 분산 관리자가 있으면 분산 모드로 동작
             if (_distributedManager != null)
             {
-                return await _distributedManager.ConnectAsync(userId, Environment.MachineName);
+                var serverId = GenerateServerId();
+                return await _distributedManager.ConnectAsync(userId, serverId);
             }
 
             // 레거시 모드: 로컬 세션만 관리
@@ -116,17 +117,36 @@ namespace ProjectVG.Application.Services.WebSocket
             _logger.LogInformation("WebSocket 세션 해제: {UserId}", userId);
         }
 
-        public bool IsSessionActive(string userId)
+        public async Task<bool> IsSessionActiveAsync(string userId)
         {
-            // 분산 관리자가 있으면 분산 상태 확인 (비동기이므로 기본값 반환)
+            // 분산 관리자가 있으면 분산 상태 확인
             if (_distributedManager != null)
             {
-                // 동기 호출이므로 로컬 연결만 확인
-                return _distributedManager.IsLocalSession(userId);
+                return await _distributedManager.IsSessionActiveAsync(userId);
             }
 
             // 레거시 모드: 로컬 상태만 확인
             return _connectionRegistry.IsConnected(userId);
+        }
+
+        /// <summary>
+        /// 표준화된 서버 ID 생성
+        /// </summary>
+        private static string GenerateServerId()
+        {
+            // 1. 환경변수에서 서버 ID 조회 (최우선)
+            var envServerId = Environment.GetEnvironmentVariable("SERVER_ID");
+            if (!string.IsNullOrWhiteSpace(envServerId))
+            {
+                return envServerId.Trim();
+            }
+
+            // 2. 표준화된 형식으로 자동 생성
+            var machineName = Environment.MachineName.ToLowerInvariant();
+            var processId = Environment.ProcessId;
+            var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd-HHmm");
+
+            return $"api-server-{machineName}-{processId}-{timestamp}";
         }
     }
 }
