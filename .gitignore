@@ -101,6 +101,7 @@ _ReSharper*/
 # Docker
 **/Dockerfile.*
 docker-compose.override.yml
+.dockerignore.local
 
 # Keep template files but ignore runtime files
 !docker-compose.prod.yml

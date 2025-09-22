@@ -1,4 +1,8 @@
-version: '3.8'
+name: projectvg-database
+
+volumes:
+  mssql_data:
+  redis_data:
 
 networks:
   projectvg-external-db:
@@ -53,9 +57,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-
-volumes:
-  mssql_data:
-    driver: local
-  redis_data:
-    driver: local
