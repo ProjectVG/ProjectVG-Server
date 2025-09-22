@@ -1,5 +1,4 @@
-
-name: projectvg-api-server
+name: ${COMPOSE_PROJECT_NAME:-projectvg-api-server}
 
 networks:
   projectvg-network:
@@ -14,7 +13,7 @@ volumes:
       device: ${DATA_PATH:-../data}/logs/api-server
 
 services:
-  projectvg.api:
+  api-server:
     image: projectvgapi:latest
     build:
       context: .
@@ -22,20 +21,19 @@ services:
       target: production
       cache_from:
         - projectvgapi:latest
+    container_name: ${CONTAINER_NAME:-api-server}
     ports:
       - "${API_PORT:-7910}:7900"
     cpus: '${API_CPU_LIMIT:-1.0}'
     mem_limit: ${API_MEMORY_LIMIT:-1g}
     memswap_limit: ${API_MEMORY_LIMIT:-1g}
     environment:
-      # 글로벌 환경 설정
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - DEBUG_MODE=${DEBUG_MODE:-false}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - LOG_FORMAT=${LOG_FORMAT:-json}
-      # ASP.NET Core 환경
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
-      # 외부 서비스 연결
+      - SERVER_ID=${SERVER_ID:-api-server-001}
       - LLM_BASE_URL=${LLM_BASE_URL}
       - MEMORY_BASE_URL=${MEMORY_BASE_URL}
       - STT_BASE_URL=${STT_BASE_URL}
@@ -65,4 +63,9 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7900/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
