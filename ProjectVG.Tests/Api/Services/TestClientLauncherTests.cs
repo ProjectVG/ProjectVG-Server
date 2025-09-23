@@ -61,20 +61,21 @@ namespace ProjectVG.Tests.Api.Services
         {
             // Arrange
             var launcher = new TestClientLauncher();
-            var beforeLaunch = DateTime.Now;
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
             // Act
             launcher.Launch();
-            
-            // Give some time for the async task to start
-            await Task.Delay(100);
-            
-            var afterDelay = DateTime.Now;
+
+            // Stop measuring immediately after Launch returns
+            stopwatch.Stop();
 
             // Assert - Method should return immediately (async fire-and-forget)
-            var elapsedTime = afterDelay - beforeLaunch;
-            elapsedTime.Should().BeLessOrEqualTo(TimeSpan.FromMilliseconds(500), 
-                "Launch는 즉시 반환되어야 함 (백그라운드에서 실행)");
+            // Launch 자체는 즉시 반환되어야 하고, Task.Delay(1000)은 백그라운드에서 실행
+            stopwatch.ElapsedMilliseconds.Should().BeLessOrEqualTo(50,
+                "Launch 메서드 자체는 즉시 반환되어야 함 (백그라운드 작업은 별도)");
+
+            // Give some time for the background task to start
+            await Task.Delay(100);
         }
 
         [Fact]
