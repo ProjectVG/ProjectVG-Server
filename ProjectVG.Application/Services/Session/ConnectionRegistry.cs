@@ -33,7 +33,7 @@ namespace ProjectVG.Application.Services.Session
 			}
 			else
 			{
-				_logger.LogWarning("해제 대상 세션을 찾을 수 없음: {UserId}", userId);
+				_logger.LogDebug("해제 대상 세션을 찾을 수 없음: {UserId}", userId);
 			}
 		}
 

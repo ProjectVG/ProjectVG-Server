@@ -62,15 +62,15 @@ private async Task ProcessChatRequestInternalAsync(ChatProcessContext context)
 Unity Client ──WebSocket(/ws)──→ WebSocketMiddleware ──→ JWT 검증 ──→ 연결 등록
      │                           InvokeAsync:31                        │
      │                                                                 │
-     └──Query Parameter: ?token={jwt} 또는 Authorization Header───────┘
+     └──Query Parameter: ?token={jwt} 또는 Authorization Header─────────┘
                                      │
                             ┌───────▼───────┐
                             │ 1. JWT 검증   │
-                            │ 2. 기존 연결  │
+                            │ 2. 기존 연결   │
                             │    정리       │
                             │ 3. 새 연결    │
                             │    등록       │
-                            │ 4. 세션 루프  │
+                            │ 4. 세션 루프   │
                             │    시작       │
                             └───────────────┘
 ```

@@ -176,7 +176,17 @@ namespace ProjectVG.Api.Middleware
                 _logger.LogWarning("WebSocket 세션 타임아웃: {UserId}", userId);
             }
             catch (WebSocketException ex) {
-                _logger.LogWarning(ex, "WebSocket 연결 오류: {UserId}", userId);
+                // 클라이언트가 적절한 close handshake 없이 연결을 종료한 경우 (일반적인 상황)
+                if (ex.Message.Contains("closed the WebSocket connection without completing the close handshake") ||
+                    ex.Message.Contains("connection was aborted"))
+                {
+                    _logger.LogInformation("클라이언트가 연결을 종료했습니다: {UserId}", userId);
+                }
+                else
+                {
+                    // 기타 WebSocket 오류는 Warning으로 처리
+                    _logger.LogWarning(ex, "WebSocket 연결 오류: {UserId}", userId);
+                }
             }
             catch (Exception ex) {
                 _logger.LogError(ex, "세션 루프 예상치 못한 오류: {UserId}", userId);
