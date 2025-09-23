@@ -112,5 +112,29 @@ namespace ProjectVG.Application.Services.WebSocket
         {
             return _connectionRegistry.IsConnected(userId);
         }
+
+        public async Task UpdateSessionHeartbeatAsync(string userId)
+        {
+            try
+            {
+                _logger.LogDebug("[분산WebSocket] 세션 하트비트 업데이트: UserId={UserId}", userId);
+
+                // Redis 세션 TTL 갱신
+                if (_sessionStorage is ProjectVG.Infrastructure.Persistence.Session.RedisSessionStorage redisStorage)
+                {
+                    await redisStorage.HeartbeatAsync(userId);
+                }
+                else
+                {
+                    // InMemory 세션의 경우 별도 하트비트가 필요 없음
+                    _logger.LogDebug("[분산WebSocket] InMemory 세션은 하트비트 갱신 불필요: UserId={UserId}", userId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[분산WebSocket] 세션 하트비트 업데이트 실패: UserId={UserId}", userId);
+                throw;
+            }
+        }
     }
 }

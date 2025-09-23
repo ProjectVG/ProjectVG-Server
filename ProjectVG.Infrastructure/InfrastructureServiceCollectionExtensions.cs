@@ -223,8 +223,8 @@ namespace ProjectVG.Infrastructure
             if (distributedEnabled)
             {
                 // 분산 시스템이 활성화된 경우에만 등록
-                services.AddScoped<IServerRegistrationService, RedisServerRegistrationService>();
-                services.AddHostedService<ServerLifecycleService>();
+                services.AddScoped<ProjectVG.Domain.Services.Server.IServerRegistrationService, ProjectVG.Infrastructure.Services.Server.RedisServerRegistrationService>();
+                services.AddHostedService<ProjectVG.Infrastructure.Services.Server.ServerLifecycleService>();
 
                 Console.WriteLine("분산 시스템 모드 활성화");
             }

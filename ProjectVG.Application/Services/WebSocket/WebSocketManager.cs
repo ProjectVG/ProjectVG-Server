@@ -75,5 +75,12 @@ namespace ProjectVG.Application.Services.WebSocket
         {
             return _connectionRegistry.IsConnected(userId);
         }
+
+        public Task UpdateSessionHeartbeatAsync(string userId)
+        {
+            // 로컬 WebSocket 매니저는 별도 하트비트 업데이트가 필요 없음
+            _logger.LogDebug("로컬 WebSocket 매니저 하트비트 (no-op): {UserId}", userId);
+            return Task.CompletedTask;
+        }
     }
 }

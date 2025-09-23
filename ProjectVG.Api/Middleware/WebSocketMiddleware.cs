@@ -160,6 +160,14 @@ namespace ProjectVG.Api.Middleware
                                 WebSocketMessageType.Text,
                                 true,
                                 cancellationTokenSource.Token);
+
+                            // 세션 하트비트 업데이트 (Redis TTL 갱신)
+                            try {
+                                await _webSocketService.UpdateSessionHeartbeatAsync(userId);
+                            }
+                            catch (Exception heartbeatEx) {
+                                _logger.LogWarning(heartbeatEx, "세션 하트비트 업데이트 실패: {UserId}", userId);
+                            }
                         }
                     }
                 }

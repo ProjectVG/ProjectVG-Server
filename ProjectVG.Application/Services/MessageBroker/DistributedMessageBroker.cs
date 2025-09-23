@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.MessageBroker;
 using ProjectVG.Application.Models.WebSocket;
-using ProjectVG.Application.Services.Server;
+using ProjectVG.Domain.Services.Server;
 using ProjectVG.Application.Services.WebSocket;
 using StackExchange.Redis;
 
