@@ -156,7 +156,7 @@ namespace ProjectVG.Infrastructure.Persistence.Session
 			}
 		}
 
-		public async Task<int> GetActiveSessionCountAsync()
+		public Task<int> GetActiveSessionCountAsync()
 		{
 			try
 			{
@@ -165,12 +165,12 @@ namespace ProjectVG.Infrastructure.Persistence.Session
 				var count = keys.Count();
 
 				_logger.LogDebug("활성 세션 수: {Count}", count);
-				return count;
+				return Task.FromResult(count);
 			}
 			catch (Exception ex)
 			{
 				_logger.LogError(ex, "활성 세션 수 조회 실패");
-				return 0;
+				return Task.FromResult(0);
 			}
 		}
 
