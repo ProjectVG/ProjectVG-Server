@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using ProjectVG.Application.Services.Auth;
 using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.Chat;
@@ -12,12 +13,14 @@ using ProjectVG.Application.Services.Session;
 using ProjectVG.Application.Services.Credit;
 using ProjectVG.Application.Services.Users;
 using ProjectVG.Application.Services.WebSocket;
+using ProjectVG.Application.Services.MessageBroker;
+using ProjectVG.Application.Services.Server;
 
 namespace ProjectVG.Application
 {
     public static class ApplicationServiceCollectionExtensions
     {
-        public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+        public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
             // Auth Services
             services.AddScoped<IAuthService, AuthService>();
@@ -69,13 +72,34 @@ namespace ProjectVG.Application
             // Conversation Services
             services.AddScoped<IConversationService, ConversationService>();
 
-            // Session Services
-            services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
-
-            // WebSocket Services
-            services.AddScoped<IWebSocketManager, WebSocketManager>();
+            // Distributed System Services
+            AddDistributedServices(services, configuration);
 
             return services;
+        }
+
+        /// <summary>
+        /// 분산 시스템 관련 서비스 등록
+        /// </summary>
+        private static void AddDistributedServices(IServiceCollection services, IConfiguration configuration)
+        {
+            var distributedEnabled = configuration.GetValue<bool>("DistributedSystem:Enabled", false);
+
+            if (distributedEnabled)
+            {
+                // 분산 환경 서비스
+                services.AddScoped<IMessageBroker, DistributedMessageBroker>();
+                services.AddScoped<IWebSocketManager, DistributedWebSocketManager>();
+            }
+            else
+            {
+                // 단일 서버 환경 서비스
+                services.AddScoped<IMessageBroker, LocalMessageBroker>();
+                services.AddScoped<IWebSocketManager, WebSocketManager>();
+            }
+
+            // WebSocket 연결 관리
+            services.AddSingleton<IConnectionRegistry, ConnectionRegistry>();
         }
     }
 }

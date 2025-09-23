@@ -2,6 +2,7 @@ using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Application.Services.WebSocket;
 using ProjectVG.Application.Services.Credit;
+using ProjectVG.Application.Services.MessageBroker;
 
 
 namespace ProjectVG.Application.Services.Chat.Handlers
@@ -9,16 +10,16 @@ namespace ProjectVG.Application.Services.Chat.Handlers
     public class ChatSuccessHandler
     {
         private readonly ILogger<ChatSuccessHandler> _logger;
-        private readonly IWebSocketManager _webSocketService;
+        private readonly IMessageBroker _messageBroker;
         private readonly ICreditManagementService _tokenManagementService;
 
         public ChatSuccessHandler(
         ILogger<ChatSuccessHandler> logger,
-        IWebSocketManager webSocketService,
+        IMessageBroker messageBroker,
         ICreditManagementService tokenManagementService)
         {
             _logger = logger;
-            _webSocketService = webSocketService;
+            _messageBroker = messageBroker;
             _tokenManagementService = tokenManagementService;
         }
 
@@ -61,8 +62,14 @@ namespace ProjectVG.Application.Services.Chat.Handlers
                         var message = ChatProcessResultMessage.FromSegment(segment, requestId)
                             .WithCreditInfo(tokensUsed, tokensRemaining);
                         var wsMessage = new WebSocketMessage("chat", message);
-                        
-                        await _webSocketService.SendAsync(userId, wsMessage);
+
+                        _logger.LogInformation("[메시지브로커] 사용자에게 메시지 전송 시작: UserId={UserId}, MessageType={MessageType}, SegmentOrder={Order}, BrokerType={BrokerType}",
+                            userId, wsMessage.Type, segment.Order, _messageBroker.IsDistributed ? "Distributed" : "Local");
+
+                        await _messageBroker.SendToUserAsync(userId, wsMessage);
+
+                        _logger.LogInformation("[메시지브로커] 사용자에게 메시지 전송 완료: UserId={UserId}, MessageType={MessageType}, SegmentOrder={Order}",
+                            userId, wsMessage.Type, segment.Order);
                     }
                     catch (Exception ex)
                     {
