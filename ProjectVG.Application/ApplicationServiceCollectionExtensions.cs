@@ -88,14 +88,14 @@ namespace ProjectVG.Application
             if (distributedEnabled)
             {
                 // 분산 환경 서비스
-                services.AddScoped<IMessageBroker, DistributedMessageBroker>();
-                services.AddScoped<IWebSocketManager, DistributedWebSocketManager>();
+                services.AddSingleton<IMessageBroker, DistributedMessageBroker>();
+                services.AddSingleton<IWebSocketManager, DistributedWebSocketManager>();
             }
             else
             {
                 // 단일 서버 환경 서비스
-                services.AddScoped<IMessageBroker, LocalMessageBroker>();
-                services.AddScoped<IWebSocketManager, WebSocketManager>();
+                services.AddSingleton<IMessageBroker, LocalMessageBroker>();
+                services.AddSingleton<IWebSocketManager, WebSocketManager>();
             }
 
             // WebSocket 연결 관리
