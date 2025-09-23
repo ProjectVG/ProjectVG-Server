@@ -111,7 +111,11 @@ let totalHistoryPages = 1;
 let selectedHistoryCharacterId = null;
 
 // 서버 정보 표시
-serverInfo.textContent = ENDPOINT;
+function updateServerInfo() {
+  serverInfo.textContent = `${ENDPOINT} (디버그 모드)`;
+}
+
+updateServerInfo();
 
 // 서버 설정 확인
 async function checkServerConfig() {
@@ -331,7 +335,11 @@ function connectWebSocket() {
     if (typeof event.data === "string") {
       try {
         const data = JSON.parse(event.data);
-        console.log("수신된 메시지:", data);
+        console.log("📥 수신된 메시지:", data);
+
+        // 디버깅: 메시지 수신 정보 표시
+        const timestamp = new Date().toLocaleTimeString();
+        appendLog(`<span style="color: #888; font-size: 0.9em;">[${timestamp}] 📥 메시지 수신: ${data.type || '타입없음'}</span>`);
 
         // 새로운 WebSocket 메시지 구조 처리 (우선순위)
         if (data.type && data.data !== undefined) {
@@ -545,7 +553,10 @@ function tryReconnect() {
 function sendChat() {
   const msg = userInput.value.trim();
   if (!msg) return;
+
+  const timestamp = new Date().toLocaleTimeString();
   appendLog(`<b>나:</b> ${msg}`);
+  appendLog(`<span style="color: #888; font-size: 0.9em;">[${timestamp}] 📤 서버로 메시지 전송 중...</span>`);
   userInput.value = "";
 
   const payload = {
@@ -556,7 +567,7 @@ function sendChat() {
     request_at: new Date().toISOString()
   };
 
-  console.log(includeAudioCheckbox.checked)
+  console.log("📤 전송할 페이로드:", payload);
 
   const headers = { "Content-Type": "application/json" };
   if (authToken) {
@@ -569,14 +580,18 @@ function sendChat() {
     body: JSON.stringify(payload)
   })
     .then(res => {
+      const responseTimestamp = new Date().toLocaleTimeString();
       if (!res.ok) {
-        appendLog(`<span style='color:red'>[HTTP 오류] 상태코드: ${res.status}</span>`);
+        appendLog(`<span style='color:red'>[${responseTimestamp}] ❌ HTTP 오류] 상태코드: ${res.status}</span>`);
         console.error("HTTP 오류", res);
+      } else {
+        appendLog(`<span style="color: #888; font-size: 0.9em;">[${responseTimestamp}] ✅ HTTP 응답 수신: ${res.status}</span>`);
       }
       return res.json();
     })
     .catch(err => {
-      appendLog(`<span style='color:red'>[HTTP 오류] ${err}</span>`);
+      const errorTimestamp = new Date().toLocaleTimeString();
+      appendLog(`<span style='color:red'>[${errorTimestamp}] ❌ HTTP 오류: ${err}</span>`);
       console.error(err);
     });
 }
