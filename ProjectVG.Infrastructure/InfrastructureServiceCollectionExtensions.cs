@@ -30,7 +30,7 @@ namespace ProjectVG.Infrastructure
             AddAuthServices(services, configuration);
             AddRedisServices(services, configuration);
             AddOAuth2Services(services, configuration);
-            // AddDistributedSystemServices(services, configuration);
+            AddDistributedSystemServices(services, configuration);
 
             return services;
         }
@@ -212,7 +212,6 @@ namespace ProjectVG.Infrastructure
             }
         }
 
-        /*
         /// <summary>
         /// 분산 시스템 서비스
         /// </summary>
@@ -233,6 +232,5 @@ namespace ProjectVG.Infrastructure
                 Console.WriteLine("단일 서버 모드");
             }
         }
-        */
     }
 }

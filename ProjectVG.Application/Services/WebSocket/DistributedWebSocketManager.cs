@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Application.Services.MessageBroker;
 using ProjectVG.Application.Services.Session;
@@ -16,20 +17,18 @@ namespace ProjectVG.Application.Services.WebSocket
         private readonly ILogger<DistributedWebSocketManager> _logger;
         private readonly IConnectionRegistry _connectionRegistry;
         private readonly ISessionStorage _sessionStorage;
-        private readonly DistributedMessageBroker? _distributedBroker;
+        private readonly IServiceProvider _serviceProvider;
 
         public DistributedWebSocketManager(
             ILogger<DistributedWebSocketManager> logger,
             IConnectionRegistry connectionRegistry,
             ISessionStorage sessionStorage,
-            IMessageBroker messageBroker)
+            IServiceProvider serviceProvider)
         {
             _logger = logger;
             _connectionRegistry = connectionRegistry;
             _sessionStorage = sessionStorage;
-
-            // MessageBroker가 분산 브로커인지 확인
-            _distributedBroker = messageBroker as DistributedMessageBroker;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task<string> ConnectAsync(string userId)
@@ -43,17 +42,20 @@ namespace ProjectVG.Application.Services.WebSocket
                 ConnectedAt = DateTime.UtcNow
             });
 
-            // 분산 환경인 경우 사용자 채널 구독
-            if (_distributedBroker != null)
+            // 분산 메시지 브로커에서 사용자 채널 구독
+            var messageBroker = _serviceProvider.GetService<IMessageBroker>() as DistributedMessageBroker;
+            if (messageBroker != null)
             {
                 _logger.LogInformation("[분산WebSocket] 분산 브로커 채널 구독 시작: UserId={UserId}", userId);
-                await _distributedBroker.SubscribeToUserChannelAsync(userId);
+                await messageBroker.SubscribeToUserChannelAsync(userId);
                 _logger.LogInformation("[분산WebSocket] 분산 사용자 채널 구독 완료: UserId={UserId}", userId);
             }
             else
             {
                 _logger.LogWarning("[분산WebSocket] 분산 브로커가 null입니다: UserId={UserId}", userId);
             }
+
+            _logger.LogInformation("[분산WebSocket] 분산 WebSocket 세션 생성 완료: UserId={UserId}", userId);
 
             return userId;
         }
@@ -97,11 +99,12 @@ namespace ProjectVG.Application.Services.WebSocket
 
             _connectionRegistry.Unregister(userId);
 
-            // 분산 환경인 경우 사용자 채널 구독 해제
-            if (_distributedBroker != null)
+            // 분산 메시지 브로커에서 사용자 채널 구독 해제
+            var messageBroker = _serviceProvider.GetService<IMessageBroker>() as DistributedMessageBroker;
+            if (messageBroker != null)
             {
                 _logger.LogInformation("[분산WebSocket] 분산 브로커 채널 구독 해제 시작: UserId={UserId}", userId);
-                await _distributedBroker.UnsubscribeFromUserChannelAsync(userId);
+                await messageBroker.UnsubscribeFromUserChannelAsync(userId);
                 _logger.LogInformation("[분산WebSocket] 분산 사용자 채널 구독 해제 완료: UserId={UserId}", userId);
             }
 

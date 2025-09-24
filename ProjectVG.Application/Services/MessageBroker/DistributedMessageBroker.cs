@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.MessageBroker;
 using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Domain.Services.Server;
-using ProjectVG.Application.Services.WebSocket;
+using ProjectVG.Application.Services.Session;
 using StackExchange.Redis;
 
 namespace ProjectVG.Application.Services.MessageBroker
@@ -14,7 +14,7 @@ namespace ProjectVG.Application.Services.MessageBroker
     {
         private readonly IConnectionMultiplexer _redis;
         private readonly ISubscriber _subscriber;
-        private readonly IWebSocketManager _webSocketManager;
+        private readonly IConnectionRegistry _connectionRegistry;
         private readonly IServerRegistrationService _serverRegistration;
         private readonly ILogger<DistributedMessageBroker> _logger;
         private readonly string _serverId;
@@ -27,13 +27,13 @@ namespace ProjectVG.Application.Services.MessageBroker
 
         public DistributedMessageBroker(
             IConnectionMultiplexer redis,
-            IWebSocketManager webSocketManager,
+            IConnectionRegistry connectionRegistry,
             IServerRegistrationService serverRegistration,
             ILogger<DistributedMessageBroker> logger)
         {
             _redis = redis;
             _subscriber = redis.GetSubscriber();
-            _webSocketManager = webSocketManager;
+            _connectionRegistry = connectionRegistry;
             _serverRegistration = serverRegistration;
             _logger = logger;
             _serverId = serverRegistration.GetServerId();
@@ -70,7 +70,7 @@ namespace ProjectVG.Application.Services.MessageBroker
                 _logger.LogInformation("[분산브로커] SendToUserAsync 시작: UserId={UserId}, ServerId={ServerId}", userId, _serverId);
 
                 // 1. 먼저 로컬에 해당 사용자가 있는지 확인
-                var isLocalActive = _webSocketManager.IsSessionActive(userId);
+                var isLocalActive = _connectionRegistry.IsConnected(userId);
                 _logger.LogInformation("[분산브로커] 로컬 세션 확인: UserId={UserId}, IsLocalActive={IsLocalActive}", userId, isLocalActive);
 
                 if (isLocalActive)
@@ -201,7 +201,7 @@ namespace ProjectVG.Application.Services.MessageBroker
                     brokerMessage.TargetUserId, brokerMessage.SourceServerId, brokerMessage.MessageType);
 
                 // 로컬에서 해당 사용자가 연결되어 있는지 확인
-                var isLocalActive = _webSocketManager.IsSessionActive(brokerMessage.TargetUserId);
+                var isLocalActive = _connectionRegistry.IsConnected(brokerMessage.TargetUserId);
                 _logger.LogInformation("[분산브로커] 로컬 세션 확인: TargetUserId={TargetUserId}, IsLocalActive={IsLocalActive}",
                     brokerMessage.TargetUserId, isLocalActive);
 
@@ -280,17 +280,28 @@ namespace ProjectVG.Application.Services.MessageBroker
 
             try
             {
-                if (message is WebSocketMessage wsMessage)
+                if (_connectionRegistry.TryGet(userId, out var connection) && connection != null)
                 {
-                    await _webSocketManager.SendAsync(userId, wsMessage);
-                    _logger.LogInformation("[분산브로커] WebSocketMessage 전송 완료: UserId={UserId}, Type={Type}",
-                        userId, wsMessage.Type);
+                    string messageText;
+
+                    if (message is WebSocketMessage wsMessage)
+                    {
+                        messageText = System.Text.Json.JsonSerializer.Serialize(wsMessage);
+                        _logger.LogInformation("[분산브로커] WebSocketMessage 전송 완료: UserId={UserId}, Type={Type}",
+                            userId, wsMessage.Type);
+                    }
+                    else
+                    {
+                        var wrappedMessage = new WebSocketMessage("message", message);
+                        messageText = System.Text.Json.JsonSerializer.Serialize(wrappedMessage);
+                        _logger.LogInformation("[분산브로커] 래핑된 메시지 전송 완료: UserId={UserId}", userId);
+                    }
+
+                    await connection.SendTextAsync(messageText);
                 }
                 else
                 {
-                    var wrappedMessage = new WebSocketMessage("message", message);
-                    await _webSocketManager.SendAsync(userId, wrappedMessage);
-                    _logger.LogInformation("[분산브로커] 래핑된 메시지 전송 완료: UserId={UserId}", userId);
+                    _logger.LogWarning("[분산브로커] 로컬 연결을 찾을 수 없음: UserId={UserId}", userId);
                 }
             }
             catch (Exception ex)

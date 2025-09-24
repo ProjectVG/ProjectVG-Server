@@ -84,6 +84,7 @@ namespace ProjectVG.Common.Constants
         GUEST_ID_INVALID,
         PROVIDER_USER_ID_INVALID,
         SESSION_EXPIRED,
+        WEBSOCKET_SESSION_REQUIRED,
         RATE_LIMIT_EXCEEDED,
         RESOURCE_QUOTA_EXCEEDED,
         
@@ -179,6 +180,7 @@ namespace ProjectVG.Common.Constants
             { ErrorCode.GUEST_ID_INVALID, "유효하지 않은 게스트 ID입니다" },
             { ErrorCode.PROVIDER_USER_ID_INVALID, "유효하지 않은 제공자 사용자 ID입니다" },
             { ErrorCode.SESSION_EXPIRED, "세션이 만료되었습니다" },
+            { ErrorCode.WEBSOCKET_SESSION_REQUIRED, "WebSocket 연결이 필요합니다" },
             { ErrorCode.RATE_LIMIT_EXCEEDED, "요청 한도를 초과했습니다" },
             { ErrorCode.RESOURCE_QUOTA_EXCEEDED, "리소스 할당량을 초과했습니다" },
             

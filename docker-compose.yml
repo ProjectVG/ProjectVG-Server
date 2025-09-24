@@ -1,9 +1,11 @@
-
 name: projectvg-api-server
 
 networks:
   projectvg-network:
     driver: bridge
+  projectvg-external-db:
+    external: true
+    name: projectvg-database_projectvg-external-db
 
 volumes:
   projectvg-api-logs:
@@ -28,6 +30,8 @@ services:
     mem_limit: ${API_MEMORY_LIMIT:-1g}
     memswap_limit: ${API_MEMORY_LIMIT:-1g}
     environment:
+      # 분산 시스템 설정
+      - SERVER_ID=${SERVER_ID:-api-server-001}
       # 글로벌 환경 설정
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - DEBUG_MODE=${DEBUG_MODE:-false}
@@ -57,6 +61,7 @@ services:
       - projectvg-api-logs:/app/logs
     networks:
       - projectvg-network
+      - projectvg-external-db
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -65,4 +70,3 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
