@@ -15,7 +15,7 @@ namespace ProjectVG.Application.Services.MessageBroker
     {
         private readonly IConnectionMultiplexer _redis;
         private readonly ISubscriber _subscriber;
-        private readonly IConnectionRegistry _connectionRegistry;
+        private readonly IWebSocketConnectionManager _connectionManager;
         private readonly IServerRegistrationService _serverRegistration;
         private readonly ILogger<DistributedMessageBroker> _logger;
         private readonly string _serverId;
@@ -28,13 +28,13 @@ namespace ProjectVG.Application.Services.MessageBroker
 
         public DistributedMessageBroker(
             IConnectionMultiplexer redis,
-            IConnectionRegistry connectionRegistry,
+            IWebSocketConnectionManager connectionManager,
             IServerRegistrationService serverRegistration,
             ILogger<DistributedMessageBroker> logger)
         {
             _redis = redis;
             _subscriber = redis.GetSubscriber();
-            _connectionRegistry = connectionRegistry;
+            _connectionManager = connectionManager;
             _serverRegistration = serverRegistration;
             _logger = logger;
             _serverId = serverRegistration.GetServerId();
@@ -71,7 +71,7 @@ namespace ProjectVG.Application.Services.MessageBroker
                 _logger.LogInformation("[분산브로커] SendToUserAsync 시작: UserId={UserId}, ServerId={ServerId}", userId, _serverId);
 
                 // 1. 먼저 로컬에 해당 사용자가 있는지 확인
-                var isLocalActive = _connectionRegistry.IsConnected(userId);
+                var isLocalActive = _connectionManager.HasLocalConnection(userId);
                 _logger.LogInformation("[분산브로커] 로컬 세션 확인: UserId={UserId}, IsLocalActive={IsLocalActive}", userId, isLocalActive);
 
                 if (isLocalActive)
@@ -201,7 +201,8 @@ namespace ProjectVG.Application.Services.MessageBroker
                 _logger.LogInformation("[분산브로커] 메시지 파싱 완료: TargetUserId={TargetUserId}, SourceServerId={SourceServerId}, MessageType={MessageType}",
                     brokerMessage.TargetUserId, brokerMessage.SourceServerId, brokerMessage.MessageType);
 
-                if (_connectionRegistry.TryGet(brokerMessage.TargetUserId, out var connection) && connection != null)
+                // 새 아키텍처: WebSocketConnectionManager 사용
+                if (_connectionManager.HasLocalConnection(brokerMessage.TargetUserId))
                 {
                     var payloadText = brokerMessage.Payload;
                     if (string.IsNullOrEmpty(payloadText))
@@ -209,8 +210,16 @@ namespace ProjectVG.Application.Services.MessageBroker
                         _logger.LogWarning("[분산브로커] 빈 Payload 수신: Channel={Channel}, TargetUserId={TargetUserId}", channel, brokerMessage.TargetUserId);
                         return;
                     }
-                    await connection.SendTextAsync(payloadText);
-                    _logger.LogInformation("[분산브로커] 분산 사용자 메시지 처리 완료: TargetUserId={TargetUserId}", brokerMessage.TargetUserId);
+
+                    var success = await _connectionManager.SendTextAsync(brokerMessage.TargetUserId, payloadText);
+                    if (success)
+                    {
+                        _logger.LogInformation("[분산브로커] 분산 사용자 메시지 처리 완료: TargetUserId={TargetUserId}", brokerMessage.TargetUserId);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("[분산브로커] 메시지 전송 실패: TargetUserId={TargetUserId}", brokerMessage.TargetUserId);
+                    }
                 }
                 else
                 {
@@ -261,8 +270,8 @@ namespace ProjectVG.Application.Services.MessageBroker
                     brokerMessage.MessageType, brokerMessage.SourceServerId);
 
                 // 현재 서버에 연결된 모든 사용자에게 브로드캐스트
-                var activeConnections = _connectionRegistry.GetAllActiveConnections().ToList();
-                if (activeConnections.Count == 0)
+                var activeSessionIds = _connectionManager.GetLocalConnectedSessionIds().ToList();
+                if (activeSessionIds.Count == 0)
                 {
                     _logger.LogDebug("브로드캐스트 대상 없음: 활성 연결 수 = 0");
                     return;
@@ -272,15 +281,23 @@ namespace ProjectVG.Application.Services.MessageBroker
                 var successCount = 0;
                 var failureCount = 0;
 
-                foreach (var (userId, connection) in activeConnections)
+                foreach (var userId in activeSessionIds)
                 {
                     var task = Task.Run(async () =>
                     {
                         try
                         {
-                            await connection.SendTextAsync(brokerMessage.Payload);
-                            Interlocked.Increment(ref successCount);
-                            _logger.LogTrace("브로드캐스트 전송 성공: UserId={UserId}", userId);
+                            var success = await _connectionManager.SendTextAsync(userId, brokerMessage.Payload);
+                            if (success)
+                            {
+                                Interlocked.Increment(ref successCount);
+                                _logger.LogTrace("브로드캐스트 전송 성공: UserId={UserId}", userId);
+                            }
+                            else
+                            {
+                                Interlocked.Increment(ref failureCount);
+                                _logger.LogWarning("브로드캐스트 전송 실패: UserId={UserId}", userId);
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -295,7 +312,7 @@ namespace ProjectVG.Application.Services.MessageBroker
                 await Task.WhenAll(broadcastTasks).ConfigureAwait(false);
 
                 _logger.LogInformation("브로드캐스트 완료: 대상={TotalCount}, 성공={SuccessCount}, 실패={FailureCount}",
-                    activeConnections.Count, successCount, failureCount);
+                    activeSessionIds.Count, successCount, failureCount);
             }
             catch (Exception ex)
             {
@@ -316,24 +333,30 @@ namespace ProjectVG.Application.Services.MessageBroker
 
             try
             {
-                if (_connectionRegistry.TryGet(userId, out var connection) && connection != null)
-                {
-                    string messageText;
+                string messageText;
 
-                    if (message is WebSocketMessage wsMessage)
+                if (message is WebSocketMessage wsMessage)
+                {
+                    messageText = System.Text.Json.JsonSerializer.Serialize(wsMessage);
+                }
+                else
+                {
+                    var wrappedMessage = new WebSocketMessage("message", message);
+                    messageText = System.Text.Json.JsonSerializer.Serialize(wrappedMessage);
+                }
+
+                var success = await _connectionManager.SendTextAsync(userId, messageText);
+                if (success)
+                {
+                    if (message is WebSocketMessage ws)
                     {
-                        messageText = System.Text.Json.JsonSerializer.Serialize(wsMessage);
                         _logger.LogInformation("[분산브로커] WebSocketMessage 전송 완료: UserId={UserId}, Type={Type}",
-                            userId, wsMessage.Type);
+                            userId, ws.Type);
                     }
                     else
                     {
-                        var wrappedMessage = new WebSocketMessage("message", message);
-                        messageText = System.Text.Json.JsonSerializer.Serialize(wrappedMessage);
                         _logger.LogInformation("[분산브로커] 래핑된 메시지 전송 완료: UserId={UserId}", userId);
                     }
-
-                    await connection.SendTextAsync(messageText);
                 }
                 else
                 {

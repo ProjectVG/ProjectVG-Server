@@ -4,7 +4,6 @@ using Moq;
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Application.Services.Chat.Handlers;
-using ProjectVG.Application.Services.WebSocket;
 using ProjectVG.Application.Services.Credit;
 using ProjectVG.Application.Services.MessageBroker;
 using Xunit;

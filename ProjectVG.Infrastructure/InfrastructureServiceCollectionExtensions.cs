@@ -200,7 +200,8 @@ namespace ProjectVG.Infrastructure
                     opt.ConnectionMultiplexerFactory = () => Task.FromResult<IConnectionMultiplexer>(multiplexer);
                 });
                 services.AddScoped<IRefreshTokenStorage, RedisRefreshTokenStorage>();
-                
+                services.AddScoped<ISessionStorage, RedisSessionStorage>();
+
                 Console.WriteLine($"Redis 연결 성공: {redisConnectionString}");
             }
             catch (Exception ex)
@@ -209,6 +210,7 @@ namespace ProjectVG.Infrastructure
                 Console.WriteLine($"Redis 연결 실패, In-Memory로 대체: {ex.Message}");
                 services.AddDistributedMemoryCache();
                 services.AddScoped<IRefreshTokenStorage, InMemoryRefreshTokenStorage>();
+                services.AddScoped<ISessionStorage, InMemorySessionStorage>();
             }
         }
 

@@ -1,6 +1,6 @@
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Services.Conversation;
-using ProjectVG.Application.Services.WebSocket;
+using ProjectVG.Application.Services.MessageBroker;
 using ProjectVG.Infrastructure.Integrations.MemoryClient;
 using ProjectVG.Domain.Entities.ConversationHistorys;
 using ProjectVG.Infrastructure.Integrations.MemoryClient.Models;
@@ -12,18 +12,18 @@ namespace ProjectVG.Application.Services.Chat.Processors
         private readonly ILogger<ChatResultProcessor> _logger;
         private readonly IConversationService _conversationService;
         private readonly IMemoryClient _memoryClient;
-        private readonly IWebSocketManager _webSocketService;
+        private readonly IMessageBroker _messageBroker;
 
         public ChatResultProcessor(
             ILogger<ChatResultProcessor> logger,
             IConversationService conversationService,
             IMemoryClient memoryClient,
-            IWebSocketManager webSocketService)
+            IMessageBroker messageBroker)
         {
             _logger = logger;
             _conversationService = conversationService;
             _memoryClient = memoryClient;
-            _webSocketService = webSocketService;
+            _messageBroker = messageBroker;
         }
 
         public async Task PersistResultsAsync(ChatProcessContext context)

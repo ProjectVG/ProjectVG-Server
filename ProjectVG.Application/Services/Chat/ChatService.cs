@@ -7,7 +7,6 @@ using ProjectVG.Application.Services.Chat.Preprocessors;
 using ProjectVG.Application.Services.Chat.Processors;
 using ProjectVG.Application.Services.Chat.Validators;
 using ProjectVG.Application.Services.Conversation;
-using ProjectVG.Application.Services.WebSocket;
 
 namespace ProjectVG.Application.Services.Chat
 {
@@ -19,7 +18,6 @@ namespace ProjectVG.Application.Services.Chat
 
         private readonly IConversationService _conversationService;
         private readonly ICharacterService _characterService;
-        private readonly IWebSocketManager _webSocketManager;
 
         private readonly ChatRequestValidator _validator;
         private readonly MemoryContextPreprocessor _memoryPreprocessor;
@@ -38,7 +36,6 @@ namespace ProjectVG.Application.Services.Chat
             ILogger<ChatService> logger,
             IConversationService conversationService,
             ICharacterService characterService,
-            IWebSocketManager webSocketManager,
             ChatRequestValidator validator,
             MemoryContextPreprocessor memoryPreprocessor,
             ICostTrackingDecorator<UserInputAnalysisProcessor> inputProcessor,
@@ -55,7 +52,6 @@ namespace ProjectVG.Application.Services.Chat
 
             _conversationService = conversationService;
             _characterService = characterService;
-            _webSocketManager = webSocketManager;
             _validator = validator;
             _memoryPreprocessor = memoryPreprocessor;
             _inputProcessor = inputProcessor;

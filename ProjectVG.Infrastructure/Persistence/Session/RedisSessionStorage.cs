@@ -85,9 +85,16 @@ namespace ProjectVG.Infrastructure.Persistence.Session
 				session.LastActivity = DateTime.UtcNow;
 
 				var json = JsonSerializer.Serialize(session);
-				await _database.StringSetAsync(key, json, SESSION_TTL);
+				var setResult = await _database.StringSetAsync(key, json, SESSION_TTL);
 
-				_logger.LogInformation("세션 생성 성공: {SessionId}, TTL={TTL}분", session.SessionId, SESSION_TTL.TotalMinutes);
+				_logger.LogInformation("[RedisSessionStorage] 세션 생성: SessionId={SessionId}, RedisKey={RedisKey}, TTL={TTL}분, SetResult={SetResult}",
+					session.SessionId, key, SESSION_TTL.TotalMinutes, setResult);
+
+				// 생성 직후 바로 확인해보기
+				var existsAfterCreate = await _database.KeyExistsAsync(key);
+				_logger.LogInformation("[RedisSessionStorage] 생성 직후 확인: RedisKey={RedisKey}, ExistsAfterCreate={ExistsAfterCreate}",
+					key, existsAfterCreate);
+
 				return session;
 			}
 			catch (Exception ex)
@@ -146,7 +153,8 @@ namespace ProjectVG.Infrastructure.Persistence.Session
 			{
 				var key = GetSessionKey(sessionId);
 				var exists = await _database.KeyExistsAsync(key);
-				_logger.LogDebug("세션 존재 확인: {SessionId} = {Exists}", sessionId, exists);
+				_logger.LogInformation("[RedisSessionStorage] 세션 존재 확인: SessionId={SessionId}, RedisKey={RedisKey}, Exists={Exists}",
+					sessionId, key, exists);
 				return exists;
 			}
 			catch (Exception ex)

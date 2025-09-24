@@ -1,8 +1,7 @@
-using ProjectVG.Infrastructure.Persistence.Session;
 using ProjectVG.Application.Services.Users;
 using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.Credit;
-using ProjectVG.Application.Services.WebSocket;
+using ProjectVG.Application.Services.Session;
 using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.Chat;
 
@@ -10,8 +9,7 @@ namespace ProjectVG.Application.Services.Chat.Validators
 {
     public class ChatRequestValidator
     {
-        private readonly ISessionStorage _sessionStorage;
-        private readonly IWebSocketManager _webSocketManager;
+        private readonly ISessionManager _sessionManager;
         private readonly IUserService _userService;
         private readonly ICharacterService _characterService;
         private readonly ICreditManagementService _tokenManagementService;
@@ -21,15 +19,13 @@ namespace ProjectVG.Application.Services.Chat.Validators
         private const decimal ESTIMATED_CHAT_COST = 10m;
 
         public ChatRequestValidator(
-            ISessionStorage sessionStorage,
-            IWebSocketManager webSocketManager,
+            ISessionManager sessionManager,
             IUserService userService,
             ICharacterService characterService,
             ICreditManagementService tokenManagementService,
             ILogger<ChatRequestValidator> logger)
         {
-            _sessionStorage = sessionStorage;
-            _webSocketManager = webSocketManager;
+            _sessionManager = sessionManager;
             _userService = userService;
             _characterService = characterService;
             _tokenManagementService = tokenManagementService;
@@ -73,35 +69,56 @@ namespace ProjectVG.Application.Services.Chat.Validators
         }
 
         /// <summary>
-        /// 사용자 WebSocket 세션 유효성 검증
-        /// 분산 환경에서 WebSocket 연결이 활성화되어 있는지 확인합니다.
+        /// 새 아키텍처: 세션 관리자를 통한 세션 유효성 검증
+        /// Redis 기반 분산 세션 상태를 확인합니다.
         /// </summary>
         private async Task ValidateUserSessionAsync(Guid userId)
         {
-            var userIdString = userId.ToString();
-
-            // 분산 WebSocket 매니저에서 실제 연결 상태 확인
-            bool isWebSocketConnected = _webSocketManager.IsSessionActive(userIdString);
-
-            if (!isWebSocketConnected)
-            {
-                _logger.LogWarning("WebSocket 세션이 연결되어 있지 않습니다: {UserId}", userId);
-                throw new ValidationException(ErrorCode.WEBSOCKET_SESSION_REQUIRED,
-                    "채팅 요청을 처리하려면 WebSocket 연결이 필요합니다. 먼저 WebSocket에 연결해주세요.");
-            }
-
-            _logger.LogDebug("WebSocket 세션 검증 성공: {UserId}", userId);
-
-            // 추가로 세션 하트비트 업데이트 (선택사항)
             try
             {
-                await _webSocketManager.UpdateSessionHeartbeatAsync(userIdString);
-                _logger.LogDebug("세션 하트비트 업데이트 완료: {UserId}", userId);
+                // [디버그] 세션 관리자 상태 정보 조회
+                var activeSessionCount = await _sessionManager.GetActiveSessionCountAsync();
+                var activeUserIds = await _sessionManager.GetActiveUserIdsAsync();
+                _logger.LogInformation("[ChatRequestValidator] 현재 활성 세션: 총 {Count}개, UserIds=[{ActiveUserIds}]",
+                    activeSessionCount, string.Join(", ", activeUserIds.Take(10))); // 너무 많은 로그 방지
+
+                // 세션 관리자에서 세션 상태 확인 (Redis 기반)
+                bool isSessionActive = await _sessionManager.IsSessionActiveAsync(userId);
+
+                _logger.LogInformation("[ChatRequestValidator] 세션 상태 확인: UserId={UserId}, IsActive={IsActive}",
+                    userId, isSessionActive);
+
+                if (!isSessionActive)
+                {
+                    _logger.LogWarning("활성 세션이 존재하지 않습니다: {UserId}", userId);
+                    throw new ValidationException(ErrorCode.WEBSOCKET_SESSION_REQUIRED,
+                        "채팅 요청을 처리하려면 WebSocket 연결이 필요합니다. 먼저 WebSocket에 연결해주세요.");
+                }
+
+                _logger.LogDebug("세션 검증 성공: {UserId}", userId);
+
+                // 세션 하트비트 업데이트 (세션 TTL 갱신)
+                try
+                {
+                    await _sessionManager.UpdateSessionHeartbeatAsync(userId);
+                    _logger.LogDebug("세션 하트비트 업데이트 완료: {UserId}", userId);
+                }
+                catch (Exception ex)
+                {
+                    // 하트비트 업데이트 실패는 로그만 남기고 진행
+                    _logger.LogWarning(ex, "세션 하트비트 업데이트 실패 (계속 진행): {UserId}", userId);
+                }
+            }
+            catch (ValidationException)
+            {
+                // ValidationException은 그대로 다시 던짐
+                throw;
             }
             catch (Exception ex)
             {
-                // 하트비트 업데이트 실패는 로그만 남기고 진행
-                _logger.LogWarning(ex, "세션 하트비트 업데이트 실패 (계속 진행): {UserId}", userId);
+                _logger.LogError(ex, "세션 검증 중 오류 발생: {UserId}", userId);
+                throw new ValidationException(ErrorCode.WEBSOCKET_SESSION_REQUIRED,
+                    "세션 상태 확인 중 오류가 발생했습니다. 다시 WebSocket에 연결해주세요.");
             }
         }
     }

@@ -195,7 +195,7 @@ namespace ProjectVG.Tests.Application.Services.Chat
         private ChatService CreateTestChatService()
         {
             // Create minimal mocks for all required dependencies
-            var mockSessionStorage = new Mock<ProjectVG.Infrastructure.Persistence.Session.ISessionStorage>();
+            var mockSessionManager = new Mock<ProjectVG.Application.Services.Session.ISessionManager>();
             var mockUserService = new Mock<ProjectVG.Application.Services.Users.IUserService>();
             var mockCreditService = new Mock<ProjectVG.Application.Services.Credit.ICreditManagementService>();
             var mockValidatorLogger = new Mock<ILogger<ChatRequestValidator>>();
@@ -211,13 +211,13 @@ namespace ProjectVG.Tests.Application.Services.Chat
             var mockTTSProcessor = new Mock<ICostTrackingDecorator<ChatTTSProcessor>>();
             
             var mockResultLogger = new Mock<ILogger<ChatResultProcessor>>();
-            var mockWebSocketManager = new Mock<ProjectVG.Application.Services.WebSocket.IWebSocketManager>();
+            var mockMessageBroker = new Mock<ProjectVG.Application.Services.MessageBroker.IMessageBroker>();
             var mockMemoryClientForResult = new Mock<ProjectVG.Infrastructure.Integrations.MemoryClient.IMemoryClient>();
             
             var mockFailureLogger = new Mock<ILogger<ChatFailureHandler>>();
 
             var mockValidator = new ChatRequestValidator(
-                mockSessionStorage.Object,
+                mockSessionManager.Object,
                 mockUserService.Object,
                 _mockCharacterService.Object,
                 mockCreditService.Object,
@@ -235,11 +235,11 @@ namespace ProjectVG.Tests.Application.Services.Chat
                 mockResultLogger.Object,
                 _mockConversationService.Object,
                 mockMemoryClientForResult.Object,
-                mockWebSocketManager.Object);
-            
+                mockMessageBroker.Object);
+
             var mockFailureHandler = new ChatFailureHandler(
                 mockFailureLogger.Object,
-                mockWebSocketManager.Object);
+                mockMessageBroker.Object);
 
             return new ChatService(
                 _mockMetricsService.Object,

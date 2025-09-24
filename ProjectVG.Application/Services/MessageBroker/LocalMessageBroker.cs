@@ -1,24 +1,25 @@
 using Microsoft.Extensions.Logging;
 using ProjectVG.Application.Models.WebSocket;
-using ProjectVG.Application.Services.WebSocket;
+using ProjectVG.Application.Services.Session;
 
 namespace ProjectVG.Application.Services.MessageBroker
 {
     /// <summary>
     /// 단일 서버 환경에서 사용하는 로컬 메시지 브로커
+    /// 새 아키텍처: WebSocketConnectionManager 사용
     /// </summary>
     public class LocalMessageBroker : IMessageBroker
     {
-        private readonly IWebSocketManager _webSocketManager;
+        private readonly IWebSocketConnectionManager _connectionManager;
         private readonly ILogger<LocalMessageBroker> _logger;
 
         public bool IsDistributed => false;
 
         public LocalMessageBroker(
-            IWebSocketManager webSocketManager,
+            IWebSocketConnectionManager connectionManager,
             ILogger<LocalMessageBroker> logger)
         {
-            _webSocketManager = webSocketManager;
+            _connectionManager = connectionManager;
             _logger = logger;
         }
 
@@ -26,19 +27,29 @@ namespace ProjectVG.Application.Services.MessageBroker
         {
             try
             {
-                // 로컬 환경에서는 직접 WebSocket으로 전송
+                // 새 아키텍처: WebSocketConnectionManager 사용
+                string messageText;
+
                 if (message is WebSocketMessage wsMessage)
                 {
-                    await _webSocketManager.SendAsync(userId, wsMessage);
+                    messageText = System.Text.Json.JsonSerializer.Serialize(wsMessage);
                 }
                 else
                 {
                     // 일반 객체인 경우 WebSocket 메시지로 감싸서 전송
                     var wrappedMessage = new WebSocketMessage("message", message);
-                    await _webSocketManager.SendAsync(userId, wrappedMessage);
+                    messageText = System.Text.Json.JsonSerializer.Serialize(wrappedMessage);
                 }
 
-                _logger.LogDebug("로컬 메시지 전송 완료: 사용자 {UserId}", userId);
+                var success = await _connectionManager.SendTextAsync(userId, messageText);
+                if (success)
+                {
+                    _logger.LogDebug("[LocalMessageBroker] 로컬 메시지 전송 완료: UserId={UserId}", userId);
+                }
+                else
+                {
+                    _logger.LogWarning("[LocalMessageBroker] 로컬 메시지 전송 실패 - 연결을 찾을 수 없음: UserId={UserId}", userId);
+                }
             }
             catch (Exception ex)
             {
