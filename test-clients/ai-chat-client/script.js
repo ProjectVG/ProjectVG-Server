@@ -554,6 +554,12 @@ function sendChat() {
   const msg = userInput.value.trim();
   if (!msg) return;
 
+  // 캐릭터 선택 검증
+  if (!characterSelect.value) {
+    appendLog(`<span style='color:red'>❌ 캐릭터를 선택해주세요.</span>`);
+    return;
+  }
+
   const timestamp = new Date().toLocaleTimeString();
   appendLog(`<b>나:</b> ${msg}`);
   appendLog(`<span style="color: #888; font-size: 0.9em;">[${timestamp}] 📤 서버로 메시지 전송 중...</span>`);
@@ -582,8 +588,15 @@ function sendChat() {
     .then(res => {
       const responseTimestamp = new Date().toLocaleTimeString();
       if (!res.ok) {
-        appendLog(`<span style='color:red'>[${responseTimestamp}] ❌ HTTP 오류] 상태코드: ${res.status}</span>`);
-        console.error("HTTP 오류", res);
+        // 오류 응답의 상세 정보를 표시
+        res.json().then(errorData => {
+          const errorMsg = errorData.message || `HTTP ${res.status} 오류`;
+          appendLog(`<span style='color:red'>[${responseTimestamp}] ❌ ${errorMsg} (${res.status})</span>`);
+          console.error("HTTP 오류 상세:", errorData);
+        }).catch(() => {
+          appendLog(`<span style='color:red'>[${responseTimestamp}] ❌ HTTP 오류: ${res.status}</span>`);
+        });
+        return;
       } else {
         appendLog(`<span style="color: #888; font-size: 0.9em;">[${responseTimestamp}] ✅ HTTP 응답 수신: ${res.status}</span>`);
       }
@@ -591,8 +604,8 @@ function sendChat() {
     })
     .catch(err => {
       const errorTimestamp = new Date().toLocaleTimeString();
-      appendLog(`<span style='color:red'>[${errorTimestamp}] ❌ HTTP 오류: ${err}</span>`);
-      console.error(err);
+      appendLog(`<span style='color:red'>[${errorTimestamp}] ❌ 네트워크 오류: ${err.message}</span>`);
+      console.error("네트워크 오류:", err);
     });
 }
 
