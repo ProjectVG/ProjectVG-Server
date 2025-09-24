@@ -29,6 +29,16 @@ namespace ProjectVG.Application.Services.Session
 		/// 활성 연결 수를 반환합니다
 		/// </summary>
 		int GetActiveConnectionCount();
+
+		/// <summary>
+		/// 모든 활성 연결을 반환합니다
+		/// </summary>
+		IEnumerable<KeyValuePair<string, IClientConnection>> GetAllActiveConnections();
+
+		/// <summary>
+		/// 모든 활성 사용자 ID를 반환합니다
+		/// </summary>
+		IEnumerable<string> GetAllActiveUserIds();
 	}
 }
 

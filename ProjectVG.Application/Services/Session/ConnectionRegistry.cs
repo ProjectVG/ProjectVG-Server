@@ -62,6 +62,22 @@ namespace ProjectVG.Application.Services.Session
 		{
 			return _connections.Count;
 		}
+
+		/// <summary>
+		/// 모든 활성 연결을 반환합니다
+		/// </summary>
+		public IEnumerable<KeyValuePair<string, IClientConnection>> GetAllActiveConnections()
+		{
+			return _connections.ToArray(); // Thread-safe snapshot
+		}
+
+		/// <summary>
+		/// 모든 활성 사용자 ID를 반환합니다
+		/// </summary>
+		public IEnumerable<string> GetAllActiveUserIds()
+		{
+			return _connections.Keys.ToArray(); // Thread-safe snapshot
+		}
 	}
 }
 

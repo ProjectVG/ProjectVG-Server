@@ -4,6 +4,7 @@ using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Domain.Services.Server;
 using ProjectVG.Application.Services.Session;
 using StackExchange.Redis;
+using System.Collections.Concurrent;
 
 namespace ProjectVG.Application.Services.MessageBroker
 {
@@ -200,16 +201,15 @@ namespace ProjectVG.Application.Services.MessageBroker
                 _logger.LogInformation("[분산브로커] 메시지 파싱 완료: TargetUserId={TargetUserId}, SourceServerId={SourceServerId}, MessageType={MessageType}",
                     brokerMessage.TargetUserId, brokerMessage.SourceServerId, brokerMessage.MessageType);
 
-                // 로컬에서 해당 사용자가 연결되어 있는지 확인
-                var isLocalActive = _connectionRegistry.IsConnected(brokerMessage.TargetUserId);
-                _logger.LogInformation("[분산브로커] 로컬 세션 확인: TargetUserId={TargetUserId}, IsLocalActive={IsLocalActive}",
-                    brokerMessage.TargetUserId, isLocalActive);
-
-                if (isLocalActive)
+                if (_connectionRegistry.TryGet(brokerMessage.TargetUserId, out var connection) && connection != null)
                 {
-                    var payload = brokerMessage.DeserializePayload<object>();
-                    await SendLocalMessage(brokerMessage.TargetUserId, payload);
-
+                    var payloadText = brokerMessage.Payload;
+                    if (string.IsNullOrEmpty(payloadText))
+                    {
+                        _logger.LogWarning("[분산브로커] 빈 Payload 수신: Channel={Channel}, TargetUserId={TargetUserId}", channel, brokerMessage.TargetUserId);
+                        return;
+                    }
+                    await connection.SendTextAsync(payloadText);
                     _logger.LogInformation("[분산브로커] 분산 사용자 메시지 처리 완료: TargetUserId={TargetUserId}", brokerMessage.TargetUserId);
                 }
                 else
@@ -257,9 +257,45 @@ namespace ProjectVG.Application.Services.MessageBroker
                     return;
                 }
 
+                _logger.LogDebug("브로드캐스트 메시지 수신: {MessageType}, SourceServer: {SourceServerId}",
+                    brokerMessage.MessageType, brokerMessage.SourceServerId);
+
                 // 현재 서버에 연결된 모든 사용자에게 브로드캐스트
-                // TODO: IConnectionRegistry에서 모든 활성 사용자 목록을 가져와서 전송
-                _logger.LogDebug("브로드캐스트 메시지 수신: {MessageType}", brokerMessage.MessageType);
+                var activeConnections = _connectionRegistry.GetAllActiveConnections().ToList();
+                if (activeConnections.Count == 0)
+                {
+                    _logger.LogDebug("브로드캐스트 대상 없음: 활성 연결 수 = 0");
+                    return;
+                }
+
+                var broadcastTasks = new List<Task>();
+                var successCount = 0;
+                var failureCount = 0;
+
+                foreach (var (userId, connection) in activeConnections)
+                {
+                    var task = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await connection.SendTextAsync(brokerMessage.Payload);
+                            Interlocked.Increment(ref successCount);
+                            _logger.LogTrace("브로드캐스트 전송 성공: UserId={UserId}", userId);
+                        }
+                        catch (Exception ex)
+                        {
+                            Interlocked.Increment(ref failureCount);
+                            _logger.LogWarning(ex, "브로드캐스트 전송 실패: UserId={UserId}", userId);
+                        }
+                    });
+                    broadcastTasks.Add(task);
+                }
+
+                // 모든 전송 완료 대기 (타임아웃 5초)
+                await Task.WhenAll(broadcastTasks).ConfigureAwait(false);
+
+                _logger.LogInformation("브로드캐스트 완료: 대상={TotalCount}, 성공={SuccessCount}, 실패={FailureCount}",
+                    activeConnections.Count, successCount, failureCount);
             }
             catch (Exception ex)
             {
