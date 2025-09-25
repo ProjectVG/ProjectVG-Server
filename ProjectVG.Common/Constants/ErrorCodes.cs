@@ -91,7 +91,16 @@ namespace ProjectVG.Common.Constants
         // 크래딧 관련 오류
         INSUFFICIENT_CREDIT_BALANCE,
         CREDIT_TRANSACTION_FAILED,
-        CREDIT_GRANT_FAILED
+        CREDIT_GRANT_FAILED,
+
+        // 분산 메시지 브로커 오류
+        DISTRIBUTED_MESSAGE_PARSING_FAILED,
+        DISTRIBUTED_MESSAGE_INVALID_FORMAT,
+        DISTRIBUTED_MESSAGE_USER_NOT_CONNECTED,
+        DISTRIBUTED_MESSAGE_SEND_FAILED,
+        REDIS_CONNECTION_ERROR,
+        REDIS_SUBSCRIPTION_FAILED,
+        MESSAGE_BROKER_INITIALIZATION_FAILED
     }
 
     public static class ErrorCodeExtensions
@@ -187,7 +196,16 @@ namespace ProjectVG.Common.Constants
             // 크래딧 관련 오류
             { ErrorCode.INSUFFICIENT_CREDIT_BALANCE, "크래딧 잔액이 부족합니다" },
             { ErrorCode.CREDIT_TRANSACTION_FAILED, "크래딧 거래에 실패했습니다" },
-            { ErrorCode.CREDIT_GRANT_FAILED, "크래딧 지급에 실패했습니다" }
+            { ErrorCode.CREDIT_GRANT_FAILED, "크래딧 지급에 실패했습니다" },
+
+            // 분산 메시지 브로커 오류
+            { ErrorCode.DISTRIBUTED_MESSAGE_PARSING_FAILED, "분산 메시지 파싱에 실패했습니다" },
+            { ErrorCode.DISTRIBUTED_MESSAGE_INVALID_FORMAT, "잘못된 분산 메시지 형식입니다" },
+            { ErrorCode.DISTRIBUTED_MESSAGE_USER_NOT_CONNECTED, "대상 사용자가 연결되어 있지 않음" },
+            { ErrorCode.DISTRIBUTED_MESSAGE_SEND_FAILED, "분산 메시지 전송에 실패했습니다" },
+            { ErrorCode.REDIS_CONNECTION_ERROR, "Redis 연결 오류가 발생했습니다" },
+            { ErrorCode.REDIS_SUBSCRIPTION_FAILED, "Redis 구독에 실패했습니다" },
+            { ErrorCode.MESSAGE_BROKER_INITIALIZATION_FAILED, "메시지 브로커 초기화에 실패했습니다" }
         };
 
         public static string GetMessage(this ErrorCode errorCode)
