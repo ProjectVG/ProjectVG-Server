@@ -111,7 +111,11 @@ let totalHistoryPages = 1;
 let selectedHistoryCharacterId = null;
 
 // 서버 정보 표시
-serverInfo.textContent = ENDPOINT;
+function updateServerInfo() {
+  serverInfo.textContent = `${ENDPOINT} (디버그 모드)`;
+}
+
+updateServerInfo();
 
 // 서버 설정 확인
 async function checkServerConfig() {
@@ -331,7 +335,11 @@ function connectWebSocket() {
     if (typeof event.data === "string") {
       try {
         const data = JSON.parse(event.data);
-        console.log("수신된 메시지:", data);
+        console.log("📥 수신된 메시지:", data);
+
+        // 디버깅: 메시지 수신 정보 표시
+        const timestamp = new Date().toLocaleTimeString();
+        appendLog(`<span style="color: #888; font-size: 0.9em;">[${timestamp}] 📥 메시지 수신: ${data.type || '타입없음'}</span>`);
 
         // 새로운 WebSocket 메시지 구조 처리 (우선순위)
         if (data.type && data.data !== undefined) {
@@ -545,7 +553,16 @@ function tryReconnect() {
 function sendChat() {
   const msg = userInput.value.trim();
   if (!msg) return;
+
+  // 캐릭터 선택 검증
+  if (!characterSelect.value) {
+    appendLog(`<span style='color:red'>❌ 캐릭터를 선택해주세요.</span>`);
+    return;
+  }
+
+  const timestamp = new Date().toLocaleTimeString();
   appendLog(`<b>나:</b> ${msg}`);
+  appendLog(`<span style="color: #888; font-size: 0.9em;">[${timestamp}] 📤 서버로 메시지 전송 중...</span>`);
   userInput.value = "";
 
   const payload = {
@@ -556,7 +573,7 @@ function sendChat() {
     request_at: new Date().toISOString()
   };
 
-  console.log(includeAudioCheckbox.checked)
+  console.log("📤 전송할 페이로드:", payload);
 
   const headers = { "Content-Type": "application/json" };
   if (authToken) {
@@ -569,15 +586,26 @@ function sendChat() {
     body: JSON.stringify(payload)
   })
     .then(res => {
+      const responseTimestamp = new Date().toLocaleTimeString();
       if (!res.ok) {
-        appendLog(`<span style='color:red'>[HTTP 오류] 상태코드: ${res.status}</span>`);
-        console.error("HTTP 오류", res);
+        // 오류 응답의 상세 정보를 표시
+        res.json().then(errorData => {
+          const errorMsg = errorData.message || `HTTP ${res.status} 오류`;
+          appendLog(`<span style='color:red'>[${responseTimestamp}] ❌ ${errorMsg} (${res.status})</span>`);
+          console.error("HTTP 오류 상세:", errorData);
+        }).catch(() => {
+          appendLog(`<span style='color:red'>[${responseTimestamp}] ❌ HTTP 오류: ${res.status}</span>`);
+        });
+        return;
+      } else {
+        appendLog(`<span style="color: #888; font-size: 0.9em;">[${responseTimestamp}] ✅ HTTP 응답 수신: ${res.status}</span>`);
       }
       return res.json();
     })
     .catch(err => {
-      appendLog(`<span style='color:red'>[HTTP 오류] ${err}</span>`);
-      console.error(err);
+      const errorTimestamp = new Date().toLocaleTimeString();
+      appendLog(`<span style='color:red'>[${errorTimestamp}] ❌ 네트워크 오류: ${err.message}</span>`);
+      console.error("네트워크 오류:", err);
     });
 }
 

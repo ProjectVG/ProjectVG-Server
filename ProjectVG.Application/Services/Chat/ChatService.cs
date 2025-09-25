@@ -67,6 +67,8 @@ namespace ProjectVG.Application.Services.Chat
             _metricsService.StartChatMetrics(command.Id.ToString(), command.UserId.ToString(), command.CharacterId.ToString());
             
             await _validator.ValidateAsync(command);
+            _logger.LogDebug("[채팅서비스] 요청 검증 완료: UserId={UserId}, CharacterId={CharacterId}",
+                command.UserId, command.CharacterId);
 
             var preprocessContext = await PrepareChatRequestAsync(command);
 

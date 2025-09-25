@@ -7,7 +7,7 @@ using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.Credit;
 using ProjectVG.Application.Services.Users;
 using ProjectVG.Application.Models.Character;
-using ProjectVG.Infrastructure.Persistence.Session;
+using ProjectVG.Application.Services.Session;
 using ProjectVG.Domain.Entities.Characters;
 using ProjectVG.Common.Exceptions;
 using ProjectVG.Common.Constants;
@@ -18,7 +18,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
     public class ChatRequestValidatorTests
     {
         private readonly ChatRequestValidator _validator;
-        private readonly Mock<ISessionStorage> _mockSessionStorage;
+        private readonly Mock<ISessionManager> _mockSessionManager;
         private readonly Mock<IUserService> _mockUserService;
         private readonly Mock<ICharacterService> _mockCharacterService;
         private readonly Mock<ICreditManagementService> _mockCreditManagementService;
@@ -26,14 +26,14 @@ namespace ProjectVG.Tests.Services.Chat.Validators
 
         public ChatRequestValidatorTests()
         {
-            _mockSessionStorage = new Mock<ISessionStorage>();
+            _mockSessionManager = new Mock<ISessionManager>();
             _mockUserService = new Mock<IUserService>();
             _mockCharacterService = new Mock<ICharacterService>();
             _mockCreditManagementService = new Mock<ICreditManagementService>();
             _mockLogger = new Mock<ILogger<ChatRequestValidator>>();
 
             _validator = new ChatRequestValidator(
-                _mockSessionStorage.Object,
+                _mockSessionManager.Object,
                 _mockUserService.Object,
                 _mockCharacterService.Object,
                 _mockCreditManagementService.Object,
@@ -64,7 +64,7 @@ namespace ProjectVG.Tests.Services.Chat.Validators
             // Act & Assert
             await _validator.ValidateAsync(command); // Should not throw
 
-            _mockSessionStorage.Verify(x => x.GetSessionsByUserIdAsync(command.UserId.ToString()), Times.Once);
+            _mockSessionManager.Verify(x => x.IsSessionActiveAsync(command.UserId), Times.Once);
             _mockUserService.Verify(x => x.ExistsByIdAsync(command.UserId), Times.Once);
             _mockCharacterService.Verify(x => x.CharacterExistsAsync(command.CharacterId), Times.Once);
             _mockCreditManagementService.Verify(x => x.GetCreditBalanceAsync(command.UserId), Times.Once);
@@ -438,8 +438,8 @@ namespace ProjectVG.Tests.Services.Chat.Validators
                     ConnectedAt = DateTime.UtcNow
                 }
             };
-            _mockSessionStorage.Setup(x => x.GetSessionsByUserIdAsync(userId.ToString()))
-                .ReturnsAsync(sessionInfos);
+            _mockSessionManager.Setup(x => x.IsSessionActiveAsync(userId))
+                .ReturnsAsync(sessionInfos.Any());
         }
 
         #endregion

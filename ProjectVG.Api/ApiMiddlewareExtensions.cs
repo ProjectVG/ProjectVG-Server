@@ -11,6 +11,7 @@ namespace ProjectVG.Api
         /// </summary>
         public static IApplicationBuilder UseApiMiddleware(this IApplicationBuilder app, IWebHostEnvironment environment)
         {
+            var configuration = app.ApplicationServices.GetRequiredService<IConfiguration>();
             // 개발 환경 설정
             if (environment.IsDevelopment()) {
                 app.UseSwagger();
@@ -23,8 +24,9 @@ namespace ProjectVG.Api
             // 전역 예외 처리
             app.UseGlobalExceptionHandler();
 
-            // WebSocket 지원
-            app.UseWebSockets();
+            // WebSocket 지원 - 구성 가능한 옵션 사용
+            var webSocketOptions = GetWebSocketOptions(configuration);
+            app.UseWebSockets(webSocketOptions);
 
             // WebSocket 미들웨어 등록
             app.UseMiddleware<WebSocketMiddleware>();
@@ -62,6 +64,57 @@ namespace ProjectVG.Api
             serviceProvider.GetRequiredService<TestClientLauncher>().Launch();
 
             return app;
+        }
+
+        /// <summary>
+        /// WebSocket 옵션을 구성 파일과 환경 변수에서 가져옵니다
+        /// </summary>
+        private static WebSocketOptions GetWebSocketOptions(IConfiguration configuration)
+        {
+            var options = new WebSocketOptions();
+
+            // KeepAliveInterval 설정 (환경 변수 > appsettings.json 순서)
+            var keepAliveMinutes = Environment.GetEnvironmentVariable("WEBSOCKET_KEEPALIVE_MINUTES");
+            if (string.IsNullOrEmpty(keepAliveMinutes))
+            {
+                keepAliveMinutes = configuration.GetValue<string>("WebSocket:KeepAliveIntervalMinutes");
+            }
+
+            if (double.TryParse(keepAliveMinutes, out var minutes))
+            {
+                if (minutes <= 0)
+                {
+                    options.KeepAliveInterval = TimeSpan.Zero; // KeepAlive 비활성화
+                }
+                else
+                {
+                    options.KeepAliveInterval = TimeSpan.FromMinutes(minutes);
+                }
+            }
+            else
+            {
+                // 기본값: KeepAlive 비활성화 (연결 안정성을 위해)
+                options.KeepAliveInterval = TimeSpan.Zero;
+            }
+
+            // 수신 버퍼 크기 설정
+            var receiveBufferSize = Environment.GetEnvironmentVariable("WEBSOCKET_RECEIVE_BUFFER_SIZE") ??
+                                  configuration.GetValue<string>("WebSocket:ReceiveBufferSize");
+            if (int.TryParse(receiveBufferSize, out var recvSize) && recvSize > 0)
+            {
+                options.ReceiveBufferSize = recvSize;
+            }
+
+            // 송신 버퍼 크기 설정 (WebSocketOptions에는 없으므로 로깅만)
+            var sendBufferSize = Environment.GetEnvironmentVariable("WEBSOCKET_SEND_BUFFER_SIZE") ??
+                               configuration.GetValue<string>("WebSocket:SendBufferSize");
+
+            // 콘솔 로깅으로 설정 확인
+            Console.WriteLine($"[WebSocket 설정] KeepAlive: {(options.KeepAliveInterval == TimeSpan.Zero ? "비활성화" : $"{options.KeepAliveInterval.TotalMinutes}분")}, " +
+                            $"ReceiveBuffer: {options.ReceiveBufferSize} bytes" +
+                            $"{(int.TryParse(sendBufferSize, out var sendSize) && sendSize > 0 ? $", SendBuffer: {sendSize} bytes (참고용)" : "")}");
+
+            return options;
         }
     }
 }

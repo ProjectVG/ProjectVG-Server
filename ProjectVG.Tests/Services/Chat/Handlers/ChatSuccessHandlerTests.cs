@@ -4,8 +4,8 @@ using Moq;
 using ProjectVG.Application.Models.Chat;
 using ProjectVG.Application.Models.WebSocket;
 using ProjectVG.Application.Services.Chat.Handlers;
-using ProjectVG.Application.Services.WebSocket;
 using ProjectVG.Application.Services.Credit;
+using ProjectVG.Application.Services.MessageBroker;
 using Xunit;
 
 namespace ProjectVG.Tests.Services.Chat.Handlers
@@ -13,16 +13,16 @@ namespace ProjectVG.Tests.Services.Chat.Handlers
     public class ChatSuccessHandlerTests
     {
         private readonly Mock<ILogger<ChatSuccessHandler>> _mockLogger;
-        private readonly Mock<IWebSocketManager> _mockWebSocketService;
+        private readonly Mock<IMessageBroker> _mockMessageBroker;
         private readonly Mock<ICreditManagementService> _mockCreditManagementService;
         private readonly ChatSuccessHandler _handler;
 
         public ChatSuccessHandlerTests()
         {
             _mockLogger = new Mock<ILogger<ChatSuccessHandler>>();
-            _mockWebSocketService = new Mock<IWebSocketManager>();
+            _mockMessageBroker = new Mock<IMessageBroker>();
             _mockCreditManagementService = new Mock<ICreditManagementService>();
-            _handler = new ChatSuccessHandler(_mockLogger.Object, _mockWebSocketService.Object, _mockCreditManagementService.Object);
+            _handler = new ChatSuccessHandler(_mockLogger.Object, _mockMessageBroker.Object, _mockCreditManagementService.Object);
         }
 
         [Fact]
@@ -34,7 +34,7 @@ namespace ProjectVG.Tests.Services.Chat.Handlers
             await _handler.HandleAsync(context);
 
             VerifyWarningLogged("채팅 처리 결과에 유효한 세그먼트가 없습니다");
-            _mockWebSocketService.Verify(x => x.SendAsync(It.IsAny<string>(), It.IsAny<WebSocketMessage>()), Times.Never);
+            _mockMessageBroker.Verify(x => x.SendToUserAsync(It.IsAny<string>(), It.IsAny<object>()), Times.Never);
         }
 
         [Fact]
@@ -51,8 +51,8 @@ namespace ProjectVG.Tests.Services.Chat.Handlers
 
             await _handler.HandleAsync(context);
 
-            _mockWebSocketService.Verify(
-                x => x.SendAsync(context.UserId.ToString(), It.IsAny<WebSocketMessage>()), 
+            _mockMessageBroker.Verify(
+                x => x.SendToUserAsync(context.UserId.ToString(), It.IsAny<object>()),
                 Times.Exactly(3));
 
             VerifyDebugLogged("채팅 결과 전송 완료");
@@ -72,8 +72,8 @@ namespace ProjectVG.Tests.Services.Chat.Handlers
 
             await _handler.HandleAsync(context);
 
-            _mockWebSocketService.Verify(
-                x => x.SendAsync(context.UserId.ToString(), It.IsAny<WebSocketMessage>()), 
+            _mockMessageBroker.Verify(
+                x => x.SendToUserAsync(context.UserId.ToString(), It.IsAny<object>()),
                 Times.Exactly(2));
         }
 
@@ -87,8 +87,8 @@ namespace ProjectVG.Tests.Services.Chat.Handlers
             context.SetResponse("Test", new List<ChatSegment> { segment }, 0.0);
 
             WebSocketMessage? sentMessage = null;
-            _mockWebSocketService.Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<WebSocketMessage>()))
-                .Callback<string, WebSocketMessage>((_, message) => sentMessage = message);
+            _mockMessageBroker.Setup(x => x.SendToUserAsync(It.IsAny<string>(), It.IsAny<object>()))
+                .Callback<string, object>((_, message) => sentMessage = message as WebSocketMessage);
 
             await _handler.HandleAsync(context);
 
@@ -107,15 +107,15 @@ namespace ProjectVG.Tests.Services.Chat.Handlers
             var segment = ChatSegment.CreateText("Test message");
             context.SetResponse("Test", new List<ChatSegment> { segment }, 0.0);
 
-            _mockWebSocketService.Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<WebSocketMessage>()))
+            _mockMessageBroker.Setup(x => x.SendToUserAsync(It.IsAny<string>(), It.IsAny<object>()))
                 .ThrowsAsync(new Exception("Connection failed"));
 
             var act = async () => await _handler.HandleAsync(context);
 
             await act.Should().ThrowAsync<Exception>().WithMessage("Connection failed");
 
-            _mockWebSocketService.Verify(
-                x => x.SendAsync(It.IsAny<string>(), It.IsAny<WebSocketMessage>()), 
+            _mockMessageBroker.Verify(
+                x => x.SendToUserAsync(It.IsAny<string>(), It.IsAny<object>()),
                 Times.Once);
 
             VerifyErrorLogged("채팅 결과 전송 중 오류 발생");
@@ -134,8 +134,12 @@ namespace ProjectVG.Tests.Services.Chat.Handlers
             context.SetResponse("Test", segments, 0.0);
 
             var sentMessages = new List<WebSocketMessage>();
-            _mockWebSocketService.Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<WebSocketMessage>()))
-                .Callback<string, WebSocketMessage>((_, message) => sentMessages.Add(message));
+            _mockMessageBroker.Setup(x => x.SendToUserAsync(It.IsAny<string>(), It.IsAny<object>()))
+                .Callback<string, object>((_, message) =>
+                {
+                    if (message is WebSocketMessage wsMessage)
+                        sentMessages.Add(wsMessage);
+                });
 
             await _handler.HandleAsync(context);
 
@@ -159,8 +163,12 @@ namespace ProjectVG.Tests.Services.Chat.Handlers
             context.SetResponse("Test", segments, 0.0);
 
             var sentMessages = new List<WebSocketMessage>();
-            _mockWebSocketService.Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<WebSocketMessage>()))
-                .Callback<string, WebSocketMessage>((_, message) => sentMessages.Add(message));
+            _mockMessageBroker.Setup(x => x.SendToUserAsync(It.IsAny<string>(), It.IsAny<object>()))
+                .Callback<string, object>((_, message) =>
+                {
+                    if (message is WebSocketMessage wsMessage)
+                        sentMessages.Add(wsMessage);
+                });
 
             await _handler.HandleAsync(context);
 
@@ -182,8 +190,8 @@ namespace ProjectVG.Tests.Services.Chat.Handlers
             context.SetResponse("Test", new List<ChatSegment> { segment }, 0.0);
 
             WebSocketMessage? sentMessage = null;
-            _mockWebSocketService.Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<WebSocketMessage>()))
-                .Callback<string, WebSocketMessage>((_, message) => sentMessage = message);
+            _mockMessageBroker.Setup(x => x.SendToUserAsync(It.IsAny<string>(), It.IsAny<object>()))
+                .Callback<string, object>((_, message) => sentMessage = message as WebSocketMessage);
 
             await _handler.HandleAsync(context);
 
@@ -205,8 +213,12 @@ namespace ProjectVG.Tests.Services.Chat.Handlers
             context.SetResponse("Test", segments, 0.0);
 
             var sentMessages = new List<WebSocketMessage>();
-            _mockWebSocketService.Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<WebSocketMessage>()))
-                .Callback<string, WebSocketMessage>((_, message) => sentMessages.Add(message));
+            _mockMessageBroker.Setup(x => x.SendToUserAsync(It.IsAny<string>(), It.IsAny<object>()))
+                .Callback<string, object>((_, message) =>
+                {
+                    if (message is WebSocketMessage wsMessage)
+                        sentMessages.Add(wsMessage);
+                });
 
             await _handler.HandleAsync(context);
 

@@ -1,7 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Caching.StackExchangeRedis;
 using ProjectVG.Infrastructure.Integrations.LLMClient;
 using ProjectVG.Infrastructure.Integrations.MemoryClient;
 using ProjectVG.Infrastructure.Integrations.TextToSpeechClient;
@@ -32,6 +30,7 @@ namespace ProjectVG.Infrastructure
             AddAuthServices(services, configuration);
             AddRedisServices(services, configuration);
             AddOAuth2Services(services, configuration);
+            AddDistributedSystemServices(services, configuration);
 
             return services;
         }
@@ -201,7 +200,8 @@ namespace ProjectVG.Infrastructure
                     opt.ConnectionMultiplexerFactory = () => Task.FromResult<IConnectionMultiplexer>(multiplexer);
                 });
                 services.AddScoped<IRefreshTokenStorage, RedisRefreshTokenStorage>();
-                
+                services.AddScoped<ISessionStorage, RedisSessionStorage>();
+
                 Console.WriteLine($"Redis 연결 성공: {redisConnectionString}");
             }
             catch (Exception ex)
@@ -210,6 +210,28 @@ namespace ProjectVG.Infrastructure
                 Console.WriteLine($"Redis 연결 실패, In-Memory로 대체: {ex.Message}");
                 services.AddDistributedMemoryCache();
                 services.AddScoped<IRefreshTokenStorage, InMemoryRefreshTokenStorage>();
+                services.AddScoped<ISessionStorage, InMemorySessionStorage>();
+            }
+        }
+
+        /// <summary>
+        /// 분산 시스템 서비스
+        /// </summary>
+        private static void AddDistributedSystemServices(IServiceCollection services, IConfiguration configuration)
+        {
+            var distributedEnabled = configuration.GetValue<bool>("DistributedSystem:Enabled", false);
+
+            if (distributedEnabled)
+            {
+                // 분산 시스템이 활성화된 경우에만 등록
+                services.AddScoped<ProjectVG.Domain.Services.Server.IServerRegistrationService, ProjectVG.Infrastructure.Services.Server.RedisServerRegistrationService>();
+                services.AddHostedService<ProjectVG.Infrastructure.Services.Server.ServerLifecycleService>();
+
+                Console.WriteLine("분산 시스템 모드 활성화");
+            }
+            else
+            {
+                Console.WriteLine("단일 서버 모드");
             }
         }
     }
