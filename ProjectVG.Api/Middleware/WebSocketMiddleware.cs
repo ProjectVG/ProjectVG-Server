@@ -1,6 +1,7 @@
 using ProjectVG.Application.Services.Session;
 using ProjectVG.Infrastructure.Auth;
 using ProjectVG.Infrastructure.Realtime.WebSocketConnection;
+using ProjectVG.Domain.Services.Server;
 using System.Net.WebSockets;
 
 namespace ProjectVG.Api.Middleware
@@ -12,19 +13,22 @@ namespace ProjectVG.Api.Middleware
         private readonly ISessionManager _sessionManager;
         private readonly IWebSocketConnectionManager _connectionManager;
         private readonly IJwtProvider _jwtProvider;
+        private readonly IServerRegistrationService? _serverRegistrationService;
 
         public WebSocketMiddleware(
             RequestDelegate next,
             ILogger<WebSocketMiddleware> logger,
             ISessionManager sessionManager,
             IWebSocketConnectionManager connectionManager,
-            IJwtProvider jwtProvider)
+            IJwtProvider jwtProvider,
+            IServerRegistrationService? serverRegistrationService = null)
         {
             _next = next;
             _logger = logger;
             _sessionManager = sessionManager;
             _connectionManager = connectionManager;
             _jwtProvider = jwtProvider;
+            _serverRegistrationService = serverRegistrationService;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -112,6 +116,22 @@ namespace ProjectVG.Api.Middleware
                 var connection = new WebSocketClientConnection(userIdString, socket);
                 _connectionManager.RegisterConnection(userIdString, connection);
                 _logger.LogInformation("[WebSocketMiddleware] 로컬 WebSocket 연결 등록 완료: UserId={UserId}", userId);
+
+                // 3. 분산 시스템: 사용자-서버 매핑 저장 (Redis)
+                if (_serverRegistrationService != null)
+                {
+                    try
+                    {
+                        var serverId = _serverRegistrationService.GetServerId();
+                        await _serverRegistrationService.SetUserServerAsync(userIdString, serverId);
+                        _logger.LogInformation("[WebSocketMiddleware] 사용자-서버 매핑 저장 완료: UserId={UserId}, ServerId={ServerId}", userId, serverId);
+                    }
+                    catch (Exception mapEx)
+                    {
+                        _logger.LogWarning(mapEx, "[WebSocketMiddleware] 사용자-서버 매핑 저장 실패: UserId={UserId}", userId);
+                        // 매핑 저장 실패는 로그만 남기고 연결은 계속 진행
+                    }
+                }
 
                 // [디버그] 등록 후 상태 확인
                 var isSessionActive = await _sessionManager.IsSessionActiveAsync(userId);
@@ -219,11 +239,25 @@ namespace ProjectVG.Api.Middleware
                         _logger.LogDebug("세션 관리자에서 세션 삭제 완료: {UserId}", userId);
                     }
 
-                    // 2. 로컬 WebSocket 연결 해제
+                    // 2. 분산 시스템: 사용자-서버 매핑 제거 (Redis)
+                    if (_serverRegistrationService != null)
+                    {
+                        try
+                        {
+                            await _serverRegistrationService.RemoveUserServerAsync(userId);
+                            _logger.LogDebug("사용자-서버 매핑 제거 완료: {UserId}", userId);
+                        }
+                        catch (Exception mapEx)
+                        {
+                            _logger.LogWarning(mapEx, "사용자-서버 매핑 제거 실패: {UserId}", userId);
+                        }
+                    }
+
+                    // 3. 로컬 WebSocket 연결 해제
                     _connectionManager.UnregisterConnection(userId);
                     _logger.LogDebug("로컬 WebSocket 연결 해제 완료: {UserId}", userId);
 
-                    // 3. WebSocket 소켓 정리
+                    // 4. WebSocket 소켓 정리
                     if (socket.State == WebSocketState.Open || socket.State == WebSocketState.CloseReceived) {
                         await socket.CloseAsync(
                             WebSocketCloseStatus.NormalClosure,

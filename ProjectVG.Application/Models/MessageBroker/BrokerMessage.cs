@@ -15,12 +15,25 @@ namespace ProjectVG.Application.Models.MessageBroker
 
         public static BrokerMessage CreateUserMessage(string userId, object payload, string? sourceServerId = null)
         {
+            string payloadJson;
+
+            // WebSocketMessage인 경우 이미 올바른 형태이므로 그대로 직렬화
+            if (payload is ProjectVG.Application.Models.WebSocket.WebSocketMessage wsMessage)
+            {
+                payloadJson = JsonSerializer.Serialize(wsMessage);
+            }
+            else
+            {
+                // 다른 객체의 경우 그대로 직렬화 (불필요한 래핑 방지)
+                payloadJson = JsonSerializer.Serialize(payload);
+            }
+
             return new BrokerMessage
             {
                 MessageType = "user_message",
                 TargetUserId = userId,
                 SourceServerId = sourceServerId,
-                Payload = JsonSerializer.Serialize(payload),
+                Payload = payloadJson,
                 Headers = new Dictionary<string, string>
                 {
                     ["content-type"] = "application/json"

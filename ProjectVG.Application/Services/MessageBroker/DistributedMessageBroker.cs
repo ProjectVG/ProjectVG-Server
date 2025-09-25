@@ -5,6 +5,7 @@ using ProjectVG.Domain.Services.Server;
 using ProjectVG.Application.Services.Session;
 using StackExchange.Redis;
 using System.Collections.Concurrent;
+using System.Text.Json;
 
 namespace ProjectVG.Application.Services.MessageBroker
 {
@@ -32,35 +33,58 @@ namespace ProjectVG.Application.Services.MessageBroker
             IServerRegistrationService serverRegistration,
             ILogger<DistributedMessageBroker> logger)
         {
-            _redis = redis;
-            _subscriber = redis.GetSubscriber();
-            _connectionManager = connectionManager;
-            _serverRegistration = serverRegistration;
-            _logger = logger;
-            _serverId = serverRegistration.GetServerId();
+            _redis = redis ?? throw new ArgumentNullException(nameof(redis));
+            _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
+            _serverRegistration = serverRegistration ?? throw new ArgumentNullException(nameof(serverRegistration));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            InitializeSubscriptions();
+            _logger.LogInformation("[분산브로커] DistributedMessageBroker 생성자 시작");
+
+            try
+            {
+                _subscriber = redis.GetSubscriber();
+                _serverId = serverRegistration.GetServerId();
+
+                _logger.LogInformation("[분산브로커] Redis 연결 상태: IsConnected={IsConnected}, ServerId={ServerId}",
+                    redis.IsConnected, _serverId);
+
+                InitializeSubscriptions();
+
+                _logger.LogInformation("[분산브로커] DistributedMessageBroker 생성 완료: ServerId={ServerId}", _serverId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[분산브로커] DistributedMessageBroker 생성자 실패");
+                throw;
+            }
         }
 
         private void InitializeSubscriptions()
         {
             try
             {
+                _logger.LogInformation("[분산브로커] Redis 구독 초기화 시작: ServerId={ServerId}", _serverId);
+
                 // 이 서버로 오는 메시지 구독
                 var serverChannel = $"{SERVER_CHANNEL_PREFIX}:{_serverId}";
+                _logger.LogInformation("[분산브로커] 서버 채널 구독 시작: Channel={Channel}", serverChannel);
                 _subscriber.Subscribe(serverChannel, OnServerMessageReceived);
+                _logger.LogInformation("[분산브로커] 서버 채널 구독 완료: Channel={Channel}", serverChannel);
 
                 // 브로드캐스트 메시지 구독
+                _logger.LogInformation("[분산브로커] 브로드캐스트 채널 구독 시작: Channel={Channel}", BROADCAST_CHANNEL);
                 _subscriber.Subscribe(BROADCAST_CHANNEL, OnBroadcastMessageReceived);
+                _logger.LogInformation("[분산브로커] 브로드캐스트 채널 구독 완료: Channel={Channel}", BROADCAST_CHANNEL);
 
                 // 사용자별 메시지 패턴 구독 (현재 서버에 연결된 사용자들만)
                 // 사용자가 연결될 때 동적으로 구독하도록 변경 예정
 
-                _logger.LogInformation("분산 메시지 브로커 구독 초기화 완료: 서버 {ServerId}", _serverId);
+                _logger.LogInformation("[분산브로커] 분산 메시지 브로커 구독 초기화 완료: ServerId={ServerId}", _serverId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "분산 메시지 브로커 구독 초기화 실패");
+                _logger.LogError(ex, "[분산브로커] 분산 메시지 브로커 구독 초기화 실패: ServerId={ServerId}", _serverId);
+                throw;
             }
         }
 
@@ -92,14 +116,14 @@ namespace ProjectVG.Application.Services.MessageBroker
                     return;
                 }
 
-                // 3. 해당 서버로 메시지 전송
+                // 3. 해당 서버로 메시지 전송 (서버별 채널 사용)
                 var brokerMessage = BrokerMessage.CreateUserMessage(userId, message, _serverId);
-                var userChannel = $"{USER_CHANNEL_PREFIX}:{userId}";
+                var serverChannel = $"{SERVER_CHANNEL_PREFIX}:{targetServerId}";
 
                 _logger.LogInformation("[분산브로커] Redis Pub 시작: Channel={Channel}, TargetServerId={TargetServerId}, SourceServerId={SourceServerId}",
-                    userChannel, targetServerId, _serverId);
+                    serverChannel, targetServerId, _serverId);
 
-                await _subscriber.PublishAsync(userChannel, brokerMessage.ToJson());
+                await _subscriber.PublishAsync(serverChannel, brokerMessage.ToJson());
 
                 _logger.LogInformation("[분산브로커] Redis Pub 완료: UserId={UserId}, TargetServerId={TargetServerId}", userId, targetServerId);
             }
@@ -245,9 +269,41 @@ namespace ProjectVG.Application.Services.MessageBroker
                 }
 
                 // 서버별 메시지 처리 로직
-                _logger.LogDebug("서버 메시지 수신: {MessageType}", brokerMessage.MessageType);
+                _logger.LogInformation("[분산브로커] 서버 메시지 수신: MessageType={MessageType}, SourceServerId={SourceServerId}",
+                    brokerMessage.MessageType, brokerMessage.SourceServerId);
 
-                // TODO: 서버별 메시지 타입에 따른 처리 로직 구현
+                // 사용자 메시지 처리
+                if (brokerMessage.MessageType == "user_message" && !string.IsNullOrEmpty(brokerMessage.TargetUserId))
+                {
+                    _logger.LogInformation("[분산브로커] 사용자 메시지 처리 시작: TargetUserId={TargetUserId}",
+                        brokerMessage.TargetUserId);
+
+                    // 해당 사용자가 이 서버에 연결되어 있는지 확인
+                    if (_connectionManager.HasLocalConnection(brokerMessage.TargetUserId))
+                    {
+                        _logger.LogInformation("[분산브로커] 원본 Payload JSON: {PayloadJson}", brokerMessage.Payload);
+
+                        // 원본 JSON 문자열을 직접 사용하여 메시지 전달
+                        await SendLocalMessageAsJson(brokerMessage.TargetUserId, brokerMessage.Payload);
+
+                        _logger.LogInformation("[분산브로커] 사용자 메시지 전달 완료: TargetUserId={TargetUserId}",
+                            brokerMessage.TargetUserId);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("[분산브로커] 대상 사용자가 이 서버에 연결되어 있지 않음: TargetUserId={TargetUserId}, ServerId={ServerId}",
+                            brokerMessage.TargetUserId, _serverId);
+                    }
+                }
+                else if (brokerMessage.MessageType == "server_message")
+                {
+                    // 다른 서버별 메시지 타입 처리 (향후 확장)
+                    _logger.LogDebug("[분산브로커] 서버 메시지 처리: {MessageType}", brokerMessage.MessageType);
+                }
+                else
+                {
+                    _logger.LogWarning("[분산브로커] 알 수 없는 메시지 타입: {MessageType}", brokerMessage.MessageType);
+                }
             }
             catch (Exception ex)
             {
@@ -320,6 +376,64 @@ namespace ProjectVG.Application.Services.MessageBroker
             }
         }
 
+        private async Task SendLocalMessageAsJson(string userId, string payloadJson)
+        {
+            if (string.IsNullOrEmpty(payloadJson))
+            {
+                _logger.LogWarning("[분산브로커] SendLocalMessageAsJson: Payload가 비어있습니다. UserId={UserId}", userId);
+                return;
+            }
+
+            _logger.LogInformation("[분산브로커] SendLocalMessageAsJson 시작: UserId={UserId}, PayloadLength={PayloadLength}",
+                userId, payloadJson.Length);
+
+            try
+            {
+                // 원본 JSON이 이미 WebSocketMessage 형태인지 확인
+                using var document = JsonDocument.Parse(payloadJson);
+                var root = document.RootElement;
+
+                string messageText;
+
+                // WebSocketMessage 구조인지 확인 (type과 data 필드가 있는지)
+                if (root.TryGetProperty("type", out var typeProperty) &&
+                    root.TryGetProperty("data", out var dataProperty))
+                {
+                    // 이미 WebSocketMessage 형태이므로 그대로 사용
+                    messageText = payloadJson;
+                    _logger.LogInformation("[분산브로커] WebSocketMessage 형태 감지: Type={Type}", typeProperty.GetString());
+                }
+                else
+                {
+                    // 일반 객체이므로 WebSocketMessage로 래핑 (예상되지 않는 케이스)
+                    _logger.LogWarning("[분산브로커] 예상하지 못한 JSON 구조, WebSocketMessage로 래핑: UserId={UserId}", userId);
+                    var wrappedMessage = new WebSocketMessage("message", root);
+                    messageText = System.Text.Json.JsonSerializer.Serialize(wrappedMessage);
+                }
+
+                _logger.LogInformation("[분산브로커] 최종 전송 메시지: {MessageText}", messageText);
+
+                var success = await _connectionManager.SendTextAsync(userId, messageText);
+                if (success)
+                {
+                    _logger.LogInformation("[분산브로커] JSON 메시지 전송 완료: UserId={UserId}", userId);
+                }
+                else
+                {
+                    _logger.LogWarning("[분산브로커] JSON 메시지 전송 실패: UserId={UserId}", userId);
+                }
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "[분산브로커] JSON 파싱 실패: UserId={UserId}, Payload={Payload}", userId, payloadJson);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[분산브로커] SendLocalMessageAsJson 실패: UserId={UserId}", userId);
+                throw;
+            }
+        }
+
         private async Task SendLocalMessage(string userId, object? message)
         {
             if (message == null)
@@ -335,12 +449,18 @@ namespace ProjectVG.Application.Services.MessageBroker
             {
                 string messageText;
 
+                // WebSocketMessage는 이미 올바른 형태이므로 그대로 직렬화
                 if (message is WebSocketMessage wsMessage)
                 {
                     messageText = System.Text.Json.JsonSerializer.Serialize(wsMessage);
+                    _logger.LogInformation("[분산브로커] WebSocketMessage 직렬화: UserId={UserId}, Type={Type}",
+                        userId, wsMessage.Type);
                 }
                 else
                 {
+                    // 다른 객체는 WebSocketMessage로 래핑 (하지만 ChatSuccessHandler에서는 이미 래핑됨)
+                    _logger.LogWarning("[분산브로커] 예상하지 못한 객체 타입: {MessageType}, UserId={UserId}",
+                        message.GetType().Name, userId);
                     var wrappedMessage = new WebSocketMessage("message", message);
                     messageText = System.Text.Json.JsonSerializer.Serialize(wrappedMessage);
                 }

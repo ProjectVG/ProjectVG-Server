@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 using ProjectVG.Application.Services.Auth;
 using ProjectVG.Application.Services.Character;
 using ProjectVG.Application.Services.Chat;
@@ -75,7 +76,19 @@ namespace ProjectVG.Application
 
         private static void AddDistributedServices(IServiceCollection services, IConfiguration configuration)
         {
-            services.AddSingleton<IMessageBroker, DistributedMessageBroker>();
+            // DistributedMessageBroker를 즉시 생성하도록 팩토리 패턴 사용
+            services.AddSingleton<IMessageBroker>(serviceProvider =>
+            {
+                var redis = serviceProvider.GetRequiredService<IConnectionMultiplexer>();
+                var connectionManager = serviceProvider.GetRequiredService<IWebSocketConnectionManager>();
+                var serverRegistration = serviceProvider.GetRequiredService<ProjectVG.Domain.Services.Server.IServerRegistrationService>();
+                var logger = serviceProvider.GetRequiredService<ILogger<DistributedMessageBroker>>();
+
+                logger.LogInformation("[DI] DistributedMessageBroker 팩토리에서 생성 시작");
+                var broker = new DistributedMessageBroker(redis, connectionManager, serverRegistration, logger);
+                logger.LogInformation("[DI] DistributedMessageBroker 팩토리에서 생성 완료");
+                return broker;
+            });
 
             services.AddSingleton<ISessionManager>(serviceProvider =>
             {
@@ -85,6 +98,9 @@ namespace ProjectVG.Application
             });
 
             AddWebSocketConnectionServices(services);
+
+            // MessageBroker 초기화를 강제하는 HostedService 등록
+            services.AddHostedService<MessageBrokerInitializationService>();
         }
 
         private static void AddWebSocketConnectionServices(IServiceCollection services)
