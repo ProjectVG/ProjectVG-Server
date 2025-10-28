@@ -4,7 +4,7 @@
 - **핵심 목표**: 현재 서버와 클라이언트의 동작 구조를 정리하고, HTTP+WebSocket 혼합 아키텍처의 타당성을 평가한다.
 - **요약**: 클라이언트는 OAuth2로 로그인하여 JWT를 발급받고, 이 JWT를 WebSocket 연결 및 HTTP API 요청에 모두 사용한다. 서버는 HTTP 요청을 수락(202 Accepted)하고 백그라운드 처리 후 결과를 WebSocket으로 푸시한다.
 
-## 현재 동작 구조 (실제 구현)
+## 현재 동작 구조
 
 ```mermaid
 sequenceDiagram
@@ -86,7 +86,7 @@ sequenceDiagram
   - 텍스트 소량 알림이면 SSE 고려
   - 오디오/바이너리 스트리밍·부분 결과 스트리밍·저지연 요구가 있으면 WS 유지가 타당
 
-## OAuth2 인증 및 JWT 발급 (실제 구현)
+## OAuth2 인증 및 JWT 발급
 
 ### OAuth2 플로우
 **구현 위치**: [ProjectVG.Api/Controllers/OAuthController.cs](../../ProjectVG.Api/Controllers/OAuthController.cs)
@@ -197,14 +197,14 @@ private Guid? ValidateAndExtractUserId(HttpContext context)
 ```
 
 - **전달 방식**:
-  1. Query Parameter: `/ws?token={access_token}` (권장)
+  1. Query Parameter: `/ws?token={access_token}` (추후 제거)
   2. Authorization Header: `Authorization: Bearer {access_token}`
 - **검증 시점**: WebSocket 연결 수립 시 1회
 - **세션 유지**: JWT 검증 후 세션 생성, 이후 ping/pong으로 세션 TTL 갱신
 
 **중요**: HTTP와 WebSocket에서 **동일한 JWT 토큰** 사용
 
-## 세션 스토리지 설계와 역할 (실제 구현)
+## 세션 스토리지 설계와 역할
 
 ### 3-Tier 세션 관리 아키텍처
 
@@ -292,53 +292,4 @@ private Guid? ValidateAndExtractUserId(HttpContext context)
 - ⏳ **압축**: WebSocket 메시지 압축 옵션
 - ⏳ **관찰성**: traceId/correlationId 전파, 활성 연결·전송량·지연·재연결율 메트릭 수집
 - ⏳ **Rate Limiting**: 사용자별/IP별 요청 제한
-
-## 아키텍처 개요 다이어그램
-
-```mermaid
-graph TB
-  subgraph "Client"
-    C["Browser / Game Client"]
-  end
-
-  LB["Load Balancer / Reverse Proxy"]
-  GW["WebSocket Gateway (optional)"]
-
-  subgraph "App Cluster"
-    A1["App Node 1\nWebSocket Server\n- In-Memory Connection Registry\n- Auth (JWT/Cookie)\n- Heartbeat (Ping/Pong)"]
-    A2["App Node N"]
-  end
-
-  SS["Session Store (Redis/Memcached)\n- Connection map\n- Presence\n- Rooms / Channels"]
-  BP["Backplane / Pub-Sub (Redis/Kafka/RabbitMQ)"]
-  DB["Operational DB (SQL/NoSQL)\n- Persistent user/game state"]
-  LOG["Metrics / Logs"]
-
-  C <--> LB
-  LB --> GW
-  GW --> A1
-  GW --> A2
-
-  A1 <--> SS
-  A2 <--> SS
-
-  A1 <--> BP
-  A2 <--> BP
-
-  A1 --> DB
-  A2 --> DB
-
-  A1 --> LOG
-  A2 --> LOG
-
-  classDef note fill:#f9f9f9,stroke:#bbb,color:#333;
-
-  subgraph "Notes"
-    N1["세션 저장 위치:\n- 단일 노드: In-Memory (A1/A2)\n- 수평 확장: Redis 등 외부 세션 스토어(SS)\n- 영속 데이터: DB"]
-    N2["구성 요소 역할:\n- LB/GW: 업그레이드, 라우팅, (선택) 스티키 세션\n- App Node: WS 핸드셰이크, 인증, 하트비트, 메시지 처리\n- SS: 연결/프레즌스/룸 상태 공유\n- BP: 노드 간 브로드캐스트/팬아웃\n- DB: 장기 상태/이벤트 저장"]
-  end
-
-  class N1,N2 note;
-```
-
 
