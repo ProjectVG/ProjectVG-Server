@@ -21,12 +21,14 @@
 ```
 Client ──HTTP POST──→ ChatController ──Enqueue──→ Background Processing
    ↑                                                      ↓
-   └──WebSocket Push────← WebSocketManager ←──Result────┘
+   └──WebSocket Push────← MessageBroker ←──Result────────┘
+                         (Local/Distributed)
 ```
 
 **구현 위치**:
 - **HTTP 진입점**: [`ProjectVG.Api/Controllers/ChatController.cs`](../../ProjectVG.Api/Controllers/ChatController.cs)
-- **WebSocket 결과 전송**: [`ProjectVG.Application/Services/WebSocket/WebSocketManager.cs`](../../ProjectVG.Application/Services/WebSocket/WebSocketManager.cs)
+- **메시지 라우팅**: [`ProjectVG.Application/Services/MessageBroker/DistributedMessageBroker.cs`](../../ProjectVG.Application/Services/MessageBroker/DistributedMessageBroker.cs)
+- **로컬 연결 관리**: [`ProjectVG.Application/Services/Session/WebSocketConnectionManager.cs`](../../ProjectVG.Application/Services/Session/WebSocketConnectionManager.cs)
 - **비동기 처리 오케스트레이션**: [`ProjectVG.Application/Services/Chat/ChatService.cs`](../../ProjectVG.Application/Services/Chat/ChatService.cs)
 
 **핵심 코드**:
@@ -121,6 +123,50 @@ private async Task ProcessChatRequestInternalAsync(ChatProcessContext context)
     }
     finally {
         _metricsService.EndChatMetrics();
+    }
+}
+```
+
+### Redis Pub/Sub 기반 분산 메시지 라우팅
+
+**설명**: 여러 API 서버가 동시 실행되는 분산 환경에서 서버 채널 기반의 효율적인 메시지 라우팅. 사용자 채널 대신 서버 채널을 사용하여 구독 오버헤드를 서버 수로 제한(O(servers) vs O(users))하고, 로컬 연결 우선 확인으로 같은 서버 메시지는 Redis를 완전히 우회합니다.
+
+**핵심 특징**:
+- **서버 채널 라우팅**: `server:{serverId}` 채널로 메시지 발행, 수백만 사용자도 서버 수만큼의 구독만 필요
+- **로컬 우선 최적화**: 같은 서버 연결은 Redis 오버헤드 없이 직접 전송
+- **3-Tier 세션 관리**: 로컬 ConcurrentDictionary + Redis 세션(30분 TTL) + Redis 사용자-서버 매핑(35분 TTL)
+
+**구현 위치**:
+- **분산 메시지 브로커**: [`ProjectVG.Application/Services/MessageBroker/DistributedMessageBroker.cs`](../../ProjectVG.Application/Services/MessageBroker/DistributedMessageBroker.cs)
+- **서버 등록 서비스**: [`ProjectVG.Infrastructure/Services/Server/RedisServerRegistrationService.cs`](../../ProjectVG.Infrastructure/Services/Server/RedisServerRegistrationService.cs)
+- **로컬 연결 관리**: [`ProjectVG.Application/Services/Session/WebSocketConnectionManager.cs`](../../ProjectVG.Application/Services/Session/WebSocketConnectionManager.cs)
+
+**핵심 코드**:
+```csharp
+// 로컬 우선, 원격 시 서버 채널 라우팅
+public async Task SendToUserAsync(string userId, object message)
+{
+    // 1. 로컬 연결 확인 (Redis 우회)
+    if (_connectionManager.HasLocalConnection(userId)) {
+        await SendLocalMessage(userId, message);
+        return;
+    }
+
+    // 2. Redis에서 사용자가 연결된 서버 조회
+    var targetServerId = await _serverRegistration.GetUserServerAsync(userId);
+
+    // 3. 서버 채널로 메시지 발행 (user 채널 아님!)
+    var serverChannel = $"server:{targetServerId}";
+    await _subscriber.PublishAsync(serverChannel, brokerMessage.ToJson());
+}
+
+// 대상 서버에서 수신 후 로컬 WebSocket으로 전달
+private async void OnServerMessageReceived(RedisChannel channel, RedisValue message)
+{
+    var brokerMessage = BrokerMessage.FromJson(message);
+    if (_connectionManager.HasLocalConnection(brokerMessage.TargetUserId))
+    {
+        await SendLocalMessageAsJson(brokerMessage.TargetUserId, brokerMessage.Payload);
     }
 }
 ```
